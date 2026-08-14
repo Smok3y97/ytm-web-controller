@@ -1,0 +1,41 @@
+{
+  "id": "com.smok3y97.ytmusicweb.diallayout",
+  "items": [
+    {
+      "key": "title",
+      "type": "text",
+      "font": { "size": 13, "weight": 600 },
+      "rect": [8, 4, 184, 20],
+      "alignment": "left",
+      "value": "Song Title",
+      "zOrder": 1
+    },
+    {
+      "key": "icon",
+      "type": "pixmap",
+      "rect": [8, 28, 56, 56],
+      "enabled": true,
+      "zOrder": 0
+    },
+    {
+      "key": "value",
+      "type": "text",
+      "rect": [70, 32, 122, 28],
+      "font": { "size": 20, "weight": 700 },
+      "alignment": "right",
+      "value": "100%",
+      "zOrder": 2
+    },
+    {
+      "key": "indicator",
+      "type": "bar",
+      "subtype": 0,
+      "rect": [70, 68, 122, 10],
+      "border_w": 0,
+      "bar_fill_c": "#FF0000",
+      "bar_bg_c": "#333333",
+      "value": 0,
+      "zOrder": 3
+    }
+  ]
+}

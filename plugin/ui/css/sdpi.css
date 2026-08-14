@@ -1,0 +1,138 @@
+/**
+ * Stream Deck Property Inspector Modern Dark Theme
+ */
+
+:root {
+  --bg: #2d2d2d;
+  --bg-secondary: #202020;
+  --bg-input: #1a1a1a;
+  --border: #3d3d3d;
+  --text: #d8d8d8;
+  --text-muted: #8e8e93;
+  --accent: #ff0000;
+  --accent-hover: #ff3333;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 11px;
+  user-select: none;
+  padding: 12px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sdpi-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sdpi-heading {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-top: 6px;
+}
+
+.sdpi-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sdpi-item-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.sdpi-item-label {
+  color: var(--text);
+  font-size: 11px;
+  min-width: 100px;
+}
+
+.sdpi-item-value {
+  flex: 1;
+  width: 100%;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: var(--font);
+  padding: 5px 8px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
+  border-color: var(--accent);
+}
+
+select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath fill='%238e8e93' d='M0 0l4 4 4-4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 20px;
+}
+
+/* Custom Styled Checkbox */
+.sdpi-checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.sdpi-checkbox-wrap input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.sdpi-hint {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.sdpi-info-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.sdpi-info-box strong {
+  color: var(--text);
+}

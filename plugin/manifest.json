@@ -1,0 +1,181 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Name": "YouTube Music Web Controller",
+  "Description": "Ultra-lightweight, event-driven Stream Deck controller for YouTube Music Web with Discord RPC.",
+  "Author": "Smok3y97",
+  "Version": "1.0.0",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.5"
+  },
+  "Icon": "assets/plugin-icon",
+  "Category": "YouTube Music",
+  "CategoryIcon": "assets/category-icon",
+  "CodePath": "bin/plugin.js",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    },
+    {
+      "Platform": "mac",
+      "MinimumVersion": "12"
+    }
+  ],
+  "Actions": [
+    {
+      "UUID": "com.smok3y97.ytmusicweb.playpause",
+      "Name": "Play / Pause",
+      "Tooltip": "Toggle Play / Pause and display album cover art",
+      "Icon": "assets/actions/playpause/icon",
+      "PropertyInspectorPath": "ui/playpause.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/playpause/play",
+          "TitleAlignment": "middle",
+          "FontSize": "10"
+        },
+        {
+          "Image": "assets/actions/playpause/pause",
+          "TitleAlignment": "middle",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.dial",
+      "Name": "YTM Dial Controller",
+      "Tooltip": "Stream Deck + Dial: rotate to skip tracks, press to toggle play/pause, view LCD feedback",
+      "Icon": "assets/actions/dial/icon",
+      "PropertyInspectorPath": "ui/dial.html",
+      "Controllers": [
+        "Encoder"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/dial/icon"
+        }
+      ],
+      "Encoder": {
+        "layout": "layouts/dial_layout.json",
+        "StackColor": "#FF0000",
+        "TriggerDescription": {
+          "Rotate": "Skip Tracks (Next / Previous)",
+          "Push": "Toggle Play / Pause",
+          "Touch": "Toggle Play / Pause"
+        }
+      }
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.next",
+      "Name": "Next Track",
+      "Tooltip": "Skip to the next track",
+      "Icon": "assets/actions/next/icon",
+      "PropertyInspectorPath": "ui/common.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/next/icon"
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.prev",
+      "Name": "Previous Track",
+      "Tooltip": "Skip to the previous track or restart current track",
+      "Icon": "assets/actions/prev/icon",
+      "PropertyInspectorPath": "ui/common.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/prev/icon"
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.like",
+      "Name": "Like Track",
+      "Tooltip": "Toggle like rating for currently playing track",
+      "Icon": "assets/actions/like/icon",
+      "PropertyInspectorPath": "ui/common.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/like/like-inactive"
+        },
+        {
+          "Image": "assets/actions/like/like-active"
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.dislike",
+      "Name": "Dislike Track",
+      "Tooltip": "Toggle dislike rating for currently playing track",
+      "Icon": "assets/actions/dislike/icon",
+      "PropertyInspectorPath": "ui/common.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/dislike/dislike-inactive"
+        },
+        {
+          "Image": "assets/actions/dislike/dislike-active"
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.shuffle",
+      "Name": "Shuffle",
+      "Tooltip": "Toggle playlist shuffle mode",
+      "Icon": "assets/actions/shuffle/icon",
+      "PropertyInspectorPath": "ui/common.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/shuffle/shuffle-inactive"
+        },
+        {
+          "Image": "assets/actions/shuffle/shuffle-active"
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.repeat",
+      "Name": "Repeat Mode",
+      "Tooltip": "Cycle repeat mode (Off / All / One)",
+      "Icon": "assets/actions/repeat/icon",
+      "PropertyInspectorPath": "ui/common.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/repeat/repeat-off"
+        },
+        {
+          "Image": "assets/actions/repeat/repeat-all"
+        },
+        {
+          "Image": "assets/actions/repeat/repeat-one"
+        }
+      ]
+    }
+  ]
+}

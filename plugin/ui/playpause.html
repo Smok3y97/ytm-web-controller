@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Play / Pause Settings</title>
+  <link rel="stylesheet" href="css/sdpi.css">
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <!-- Local Action Settings -->
+    <div class="sdpi-heading">Action Settings</div>
+
+    <div class="sdpi-item">
+      <label class="sdpi-checkbox-wrap">
+        <input type="checkbox" id="showCoverAsBackground" checked>
+        <span>Album-Cover als Button-Hintergrund</span>
+      </label>
+    </div>
+    <div class="sdpi-hint">
+      Wenn aktiv, wird das Album-Cover des aktuellen Songs direkt in den Button geladen.
+    </div>
+
+    <!-- Global Settings -->
+    <div class="sdpi-heading">Globale Einstellungen (Plugin-Weit)</div>
+
+    <div class="sdpi-item">
+      <label class="sdpi-checkbox-wrap">
+        <input type="checkbox" id="enableDiscordRPC">
+        <span>Discord Rich Presence (RPC) aktivieren</span>
+      </label>
+    </div>
+    <div class="sdpi-hint">
+      Zeigt den aktuellen YouTube Music Track live im Discord Profil an (Standard: Deaktiviert).
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">WebSocket Port</div>
+      <div class="sdpi-item-value">
+        <input type="number" id="wsPort" min="1024" max="65535" value="39865" placeholder="39865">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Muss mit dem Port in der Browser-Erweiterung übereinstimmen (Standard: 39865).
+    </div>
+  </div>
+
+  <script src="playpause.js"></script>
+</body>
+</html>

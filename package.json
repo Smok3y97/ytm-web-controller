@@ -1,0 +1,26 @@
+{
+  "name": "ytm-web-controller",
+  "version": "1.0.0",
+  "description": "High-performance, event-driven Elgato Stream Deck integration for YouTube Music Web with Discord RPC",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix plugin",
+    "watch": "npm run watch --prefix plugin",
+    "pack": "npm run pack --prefix plugin",
+    "lint": "npm run lint --prefix plugin"
+  },
+  "keywords": [
+    "streamdeck",
+    "elgato",
+    "youtube-music",
+    "discord-rpc",
+    "streamdeck-plus",
+    "browser-extension"
+  ],
+  "author": "Smok3y97",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smok3y97/ytm-web-controller.git"
+  }
+}

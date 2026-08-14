@@ -1,6 +1,6 @@
 {
   "name": "com.smok3y97.ytmusicweb",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Elgato Stream Deck Plugin for YouTube Music Web with Discord RPC",
   "type": "module",
   "main": "bin/plugin.js",

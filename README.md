@@ -86,16 +86,20 @@ This plugin has been tested and verified with:
 ### Step 2: Install the Browser Extension
 The browser extension connects your YouTube Music tab to the Stream Deck plugin.
 
+> [!TIP]
+> **No Git clone or repository download required!** You can simply download the pre-packaged `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page alongside the Stream Deck plugin and extract it anywhere on your PC.
+
 #### Chromium Browsers (Google Chrome, Microsoft Edge, Brave, Opera, Vivaldi):
-1. Download or clone this repository.
+1. Download and unzip `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page (or use the [`extension/`](extension/) folder from the cloned repository).
 2. Navigate to `chrome://extensions` (or `edge://extensions` / `brave://extensions`).
 3. Enable **Developer mode** (toggle in the top-right corner).
-4. Click **Load unpacked** and select the [`extension/`](extension/) directory from this repository.
+4. Click **Load unpacked** (*Entpackte Erweiterung laden*) and select the unzipped `extension` folder.
 
 #### Mozilla Firefox:
-1. Navigate to `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on...**.
-3. Select [`extension/manifest.json`](extension/manifest.json).
+1. Download and unzip `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page (or use the [`extension/`](extension/) folder from the cloned repository).
+2. Navigate to `about:debugging#/runtime/this-firefox`.
+3. Click **Load Temporary Add-on...**.
+4. Select `manifest.json` from the unzipped extension directory.
 
 ### Step 3: Start Playing Music!
 1. Open [music.youtube.com](https://music.youtube.com).

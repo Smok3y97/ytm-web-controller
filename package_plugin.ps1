@@ -10,16 +10,30 @@ Write-Output "Assembling Stream Deck Plugin: $uuid"
 if (Test-Path $releaseDir) {
     Remove-Item $releaseDir -Recurse -Force
 }
+New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 
 # 1. Copy Manifest & Package
 Copy-Item (Join-Path $pluginDir "manifest.json") $stageDir
 Copy-Item (Join-Path $pluginDir "package.json") $stageDir
 
-# 2. Copy compiled binary
+# 2. Copy compiled binary (Build automatically if not present)
+$binSource = Join-Path $pluginDir "bin\plugin.js"
+if (!(Test-Path $binSource)) {
+    Write-Output "Compiled binary not found. Installing dependencies and building..."
+    Push-Location $pluginDir
+    if (!(Test-Path (Join-Path $pluginDir "node_modules"))) {
+        npm install
+    }
+    npm run build
+    Pop-Location
+}
+
 $binTarget = Join-Path $stageDir "bin"
 New-Item -ItemType Directory -Path $binTarget -Force | Out-Null
-Copy-Item (Join-Path $pluginDir "bin\plugin.js") $binTarget
+if (Test-Path $binSource) {
+    Copy-Item $binSource $binTarget
+}
 if (Test-Path (Join-Path $pluginDir "bin\plugin.js.map")) {
     Copy-Item (Join-Path $pluginDir "bin\plugin.js.map") $binTarget
 }
@@ -46,11 +60,31 @@ Rename-Item -Path $archiveZip -NewName "$uuid.streamDeckPlugin" -Force
 
 Write-Output "Successfully created package: $archivePath"
 
-# 7. Copy files into Stream Deck AppData Plugins directory
-$appDataPlugins = Join-Path $env:APPDATA "Elgato\StreamDeck\Plugins"
-if (Test-Path $appDataPlugins) {
+# 7. Package Extension into release folder as extension.zip
+$extDir = Join-Path $PSScriptRoot "extension"
+if (Test-Path $extDir) {
+    $extZip = Join-Path $releaseDir "extension.zip"
+    Write-Output "Packaging Chrome Extension to: $extZip"
+    Compress-Archive -Path "$extDir\*" -DestinationPath $extZip -Force
+}
+
+# 8. Optionally install/update local Stream Deck plugin if Stream Deck is installed
+$appDataPlugins = $null
+if ($env:APPDATA) {
+    $winPlugins = Join-Path $env:APPDATA "Elgato\StreamDeck\Plugins"
+    if (Test-Path $winPlugins) {
+        $appDataPlugins = $winPlugins
+    }
+} elseif ($IsMacOS -or ($PSVersionTable.OS -like "*Darwin*")) {
+    $macPlugins = [System.IO.Path]::Combine($env:HOME, "Library/Application Support/com.elgato.StreamDeck/Plugins")
+    if (Test-Path $macPlugins) {
+        $appDataPlugins = $macPlugins
+    }
+}
+
+if ($appDataPlugins) {
     $targetSdPlugin = Join-Path $appDataPlugins "$uuid.sdPlugin"
-    Write-Output "Updating Stream Deck plugin at: $targetSdPlugin"
+    Write-Output "Updating local Stream Deck plugin at: $targetSdPlugin"
     if (!(Test-Path $targetSdPlugin)) {
         New-Item -ItemType Directory -Path $targetSdPlugin -Force | Out-Null
     }
@@ -64,3 +98,5 @@ if (Test-Path $appDataPlugins) {
     Copy-Item -Path "$stageDir\*" -Destination $targetSdPlugin -Recurse -Force
     Write-Output "Plugin successfully updated in Stream Deck plugins directory!"
 }
+
+

@@ -304,11 +304,7 @@
         trackUrl = window.location.href;
       }
 
-      // Extract Album from MediaSession
-      if (mediaSession?.album) {
-        album = mediaSession.album.trim();
-      }
-
+      // Query Byline element
       const bylineElem = $('ytmusic-player-bar .byline') ||
         $('ytmusic-player-bar .subtitle') ||
         $('ytmusic-player-bar yt-formatted-string.byline') ||
@@ -318,48 +314,33 @@
         $('ytmusic-player-bar .content-info-wrapper .subtitle');
 
       if (bylineElem) {
-        const allLinks = Array.from(bylineElem.querySelectorAll('a'));
-        const artistLinks = [];
-        let albumLink = null;
-
-        for (const a of allLinks) {
-          const href = a.getAttribute('href') || a.href || '';
-          const text = (a.textContent || a.innerText || '').trim();
-          if (!text) continue;
-
-          if (href.includes('browse/MPRE') || href.includes('browse/FEmusic_library_album') || href.includes('album')) {
-            if (!albumLink) albumLink = a;
-          } else if (href.includes('channel/') || href.includes('browse/UC') || href.includes('artist')) {
-            artistLinks.push(a);
-          } else if (artistLinks.length === 0 && !albumLink) {
-            artistLinks.push(a);
-          } else if (!albumLink) {
-            albumLink = a;
-          }
-        }
-
-        if (!artist && artistLinks.length > 0) {
-          artist = artistLinks.map(a => a.textContent.trim()).join(' & ');
-        }
-        if (artistLinks.length > 0 && !artistUrl) {
-          artistUrl = artistLinks[0].href || '';
-        }
-
-        if (albumLink) {
-          if (!album) album = albumLink.textContent.trim();
-          if (!albumUrl) albumUrl = albumLink.href || '';
-        }
-
         const bylineRawText = (bylineElem.textContent || '').replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
         const parts = bylineRawText.split(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•|]/).map(p => p.trim()).filter(Boolean);
-        if (parts.length > 0 && !artist) {
+
+        if (parts.length > 0) {
           artist = parts[0];
         }
-        if (parts.length > 1 && !album && !/^\d{4}$/.test(parts[1])) {
+        if (parts.length > 1 && !/^\d{4}$/.test(parts[1])) {
           album = parts[1];
+        }
+
+        const allLinks = Array.from(bylineElem.querySelectorAll('a'));
+        for (const a of allLinks) {
+          const href = a.getAttribute('href') || a.href || '';
+          if (!href) continue;
+
+          if (href.includes('browse/MPRE') || href.includes('browse/FEmusic_library_album') || href.includes('album')) {
+            if (!albumUrl) albumUrl = a.href;
+          } else if (href.includes('channel/') || href.includes('browse/UC') || href.includes('artist')) {
+            if (!artistUrl) artistUrl = a.href;
+          }
         }
       }
 
+      // Fallbacks from MediaSession
+      if (!album && mediaSession?.album) {
+        album = mediaSession.album.trim();
+      }
       if (!artist && mediaSession?.artist) {
         artist = mediaSession.artist.trim();
       }
@@ -377,7 +358,7 @@
       // Strip 4-digit years, explicit badges, and trailing separators
       artist = artist.replace(/\b\d{4}\b/g, '').trim();
       artist = artist.replace(/^(E|\[E\])\s+/i, '').trim();
-      // Normalize relative URLs
+      artist = artist.replace(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/, '').trim();   // Normalize relative URLs
       if (trackUrl && trackUrl.startsWith('/')) trackUrl = `https://music.youtube.com${trackUrl}`;
       if (artistUrl && artistUrl.startsWith('/')) artistUrl = `https://music.youtube.com${artistUrl}`;
       if (albumUrl && albumUrl.startsWith('/')) albumUrl = `https://music.youtube.com${albumUrl}`;

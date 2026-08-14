@@ -192,7 +192,7 @@ export class DiscordRpcService {
       this.debounceTimeout = setTimeout(() => {
         this.debounceTimeout = null;
         this.sendActivity(state, false);
-      }, 350);
+      }, 800);
     }
   }
 

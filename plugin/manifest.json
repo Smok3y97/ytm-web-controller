@@ -1,9 +1,9 @@
 {
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
-  "Name": "YouTube Music Web Controller",
-  "Description": "Ultra-lightweight, event-driven Stream Deck controller for YouTube Music Web with Discord RPC.",
+  "Name": "YouTube Music Web",
+  "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence",
   "Author": "Smok3y97",
-  "Version": "1.1.0",
+  "Version": "1.1.1",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.5"

@@ -10,6 +10,9 @@ export interface YTMPlaybackState {
   album: string;
   coverUrl: string;
   coverBase64?: string;
+  trackUrl?: string;
+  artistUrl?: string;
+  albumUrl?: string;
   currentTime: number;
   duration: number;
   volume: number;

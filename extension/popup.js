@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusBadge = document.getElementById('status-badge');
   const statusText = document.getElementById('status-text');
   const toastMessage = document.getElementById('toast-message');
+  const versionText = document.getElementById('version-text');
+
+  if (versionText && typeof chrome !== 'undefined' && chrome.runtime?.getManifest) {
+    const manifest = chrome.runtime.getManifest();
+    if (manifest.version) {
+      versionText.textContent = `v${manifest.version} • Open Source`;
+    }
+  }
 
   let toastTimeout = null;
 

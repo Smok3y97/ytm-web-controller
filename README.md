@@ -33,6 +33,7 @@ Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party 
 | **Dislike Track** | Dual-State Key | Toggles track thumbs-down with real-time active state highlight. |
 | **Shuffle** | Dual-State Key | Toggles playlist shuffle mode on/off with real-time active state highlight. |
 | **Repeat Mode** | Tri-State Key | Cycles through repeat modes: **Off** ➔ **Repeat All** ➔ **Repeat One (1)**. |
+| **Discord Rich Presence (RPC)** | Service Integration | Real-time Discord presence with live album cover, animated progress bar, clickable track/artist/album links, and custom Application ID support. |
 
 ---
 
@@ -51,7 +52,6 @@ This plugin has been tested and verified with:
 
 ## 🗺️ Roadmap & Planned Features
 
-- 💬 **Discord Rich Presence (RPC)** *(WIP / In Development)*: Broadcasting live listening status, album art, and playback progress to Discord (currently non-functional and being reworked).
 - 🔊 **Volume Control**: Dedicated volume adjustment (rotary encoder mode for Dial and separate Volume Up / Volume Down keypad actions with customizable step size).
 - 🔇 **Mute / Unmute Key**: Dual-state mute toggle key with visual status feedback.
 - 🌐 **Store Distribution**: Publishing the plugin to the **Elgato Marketplace** and the companion extension to the **Chrome Web Store** and **Firefox Add-ons** repository.
@@ -92,7 +92,7 @@ The browser extension connects your YouTube Music tab to the Stream Deck plugin.
 Global settings (WebSocket Port and Discord RPC toggle) are managed centrally inside the Property Inspector of the **Play / Pause** action:
 
 - **WebSocket Port** (Default: `39865`): If port `39865` conflicts with other software on your PC, change it here and update the extension popup to match. The server rebinds dynamically without restarting Stream Deck.
-- **Discord Rich Presence (RPC)** *(WIP)*: Setting toggle is available in the UI, but the background Discord IPC connection is currently under development / non-functional.
+- **Discord Rich Presence (RPC)**: Activate live Discord presence broadcasting with animated timeline and direct track/artist profile buttons. You can also specify a custom Discord Application ID (Default: `1537908230209019954`).
 - **Album Cover as Button Background** (Play/Pause Key): Toggle whether the Play/Pause key displays the live song cover artwork in RAM or classic Play/Pause state icons.
 
 ### Stream Deck + Dial Customization

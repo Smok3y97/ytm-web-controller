@@ -1,10 +1,27 @@
 # YouTube Music Web Controller (`ytm-web-controller`)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Latest Release](https://img.shields.io/github/v/release/smok3y97/ytm-web-controller?include_prereleases&label=Release&color=blue)](https://github.com/smok3y97/ytm-web-controller/releases)
 [![Stream Deck](https://img.shields.io/badge/Stream%20Deck-v6.5%2B-red.svg)](https://www.elgato.com/stream-deck)
 [![Manifest V3](https://img.shields.io/badge/Extension-Manifest%20V3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 
 An ultra-lightweight, event-driven, resource-efficient open-source controller bridge connecting the official [YouTube Music Web App](https://music.youtube.com) directly to your **Elgato Stream Deck** (including **Stream Deck + Dials & LCD Touchstrips**).
+
+---
+
+## 📸 Screenshots & Preview
+
+<p align="center">
+  <img src="screenshots/StreamDeck.png" alt="Elgato Stream Deck Action Setup" width="800">
+  <br>
+  <em>Stream Deck Plugin Action Setup & Dynamic Controls</em>
+</p>
+
+<p align="center">
+  <img src="screenshots/Discord-Rich-Presence.png" alt="Discord Rich Presence" width="450">
+  <br>
+  <em>Discord Rich Presence Integration with Live Progress & Interactive Buttons</em>
+</p>
 
 ---
 
@@ -70,16 +87,20 @@ This plugin has been tested and verified with:
 ### Step 2: Install the Browser Extension
 The browser extension connects your YouTube Music tab to the Stream Deck plugin.
 
+> [!TIP]
+> **No Git clone or repository download required!** You can simply download the pre-packaged `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page alongside the Stream Deck plugin and extract it anywhere on your PC.
+
 #### Chromium Browsers (Google Chrome, Microsoft Edge, Brave, Opera, Vivaldi):
-1. Download or clone this repository.
+1. Download and unzip `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page (or use the [`extension/`](extension/) folder from the cloned repository).
 2. Navigate to `chrome://extensions` (or `edge://extensions` / `brave://extensions`).
 3. Enable **Developer mode** (toggle in the top-right corner).
-4. Click **Load unpacked** and select the [`extension/`](extension/) directory from this repository.
+4. Click **Load unpacked** (*Entpackte Erweiterung laden*) and select the unzipped `extension` folder.
 
 #### Mozilla Firefox:
-1. Navigate to `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on...**.
-3. Select [`extension/manifest.json`](extension/manifest.json).
+1. Download and unzip `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page (or use the [`extension/`](extension/) folder from the cloned repository).
+2. Navigate to `about:debugging#/runtime/this-firefox`.
+3. Click **Load Temporary Add-on...**.
+4. Select `manifest.json` from the unzipped extension directory.
 
 ### Step 3: Start Playing Music!
 1. Open [music.youtube.com](https://music.youtube.com).
@@ -137,6 +158,9 @@ ytm-web-controller/
 ├── package_plugin.ps1           # Packaging & Stream Deck AppData deployment script
 ├── LICENSE                      # MIT License
 ├── README.md                    # Documentation
+├── screenshots/                 # Visual documentation & preview screenshots
+│   ├── StreamDeck.png           # Stream Deck action configuration preview
+│   └── Discord-Rich-Presence.png# Discord RPC integration preview
 ├── extension/                   # Manifest V3 Browser Extension
 │   ├── manifest.json            # MV3 Manifest with Chromium & Gecko support
 │   ├── content.js               # Event-driven DOM observer & WebSocket client
@@ -167,20 +191,20 @@ ytm-web-controller/
 - [Node.js](https://nodejs.org) (v20+ recommended)
 - [npm](https://www.npmjs.com)
 
-### Build the Plugin
-```bash
-# Install plugin dependencies
-cd plugin
-npm install
+### Build & Package the Project
+You can build and package everything directly from the repository root:
 
-# Build standalone bundle
+```bash
+# 1. Build standalone plugin bundle
 npm run build
 
-# Watch mode for active development
-npm run watch
+# 2. Package Stream Deck Plugin (.streamDeckPlugin) & Extension (.zip) into release/
+npm run package
+# (or execute directly with PowerShell):
+powershell -ExecutionPolicy Bypass -File .\package_plugin.ps1
 
-# Package plugin into release/
-powershell -ExecutionPolicy Bypass -File ..\package_plugin.ps1
+# Optional: Watch mode for active development
+npm run watch
 ```
 
 ---

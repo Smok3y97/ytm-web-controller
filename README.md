@@ -1,6 +1,7 @@
 # YouTube Music Web Controller (`ytm-web-controller`)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Latest Release](https://img.shields.io/github/v/release/smok3y97/ytm-web-controller?include_prereleases&label=Release&color=blue)](https://github.com/smok3y97/ytm-web-controller/releases)
 [![Stream Deck](https://img.shields.io/badge/Stream%20Deck-v6.5%2B-red.svg)](https://www.elgato.com/stream-deck)
 [![Manifest V3](https://img.shields.io/badge/Extension-Manifest%20V3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 
@@ -190,20 +191,20 @@ ytm-web-controller/
 - [Node.js](https://nodejs.org) (v20+ recommended)
 - [npm](https://www.npmjs.com)
 
-### Build the Plugin
-```bash
-# Install plugin dependencies
-cd plugin
-npm install
+### Build & Package the Project
+You can build and package everything directly from the repository root:
 
-# Build standalone bundle
+```bash
+# 1. Build standalone plugin bundle
 npm run build
 
-# Watch mode for active development
-npm run watch
+# 2. Package Stream Deck Plugin (.streamDeckPlugin) & Extension (.zip) into release/
+npm run package
+# (or execute directly with PowerShell):
+powershell -ExecutionPolicy Bypass -File .\package_plugin.ps1
 
-# Package plugin into release/
-powershell -ExecutionPolicy Bypass -File ..\package_plugin.ps1
+# Optional: Watch mode for active development
+npm run watch
 ```
 
 ---

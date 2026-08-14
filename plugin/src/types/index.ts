@@ -38,10 +38,18 @@ export interface GlobalSettings extends JsonObject {
   wsPort?: number;
   enableDiscordRPC?: boolean;
   discordClientId?: string;
+  enableObsExport?: boolean;
+  obsFilePath?: string;
+  obsFormatTemplate?: string;
+  obsClearOnPause?: boolean;
 }
 
 export interface PlayPauseSettings extends JsonObject {
   showCoverAsBackground?: boolean;
+  enableObsExport?: boolean;
+  obsFilePath?: string;
+  obsFormatTemplate?: string;
+  obsClearOnPause?: boolean;
 }
 
 export interface DialSettings extends JsonObject {
@@ -55,3 +63,4 @@ export interface DialSettings extends JsonObject {
 export interface VolumeSettings extends JsonObject {
   step?: number;
 }
+

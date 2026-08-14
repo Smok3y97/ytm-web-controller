@@ -9,6 +9,10 @@ let settings = {};
 let globalSettings = {};
 
 const showCoverCheckbox = document.getElementById('showCoverAsBackground');
+const enableObsCheckbox = document.getElementById('enableObsExport');
+const obsFilePathInput = document.getElementById('obsFilePath');
+const obsFormatTemplateInput = document.getElementById('obsFormatTemplate');
+const obsClearOnPauseCheckbox = document.getElementById('obsClearOnPause');
 const enableDiscordCheckbox = document.getElementById('enableDiscordRPC');
 const discordClientIdInput = document.getElementById('discordClientId');
 const wsPortInput = document.getElementById('wsPort');
@@ -53,11 +57,31 @@ function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegist
       showCoverCheckbox.checked = !!settings.showCoverAsBackground;
     } else if (event === 'didReceiveGlobalSettings') {
       globalSettings = payload.settings || {};
-      enableDiscordCheckbox.checked = !!globalSettings.enableDiscordRPC;
+      
+      // OBS Settings
+      if (enableObsCheckbox) {
+        enableObsCheckbox.checked = !!globalSettings.enableObsExport;
+      }
+      if (obsFilePathInput) {
+        obsFilePathInput.value = globalSettings.obsFilePath || '';
+      }
+      if (obsFormatTemplateInput) {
+        obsFormatTemplateInput.value = globalSettings.obsFormatTemplate || 'Currently Playing: {artist} - {title}';
+      }
+      if (obsClearOnPauseCheckbox) {
+        obsClearOnPauseCheckbox.checked = globalSettings.obsClearOnPause !== false;
+      }
+
+      // Discord & WebSocket Settings
+      if (enableDiscordCheckbox) {
+        enableDiscordCheckbox.checked = !!globalSettings.enableDiscordRPC;
+      }
       if (discordClientIdInput) {
         discordClientIdInput.value = globalSettings.discordClientId || '';
       }
-      wsPortInput.value = globalSettings.wsPort || 39865;
+      if (wsPortInput) {
+        wsPortInput.value = globalSettings.wsPort || 39865;
+      }
     }
   };
 }
@@ -77,12 +101,31 @@ function saveSettings() {
 function saveGlobalSettings() {
   if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
 
-  const portVal = parseInt(wsPortInput.value, 10) || 39865;
-  globalSettings.enableDiscordRPC = enableDiscordCheckbox.checked;
+  // OBS Settings
+  if (enableObsCheckbox) {
+    globalSettings.enableObsExport = enableObsCheckbox.checked;
+  }
+  if (obsFilePathInput) {
+    globalSettings.obsFilePath = obsFilePathInput.value.trim();
+  }
+  if (obsFormatTemplateInput) {
+    globalSettings.obsFormatTemplate = obsFormatTemplateInput.value || 'Currently Playing: {artist} - {title}';
+  }
+  if (obsClearOnPauseCheckbox) {
+    globalSettings.obsClearOnPause = obsClearOnPauseCheckbox.checked;
+  }
+
+  // Discord & WebSocket Settings
+  if (enableDiscordCheckbox) {
+    globalSettings.enableDiscordRPC = enableDiscordCheckbox.checked;
+  }
   if (discordClientIdInput) {
     globalSettings.discordClientId = discordClientIdInput.value.trim() || undefined;
   }
-  globalSettings.wsPort = portVal;
+  if (wsPortInput) {
+    const portVal = parseInt(wsPortInput.value, 10) || 39865;
+    globalSettings.wsPort = portVal;
+  }
 
   websocket.send(JSON.stringify({
     event: 'setGlobalSettings',
@@ -92,14 +135,35 @@ function saveGlobalSettings() {
 }
 
 showCoverCheckbox.addEventListener('change', saveSettings);
-enableDiscordCheckbox.addEventListener('change', saveGlobalSettings);
+
+if (enableObsCheckbox) {
+  enableObsCheckbox.addEventListener('change', saveGlobalSettings);
+}
+if (obsFilePathInput) {
+  obsFilePathInput.addEventListener('change', saveGlobalSettings);
+  obsFilePathInput.addEventListener('blur', saveGlobalSettings);
+}
+if (obsFormatTemplateInput) {
+  obsFormatTemplateInput.addEventListener('change', saveGlobalSettings);
+  obsFormatTemplateInput.addEventListener('input', saveGlobalSettings);
+}
+if (obsClearOnPauseCheckbox) {
+  obsClearOnPauseCheckbox.addEventListener('change', saveGlobalSettings);
+}
+
+if (enableDiscordCheckbox) {
+  enableDiscordCheckbox.addEventListener('change', saveGlobalSettings);
+}
 if (discordClientIdInput) {
   discordClientIdInput.addEventListener('change', saveGlobalSettings);
 }
-wsPortInput.addEventListener('change', saveGlobalSettings);
-wsPortInput.addEventListener('input', () => {
-  const port = parseInt(wsPortInput.value, 10);
-  if (port >= 1024 && port <= 65535) {
-    saveGlobalSettings();
-  }
-});
+if (wsPortInput) {
+  wsPortInput.addEventListener('change', saveGlobalSettings);
+  wsPortInput.addEventListener('input', () => {
+    const port = parseInt(wsPortInput.value, 10);
+    if (port >= 1024 && port <= 65535) {
+      saveGlobalSettings();
+    }
+  });
+}
+

@@ -23,6 +23,48 @@
     <!-- Global Settings -->
     <div class="sdpi-heading">Globale Einstellungen (Plugin-Weit)</div>
 
+    <!-- OBS Studio Text Export -->
+    <div class="sdpi-item">
+      <label class="sdpi-checkbox-wrap">
+        <input type="checkbox" id="enableObsExport">
+        <span>OBS Text-Export aktivieren (.txt)</span>
+      </label>
+    </div>
+    <div class="sdpi-hint">
+      Schreibt Track-Informationen live in eine Textdatei für OBS Studio Overlays ("Text (GDI+)" ➔ "Aus Datei lesen").
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Dateipfad (.txt)</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="obsFilePath" placeholder="C:\Users\...\ytm_current_track.txt">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Absoluter Pfad zur Zieldatei (wird bei Bedarf automatisch erstellt).
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Format Template</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="obsFormatTemplate" placeholder="Currently Playing: {artist} - {title}" value="Currently Playing: {artist} - {title}">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Platzhalter: {artist}, {title}, {album}
+    </div>
+
+    <div class="sdpi-item">
+      <label class="sdpi-checkbox-wrap">
+        <input type="checkbox" id="obsClearOnPause" checked>
+        <span>Datei bei Pause/Stopp leeren</span>
+      </label>
+    </div>
+    <div class="sdpi-hint">
+      Wenn aktiv, wird der Dateiinhalt gelöscht sobald die Wiedergabe pausiert wird.
+    </div>
+
+    <!-- Discord RPC -->
     <div class="sdpi-item">
       <label class="sdpi-checkbox-wrap">
         <input type="checkbox" id="enableDiscordRPC">
@@ -53,6 +95,7 @@
       Muss mit dem Port in der Browser-Erweiterung übereinstimmen (Standard: 39865).
     </div>
   </div>
+
 
   <script src="playpause.js"></script>
 </body>

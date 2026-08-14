@@ -10,6 +10,7 @@ let globalSettings = {};
 
 const showCoverCheckbox = document.getElementById('showCoverAsBackground');
 const enableDiscordCheckbox = document.getElementById('enableDiscordRPC');
+const discordClientIdInput = document.getElementById('discordClientId');
 const wsPortInput = document.getElementById('wsPort');
 
 function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
@@ -53,6 +54,9 @@ function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegist
     } else if (event === 'didReceiveGlobalSettings') {
       globalSettings = payload.settings || {};
       enableDiscordCheckbox.checked = !!globalSettings.enableDiscordRPC;
+      if (discordClientIdInput) {
+        discordClientIdInput.value = globalSettings.discordClientId || '';
+      }
       wsPortInput.value = globalSettings.wsPort || 39865;
     }
   };
@@ -75,6 +79,9 @@ function saveGlobalSettings() {
 
   const portVal = parseInt(wsPortInput.value, 10) || 39865;
   globalSettings.enableDiscordRPC = enableDiscordCheckbox.checked;
+  if (discordClientIdInput) {
+    globalSettings.discordClientId = discordClientIdInput.value.trim() || undefined;
+  }
   globalSettings.wsPort = portVal;
 
   websocket.send(JSON.stringify({
@@ -86,6 +93,9 @@ function saveGlobalSettings() {
 
 showCoverCheckbox.addEventListener('change', saveSettings);
 enableDiscordCheckbox.addEventListener('change', saveGlobalSettings);
+if (discordClientIdInput) {
+  discordClientIdInput.addEventListener('change', saveGlobalSettings);
+}
 wsPortInput.addEventListener('change', saveGlobalSettings);
 wsPortInput.addEventListener('input', () => {
   const port = parseInt(wsPortInput.value, 10);

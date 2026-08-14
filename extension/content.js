@@ -29,6 +29,9 @@
     album: '',
     coverUrl: '',
     coverBase64: '',
+    trackUrl: '',
+    artistUrl: '',
+    albumUrl: '',
     paused: true,
     currentTime: 0,
     duration: 0,
@@ -41,13 +44,21 @@
   };
 
   /**
-   * Safe selector query helper
+   * Safe selector query helpers
    */
   const $ = (selector, parent = document) => {
     try {
       return parent.querySelector(selector);
     } catch {
       return null;
+    }
+  };
+
+  const $$ = (selector, parent = document) => {
+    try {
+      return Array.from(parent.querySelectorAll(selector));
+    } catch {
+      return [];
     }
   };
 
@@ -251,23 +262,134 @@
     const mediaSession = navigator.mediaSession?.metadata;
     const playerBar = $('ytmusic-player-bar');
 
-    let title = mediaSession?.title || '';
-    let artist = mediaSession?.artist || '';
-    let album = mediaSession?.album || '';
+    let title = '';
+    let artist = '';
+    let album = '';
     let coverUrl = '';
+    let trackUrl = '';
+    let artistUrl = '';
+    let albumUrl = '';
 
-    if (!title) {
-      const titleElem = $('ytmusic-player-bar .title') ||
-        $('ytmusic-player-bar yt-formatted-string.title') ||
-        $('.middle-controls .title');
-      title = titleElem?.textContent?.trim() || '';
-    }
-    if (!artist) {
+    // 1. Extract from YouTube Music Internal Player API
+    try {
+      const playerBar = $('ytmusic-player-bar');
+      if (playerBar && playerBar.playerApi_?.getVideoData) {
+        const vData = playerBar.playerApi_.getVideoData();
+        if (vData?.title) title = vData.title.trim();
+        if (vData?.author) artist = vData.author.trim();
+        if (vData?.video_id) trackUrl = `https://music.youtube.com/watch?v=${vData.video_id}`;
+      }
+    } catch {}
+
+    // 2. Extract Title, Artist, Album & URLs from DOM & MediaSession
+    try {
+      if (!title) {
+        const titleLink = $('ytmusic-player-bar .title a') ||
+          $('ytmusic-player-bar yt-formatted-string.title a') ||
+          $('ytmusic-player-bar a.yt-simple-endpoint[href*="watch"]');
+        if (titleLink) {
+          title = titleLink.textContent?.trim() || '';
+          if (!trackUrl && titleLink.href) {
+            trackUrl = titleLink.href;
+          }
+        }
+      }
+      if (!title) {
+        const titleElem = $('ytmusic-player-bar .title') ||
+          $('ytmusic-player-bar yt-formatted-string.title') ||
+          $('.middle-controls .title');
+        title = titleElem?.textContent?.trim() || mediaSession?.title || '';
+      }
+      if (!trackUrl && window.location.href.includes('music.youtube.com/watch')) {
+        trackUrl = window.location.href;
+      }
+
+      // Extract Album from MediaSession
+      if (mediaSession?.album) {
+        album = mediaSession.album.trim();
+      }
+
       const bylineElem = $('ytmusic-player-bar .byline') ||
+        $('ytmusic-player-bar .subtitle') ||
         $('ytmusic-player-bar yt-formatted-string.byline') ||
-        $('.middle-controls .byline');
-      artist = bylineElem?.textContent?.trim() || '';
-    }
+        $('ytmusic-player-bar yt-formatted-string.subtitle') ||
+        $('.middle-controls .byline') ||
+        $('.middle-controls .subtitle') ||
+        $('ytmusic-player-bar .content-info-wrapper .subtitle');
+
+      if (bylineElem) {
+        const allLinks = Array.from(bylineElem.querySelectorAll('a'));
+        const artistLinks = [];
+        let albumLink = null;
+
+        for (const a of allLinks) {
+          const href = a.getAttribute('href') || a.href || '';
+          const text = (a.textContent || a.innerText || '').trim();
+          if (!text) continue;
+
+          if (href.includes('browse/MPRE') || href.includes('browse/FEmusic_library_album') || href.includes('album')) {
+            if (!albumLink) albumLink = a;
+          } else if (href.includes('channel/') || href.includes('browse/UC') || href.includes('artist')) {
+            artistLinks.push(a);
+          } else if (artistLinks.length === 0 && !albumLink) {
+            artistLinks.push(a);
+          } else if (!albumLink) {
+            albumLink = a;
+          }
+        }
+
+        if (!artist && artistLinks.length > 0) {
+          artist = artistLinks.map(a => a.textContent.trim()).join(' & ');
+        }
+        if (artistLinks.length > 0 && !artistUrl) {
+          artistUrl = artistLinks[0].href || '';
+        }
+
+        if (albumLink) {
+          if (!album) album = albumLink.textContent.trim();
+          if (!albumUrl) albumUrl = albumLink.href || '';
+        }
+
+        const bylineRawText = (bylineElem.textContent || '').replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
+        const parts = bylineRawText.split(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•|]/).map(p => p.trim()).filter(Boolean);
+        if (parts.length > 0 && !artist) {
+          artist = parts[0];
+        }
+        if (parts.length > 1 && !album && !/^\d{4}$/.test(parts[1])) {
+          album = parts[1];
+        }
+      }
+
+      if (!artist && mediaSession?.artist) {
+        artist = mediaSession.artist.trim();
+      }
+
+      // Clean artist and album
+      artist = artist.replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
+      album = album.replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
+
+      // If album name is present inside artist string, strip it completely!
+      if (album && artist.toLowerCase().includes(album.toLowerCase())) {
+        const escapedAlbum = album.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        artist = artist.replace(new RegExp(`\\s*${escapedAlbum}`, 'gi'), '').trim();
+      }
+
+      // Strip 4-digit years, explicit badges, and trailing separators
+      artist = artist.replace(/\b\d{4}\b/g, '').trim();
+      artist = artist.replace(/^(E|\[E\])\s+/i, '').trim();
+      // Normalize relative URLs
+      if (trackUrl && trackUrl.startsWith('/')) trackUrl = `https://music.youtube.com${trackUrl}`;
+      if (artistUrl && artistUrl.startsWith('/')) artistUrl = `https://music.youtube.com${artistUrl}`;
+      if (albumUrl && albumUrl.startsWith('/')) albumUrl = `https://music.youtube.com${albumUrl}`;
+
+      // Fallback URLs
+      if (!trackUrl && title) {
+        trackUrl = `https://music.youtube.com/search?q=${encodeURIComponent(title + ' ' + (artist || ''))}`;
+      }
+      if (!artistUrl && artist) {
+        artistUrl = `https://music.youtube.com/search?q=${encodeURIComponent(artist)}`;
+      }
+    } catch {}
 
     if (mediaSession?.artwork && mediaSession.artwork.length > 0) {
       const sortedArtworks = [...mediaSession.artwork].sort((a, b) => {
@@ -472,6 +594,9 @@
       album,
       coverUrl,
       coverBase64: cachedCoverBase64,
+      trackUrl,
+      artistUrl,
+      albumUrl,
       currentTime,
       duration,
       volume,
@@ -497,6 +622,7 @@
         const isIdentical = (
           state.title === lastSentState.title &&
           state.artist === lastSentState.artist &&
+          state.album === lastSentState.album &&
           state.paused === lastSentState.paused &&
           state.duration === lastSentState.duration &&
           state.volume === lastSentState.volume &&
@@ -505,7 +631,10 @@
           state.isDisliked === lastSentState.isDisliked &&
           state.shuffleActive === lastSentState.shuffleActive &&
           state.repeatMode === lastSentState.repeatMode &&
-          state.coverBase64 === lastSentState.coverBase64
+          state.coverBase64 === lastSentState.coverBase64 &&
+          state.trackUrl === lastSentState.trackUrl &&
+          state.artistUrl === lastSentState.artistUrl &&
+          state.albumUrl === lastSentState.albumUrl
         );
 
         if (isIdentical && (state.paused || Math.abs(state.currentTime - lastSentState.currentTime) < 1)) {

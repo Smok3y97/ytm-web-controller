@@ -3,7 +3,7 @@
   "Name": "YouTube Music Web Controller",
   "Description": "Ultra-lightweight, event-driven Stream Deck controller for YouTube Music Web with Discord RPC.",
   "Author": "Smok3y97",
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.5"

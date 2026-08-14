@@ -8,6 +8,22 @@ An ultra-lightweight, event-driven, resource-efficient open-source controller br
 
 ---
 
+## 📸 Screenshots & Preview
+
+<p align="center">
+  <img src="screenshots/StreamDeck.png" alt="Elgato Stream Deck Action Setup" width="800">
+  <br>
+  <em>Stream Deck Plugin Action Setup & Dynamic Controls</em>
+</p>
+
+<p align="center">
+  <img src="screenshots/Discord-Rich-Presence.png" alt="Discord Rich Presence" width="450">
+  <br>
+  <em>Discord Rich Presence Integration with Live Progress & Interactive Buttons</em>
+</p>
+
+---
+
 ## 🌟 Why This Exists
 
 Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party Electron wrappers (such as YouTube Music Desktop App / YTMD) that consume hundreds of megabytes of RAM and run unnecessary background processes.
@@ -137,6 +153,9 @@ ytm-web-controller/
 ├── package_plugin.ps1           # Packaging & Stream Deck AppData deployment script
 ├── LICENSE                      # MIT License
 ├── README.md                    # Documentation
+├── screenshots/                 # Visual documentation & preview screenshots
+│   ├── StreamDeck.png           # Stream Deck action configuration preview
+│   └── Discord-Rich-Presence.png# Discord RPC integration preview
 ├── extension/                   # Manifest V3 Browser Extension
 │   ├── manifest.json            # MV3 Manifest with Chromium & Gecko support
 │   ├── content.js               # Event-driven DOM observer & WebSocket client

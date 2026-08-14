@@ -34,6 +34,7 @@ Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party 
 | **Shuffle** | Dual-State Key | Toggles playlist shuffle mode on/off with real-time active state highlight. |
 | **Repeat Mode** | Tri-State Key | Cycles through repeat modes: **Off** ➔ **Repeat All** ➔ **Repeat One (1)**. |
 | **Discord Rich Presence (RPC)** | Service Integration | Real-time Discord presence with live album cover, animated progress bar, clickable track/artist/album links, and custom Application ID support. |
+| **OBS Text Export** | Service Integration | Automatically writes the currently playing track metadata to a local `.txt` file for OBS Studio stream overlays. |
 
 ---
 
@@ -47,6 +48,7 @@ This plugin has been tested and verified with:
   - **Google Chrome** (Official Web Player & PWA)
 - **Software**:
   - Elgato Stream Deck Software **v7.5.1 (22901)** (Minimum required: v6.5+)
+  - **OBS Studio** (v28+)
 
 ---
 
@@ -86,11 +88,35 @@ The browser extension connects your YouTube Music tab to the Stream Deck plugin.
 
 ---
 
+## 🎥 OBS Studio Overlay Setup (Text GDI+)
+
+You can display the currently playing track live in your OBS stream overlay using a standard **Text (GDI+)** source:
+
+1. In the Property Inspector of the **Play / Pause** action:
+   - Enable **OBS Text-Export aktivieren (.txt)**.
+   - Enter your desired target file path (e.g. `C:\Users\YourUsername\Documents\ytm_current_track.txt`).
+   - (Optional) Customize the template (e.g. `Currently Playing: {artist} - {title}`).
+2. In **OBS Studio**:
+   - In your Scene, click the **+** button under **Sources** and select **Text (GDI+)** (or **Text (FreeType 2)** on macOS/Linux).
+   - Name the source (e.g. `Current Track`).
+   - Check the **Read from file** checkbox.
+   - Click **Browse** and select the file path you configured in the Stream Deck Property Inspector (e.g. `ytm_current_track.txt`).
+   - Choose your favorite font, size, text color, outline/shadow, and alignment.
+   - Click **OK**.
+3. Whenever music is played, skipped, or paused in YouTube Music, OBS updates the overlay text immediately in real-time!
+
+---
+
 ## ⚙️ Configuration
 
 ### Central Settings Architecture
-Global settings (WebSocket Port and Discord RPC toggle) are managed centrally inside the Property Inspector of the **Play / Pause** action:
+Global settings (WebSocket Port, Discord RPC toggle, and OBS Text Export) are managed centrally inside the Property Inspector of the **Play / Pause** action:
 
+- **OBS Text-Export**:
+  - **Enable OBS Export**: Toggle the `.txt` export feature on/off.
+  - **File Path**: Absolute path where the text file will be saved (e.g. `C:\Users\username\Documents\ytm_current_track.txt`). The directory is created automatically if it does not exist.
+  - **Format Template**: Customize the format. Supports `{artist}`, `{title}`, `{album}` placeholders (Default: `Currently Playing: {artist} - {title}`).
+  - **Clear on Pause**: If enabled, empties the text file when music is paused or stopped.
 - **WebSocket Port** (Default: `39865`): If port `39865` conflicts with other software on your PC, change it here and update the extension popup to match. The server rebinds dynamically without restarting Stream Deck.
 - **Discord Rich Presence (RPC)**: Activate live Discord presence broadcasting with animated timeline and direct track/artist profile buttons. You can also specify a custom Discord Application ID (Default: `1537908230209019954`).
 - **Album Cover as Button Background** (Play/Pause Key): Toggle whether the Play/Pause key displays the live song cover artwork in RAM or classic Play/Pause state icons.
@@ -129,7 +155,7 @@ ytm-web-controller/
     └── src/
         ├── index.ts             # Plugin entry point & action registration
         ├── types/               # TypeScript interfaces
-        ├── services/            # WebSocket Server, In-Memory Image Renderer, State Manager, Discord RPC
+        ├── services/            # WebSocket Server, In-Memory Image Renderer, State Manager, Discord RPC, OBS Exporter
         └── actions/             # Handlers for Play/Pause, Dial, Next, Previous, Like, Dislike, Shuffle, Repeat
 ```
 

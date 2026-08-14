@@ -8,6 +8,7 @@ import streamDeck, { LogLevel } from '@elgato/streamdeck';
 import { WebSocketService } from './services/websocket-server.js';
 import { StateManager } from './services/state-manager.js';
 import { DiscordRpcService } from './services/discord-rpc.js';
+import { ObsExporterService } from './services/obs-exporter.js';
 import { GlobalSettings, YTMPlaybackState } from './types/index.js';
 
 // Action Handlers
@@ -27,6 +28,7 @@ streamDeck.logger.info('[YTM Controller] Initializing plugin...');
 const wsService = WebSocketService.getInstance();
 const stateManager = StateManager.getInstance();
 const discordService = DiscordRpcService.getInstance();
+const obsService = ObsExporterService.getInstance();
 
 // 1. Start WebSocket server immediately on default/fallback port
 wsService.start(39865).catch((err) => {
@@ -48,12 +50,13 @@ wsService.on('stateUpdate', (state: YTMPlaybackState) => {
   stateManager.updateState(state);
 });
 
-// 4. Connect StateManager updates to Discord RPC
+// 4. Connect StateManager updates to Discord RPC & OBS Exporter
 stateManager.on('stateChanged', (state: YTMPlaybackState) => {
   discordService.updatePresence(state);
+  obsService.updateExport(state);
 });
 
-// 5. Handle global settings changes (WebSocket Port & Discord RPC)
+// 5. Handle global settings changes (WebSocket Port, Discord RPC, OBS Exporter)
 streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>(async (ev) => {
   const settings = ev.settings;
   const targetPort = settings.wsPort || 39865;
@@ -64,6 +67,7 @@ streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>(async (ev) => {
   }
 
   await discordService.setEnabled(!!settings.enableDiscordRPC, settings.discordClientId);
+  await obsService.updateSettings(settings);
 });
 
 // 6. Connect to Stream Deck Application
@@ -77,9 +81,11 @@ streamDeck.connect().then(async () => {
     if (globalSettings.enableDiscordRPC) {
       await discordService.setEnabled(true, globalSettings.discordClientId);
     }
+    await obsService.updateSettings(globalSettings);
   } catch (err) {
     streamDeck.logger.warn(`[YTM Controller] Could not fetch global settings: ${err}`);
   }
 }).catch((err) => {
   streamDeck.logger.error(`[YTM Controller] Connection to Stream Deck failed: ${err}`);
 });
+

@@ -61,10 +61,10 @@ Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party 
   </tr>
   <tr>
     <td align="center" valign="middle">
-      <img src="screenshots/Discord-Rich-Presence.png" alt="Discord Rich Presence Desktop" width="440">
+      <img src="screenshots/Discord-Desktop-RPC.png" alt="Discord Rich Presence Desktop" width="300">
     </td>
     <td align="center" valign="middle">
-      <img src="screenshots/Discord-Mobile-RPC.png" alt="Discord Mobile App Rich Presence" width="260">
+      <img src="screenshots/Discord-Mobile-RPC.png" alt="Discord Mobile App Rich Presence" width="300">
     </td>
   </tr>
 </table>
@@ -183,7 +183,7 @@ ytm-web-controller/
 ├── screenshots/                 # Visual documentation & preview screenshots
 │   ├── Banner.png               # GitHub hero banner & social preview
 │   ├── StreamDeck.png           # Stream Deck action configuration preview
-│   ├── Discord-Rich-Presence.png# Discord RPC desktop integration preview
+│   ├── Discord-Desktop-RPC.png  # Discord RPC desktop integration preview
 │   └── Discord-Mobile-RPC.png   # Discord Mobile App Rich Presence preview
 ├── extension/                   # Manifest V3 Browser Extension
 │   ├── manifest.json            # MV3 Manifest with Chromium & Gecko support

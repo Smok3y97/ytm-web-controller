@@ -1,13 +1,15 @@
+# YouTube Music Web Controller (`ytm-web-controller`)
+
 <p align="center">
   <img src="screenshots/Banner.png" alt="YouTube Music Web Controller" width="100%">
 </p>
 
-# YouTube Music Web Controller (`ytm-web-controller`)
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Latest Release](https://img.shields.io/github/v/release/smok3y97/ytm-web-controller?include_prereleases&label=Release&color=blue)](https://github.com/smok3y97/ytm-web-controller/releases)
-[![Stream Deck](https://img.shields.io/badge/Stream%20Deck-v6.5%2B-red.svg)](https://www.elgato.com/stream-deck)
-[![Manifest V3](https://img.shields.io/badge/Extension-Manifest%20V3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://github.com/smok3y97/ytm-web-controller/releases"><img src="https://img.shields.io/github/v/release/smok3y97/ytm-web-controller?include_prereleases&label=Release&color=blue" alt="Latest Release"></a>
+  <a href="https://www.elgato.com/stream-deck"><img src="https://img.shields.io/badge/Stream%20Deck-v6.5%2B-red.svg" alt="Stream Deck"></a>
+  <a href="https://developer.chrome.com/docs/extensions/mv3/intro/"><img src="https://img.shields.io/badge/Extension-Manifest%20V3-green.svg" alt="Manifest V3"></a>
+</p>
 
 An ultra-lightweight, event-driven, resource-efficient open-source controller bridge connecting the official [YouTube Music Web App](https://music.youtube.com) directly to your **Elgato Stream Deck** (including **Stream Deck + Dials & LCD Touchstrips**).
 

@@ -20,6 +20,7 @@ import { LikeAction } from './actions/like.js';
 import { DislikeAction } from './actions/dislike.js';
 import { ShuffleAction } from './actions/shuffle.js';
 import { RepeatAction } from './actions/repeat.js';
+import { CopyUrlAction } from './actions/copy-url.js';
 
 // Enable logging
 streamDeck.logger.setLevel(LogLevel.INFO);
@@ -44,6 +45,7 @@ streamDeck.actions.registerAction(new LikeAction());
 streamDeck.actions.registerAction(new DislikeAction());
 streamDeck.actions.registerAction(new ShuffleAction());
 streamDeck.actions.registerAction(new RepeatAction());
+streamDeck.actions.registerAction(new CopyUrlAction());
 
 // 3. Connect WebSocket state updates to StateManager
 wsService.on('stateUpdate', (state: YTMPlaybackState) => {

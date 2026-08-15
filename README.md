@@ -50,6 +50,7 @@ Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party 
 | **Dislike Track** | Dual-State Key | Toggles track thumbs-down with real-time active state highlight. |
 | **Shuffle** | Dual-State Key | Toggles playlist shuffle mode on/off with real-time active state highlight. |
 | **Repeat Mode** | Tri-State Key | Cycles through repeat modes: **Off** ➔ **Repeat All** ➔ **Repeat One (1)**. |
+| **Copy Song URL** | Key | Copies the active YouTube Music song URL to your clipboard for instant track sharing, with visual success feedback (`showOk`). |
 | **Discord Rich Presence (RPC)** | Service Integration | Real-time Discord presence with live album cover, animated progress bar, clickable track/artist/album links, and custom Application ID support. |
 | **OBS Text Export** | Service Integration | Automatically writes the currently playing track metadata to a local `.txt` file for OBS Studio stream overlays. |
 
@@ -180,8 +181,8 @@ ytm-web-controller/
     └── src/
         ├── index.ts             # Plugin entry point & action registration
         ├── types/               # TypeScript interfaces
-        ├── services/            # WebSocket Server, In-Memory Image Renderer, State Manager, Discord RPC, OBS Exporter
-        └── actions/             # Handlers for Play/Pause, Dial, Next, Previous, Like, Dislike, Shuffle, Repeat
+        ├── services/            # WebSocket Server, In-Memory Image Renderer, State Manager, Discord RPC, OBS Exporter, Clipboard
+        └── actions/             # Handlers for Play/Pause, Dial, Next, Previous, Like, Dislike, Shuffle, Repeat, Copy URL
 ```
 
 ---

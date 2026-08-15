@@ -3,7 +3,7 @@
   "Name": "YouTube Music Web",
   "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence",
   "Author": "Smok3y97",
-  "Version": "1.2.2",
+  "Version": "1.3.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.5"
@@ -174,6 +174,21 @@
         },
         {
           "Image": "assets/actions/repeat/repeat-one"
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.copyurl",
+      "Name": "Copy Song URL",
+      "Tooltip": "Copy current song URL to clipboard",
+      "Icon": "assets/actions/copyurl/icon",
+      "PropertyInspectorPath": "ui/common.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/copyurl/icon"
         }
       ]
     }

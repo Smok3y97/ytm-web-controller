@@ -38,7 +38,12 @@ if (Test-Path (Join-Path $pluginDir "bin\plugin.js.map")) {
     Copy-Item (Join-Path $pluginDir "bin\plugin.js.map") $binTarget
 }
 
-# 3. Copy Assets (excluding script files)
+# 3. Generate & Copy Assets (excluding script files)
+if (Test-Path (Join-Path $pluginDir "assets\generate_assets.ps1")) {
+    Write-Output "Generating plugin and action assets..."
+    & (Join-Path $pluginDir "assets\generate_assets.ps1")
+}
+
 $assetsTarget = Join-Path $stageDir "assets"
 Copy-Item (Join-Path $pluginDir "assets") $stageDir -Recurse
 Get-ChildItem $assetsTarget -Include "*.ps1","*.mjs" -Recurse | Remove-Item -Force

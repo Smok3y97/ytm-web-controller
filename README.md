@@ -62,10 +62,11 @@ This plugin has been tested and verified with:
   - **Elgato Stream Deck +** (Rotary Dials & LCD Touchstrip)
   - **Corsair Galleon 100 SD** (with Elgato Stream Deck integration)
 - **Browsers**:
-  - **Google Chrome** (Official Web Player & PWA)
+  - **Google Chrome** 151.0.7922.138 (Official Web Player & PWA)
 - **Software**:
-  - Elgato Stream Deck Software **v7.5.1 (22901)** (Minimum required: v6.5+)
+  - **Elgato Stream Deck Software** v7.5.1 (22901) (Minimum required: v6.5+)
   - **OBS Studio** (v28+)
+  - **Discord** 1.0.9253 x64
 
 ---
 

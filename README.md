@@ -23,7 +23,7 @@ Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party 
 - 🚀 **Use the Official Web Player or PWA**: Enjoy YouTube Music directly in Chrome, Brave, Edge, or Firefox with full official features, latest UI updates, and GPU acceleration.
 - ⚡ **Zero Polling (`setInterval() == 0`)**: 100% event-driven architecture using native HTML5 `<video>` events and DOM MutationObservers. The connection remains completely silent and idle when music is paused.
 - 🧠 **Zero-Disk Footprint**: Album artwork and dynamic LCD touchstrip graphics are computed and transferred strictly in-memory (RAM) via Base64 Data URLs. No temporary image cache is ever written to your disk.
-- 🎮 **Stream Deck + Dial Support**: Rotary encoder track skipping with push-jitter protection, dial push & LCD tap Play/Pause toggle, dynamic marquee title scrolling, remaining time, and real-time LCD progress bars.
+- 🎮 **Stream Deck + Rotary Dial Support**: Dedicated encoders for Track Skipping, Volume Control, and Quick Seeking/Scrubbing with push-jitter protection, dial push & LCD tap toggles, synchronized marquee title scrolling, and real-time LCD progress bars.
 - 🎨 **100% Native Vector SVGs**: Crisp, official Google YouTube Music vector icons that scale perfectly to any Stream Deck key resolution.
 
 ---
@@ -33,7 +33,12 @@ Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party 
 | Action | Type | Description |
 | :--- | :--- | :--- |
 | **Play / Pause** | Dual-State Key | Toggles playback. Optionally renders the live **Album Cover Art as the button background** in RAM or official vector Play/Pause states. |
-| **YTM Dial Controller** | Stream Deck + Dial & LCD | Rotary control for **Track Skipping** (Clockwise: Next / Counter-Clockwise: Previous) with push-jitter suppression. LCD touchstrip displays album thumbnail, auto-scrolling marquee song title & artist, live time/remaining, and progress bar. Tap dial or touchstrip to toggle Play/Pause. |
+| **Track Controller (Dial)** | Stream Deck + Dial & LCD | Rotary control for **Track Skipping** (Clockwise: Next / Counter-Clockwise: Previous) with push-jitter suppression. LCD touchstrip displays album thumbnail, auto-scrolling marquee song title & artist, live time/remaining, and progress bar. Tap dial or touchstrip to toggle Play/Pause. |
+| **Volume Controller (Dial)** | Stream Deck + Dial & LCD | Dedicated rotary encoder for **Volume Control** with customizable step size (1% – 25% per tick). LCD touchstrip displays real-time volume bar indicator, current volume percentage / MUTED status, and cover/icon. Tap dial or touchstrip to toggle Mute / Unmute. |
+| **Seek Controller (Dial)** | Stream Deck + Dial & LCD | Dedicated rotary encoder for **Quick Seeking & Scrubbing** with customizable step size (1s – 60s per tick, default 10s). LCD touchstrip displays real-time track progress bar, current time / remaining time, and cover thumbnail. Tap dial or touchstrip to toggle Play/Pause. |
+| **Volume Up** | Key | Increases playback volume by a configurable step (1% – 25%, default 5%) with optional live `{volume}%` text feedback. |
+| **Volume Down** | Key | Decreases playback volume by a configurable step (1% – 25%, default 5%) with optional live `{volume}%` text feedback. |
+| **Mute / Unmute** | Dual-State Key | Toggles playback mute status with dynamic active/inactive speaker icons. |
 | **Next Track** | Key | Skips to the next track. |
 | **Previous Track** | Key | Skips to the previous track or restarts the current track. |
 | **Like Track** | Dual-State Key | Toggles track thumbs-up with real-time active state highlight. |
@@ -92,9 +97,7 @@ This plugin has been tested and verified with:
 
 ## 🗺️ Roadmap & Planned Features
 
-- 🔊 **Volume Control**: Dedicated volume adjustment (rotary encoder mode for Dial and separate Volume Up / Volume Down keypad actions with customizable step size).
-- 🔇 **Mute / Unmute Key**: Dual-state mute toggle key with visual status feedback.
-- 🌐 **Store Distribution**: Publishing the plugin to the **Elgato Marketplace** and the companion extension to the **Chrome Web Store** and **Firefox Add-ons** repository.
+- 🌐 **Store Distribution**: Publishing the plugin to the **Elgato Marketplace** and the companion extension to the **Chrome Web Store**.
 
 ---
 
@@ -134,7 +137,7 @@ The browser extension connects your YouTube Music tab to the Stream Deck plugin.
 
 You can display the currently playing track live in your OBS stream overlay using a standard **Text (GDI+)** source:
 
-1. In the Property Inspector of the **Play / Pause** or **Dial** action:
+1. In the Property Inspector of any action (e.g. **Play / Pause** or **Dial**):
    - Enable **Enable OBS text export (.txt)**.
    - Enter your desired target file path (e.g. `C:\Users\YourUsername\Documents\ytm_current_track.txt`).
    - (Optional) Customize the template (e.g. `Currently Playing: {artist} - {title}`).
@@ -149,11 +152,10 @@ You can display the currently playing track live in your OBS stream overlay usin
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Configuration & Customization
 
-### Central Settings Architecture
-Global settings (WebSocket Port, Discord RPC toggle, and OBS Text Export) are managed centrally inside the Property Inspector of the **Play / Pause** action:
-
+### 1. Central Plugin Settings
+Configured inside the Property Inspector of any action:
 - **OBS Text-Export**:
   - **Enable OBS Export**: Toggle the `.txt` export feature on/off.
   - **File Path**: Absolute path where the text file will be saved (e.g. `C:\Users\username\Documents\ytm_current_track.txt`). The directory is created automatically if it does not exist.
@@ -161,13 +163,23 @@ Global settings (WebSocket Port, Discord RPC toggle, and OBS Text Export) are ma
   - **Clear on Pause**: If enabled, empties the text file when music is paused or stopped.
 - **WebSocket Port** (Default: `39865`): If port `39865` conflicts with other software on your PC, change it here and update the extension popup to match. The server rebinds dynamically without restarting Stream Deck.
 - **Discord Rich Presence (RPC)**: Activate live Discord presence broadcasting with animated timeline and direct track/artist profile buttons. You can also specify a custom Discord Application ID (Default: `1537908230209019954`).
-- **Album Cover as Button Background** (Play/Pause Key): Toggle whether the Play/Pause key displays the live song cover artwork in RAM or classic Play/Pause state icons.
 
-### Stream Deck + Dial Customization
-Configured in the Property Inspector of the **YTM Dial Controller** action:
-- **Title Template**: Customize the title layout on the LCD touchstrip. Supports `{title}`, `{artist}`, `{album}` (Default: `{artist} - {title}`). Automatically smoothly scrolls as a Marquee if text exceeds width.
-- **Time Template**: Customize the time format. Supports `{current}`, `{remaining}`, `{duration}` (Default: `{remaining}`).
-- **Cover Thumbnail**: Toggle album thumbnail display on the LCD touchstrip segment.
+### 2. Volume Controllers (Keys & Dial)
+- **Volume Up & Volume Down (Keys)**:
+  - **Volume Step**: Configurable step size from **1% to 25%** (Default: `5%`).
+  - **Show Volume on Key**: Toggle live volume display on the button.
+  - **Title Template**: Customize key text format (`{volume}%`, `Vol {volume}%`, `{volume}`).
+  - **Font & Position**: Styled using Stream Deck's native **"T" Title Styler** button (Top, Middle, Bottom alignment, font size, and color).
+- **Volume Controller (Dial)**:
+  - Rotary volume adjustment (1% – 25% per tick).
+  - Push dial / tap LCD touchstrip to toggle **Mute / Unmute**.
+  - LCD displays real-time volume bar, percentage readout (`100%`, `MUTED`), and cover thumbnail.
+
+### 3. Seek Controller (Dial)
+- **Seek Step**: Configurable scrubbing step from **1s to 60s** per rotary click (Default: `10s`).
+- **Time Template**: Customize LCD time format (`{current} / {duration}`, `{remaining}`, `{current}`).
+- **Title Template**: Auto-scrolling marquee song title and artist (`{artist} - {title}`).
+- **Push / Touch Tap**: Toggles Play / Pause with push-jitter protection.
 
 ---
 
@@ -202,13 +214,16 @@ ytm-web-controller/
     │   ├── plugin-icon.png      # Full-color YouTube Music badge (256x256)
     │   ├── plugin-icon@2x.png   # High-DPI YouTube Music badge (512x512)
     │   ├── generate_assets.ps1  # Automated asset generation script
-    │   └── actions/             # SVG action icons (playpause, dial, like, repeat, etc.)
+    │   └── actions/             # SVG action icons (playpause, dial, volumedial, seekdial, etc.)
     ├── layouts/                 # Stream Deck + Dial LCD JSON layouts
-    │   └── dial_layout.json     # 4-item LCD strip layout definition
+    │   └── dial_layout.json     # Single-source-of-truth 4-item LCD strip layout
     ├── ui/                      # Property Inspector HTML/JS/CSS
-    │   ├── playpause.html/.js   # Central plugin settings & Play/Pause inspector
-    │   ├── dial.html/.js        # Dial & LCD layout customization inspector
-    │   ├── common.html/.js      # Common keypad actions inspector
+    │   ├── common-pi.js         # Shared global settings & WebSocket helper
+    │   ├── playpause.html/.js   # Play/Pause inspector
+    │   ├── dial.html/.js        # Track Controller Dial inspector
+    │   ├── volume.html/.js      # Volume Up & Down keys inspector
+    │   ├── volume-dial.html/.js # Volume Controller Dial inspector
+    │   ├── seek-dial.html/.js   # Seek Controller Dial inspector
     │   └── css/sdpi.css         # Stream Deck Property Inspector stylesheet
     └── src/                     # Plugin TypeScript Source Code
         ├── index.ts             # Plugin entry point & action registration
@@ -216,15 +231,23 @@ ytm-web-controller/
         ├── services/            # Core backend services
         │   ├── websocket-server.ts  # Local WebSocket server (port 39865)
         │   ├── state-manager.ts     # Centralized playback state store
+        │   ├── marquee-service.ts   # Centralized synchronized marquee scroller
         │   ├── image-renderer.ts    # In-memory RAM base64 cover/canvas renderer
         │   ├── discord-rpc.ts       # Live Discord Rich Presence client
         │   ├── obs-exporter.ts      # Live .txt track info exporter for OBS
         │   └── clipboard.ts         # Native clipboard bridge for URL copying
         └── actions/             # Action Controllers
+            ├── base-state-action.ts  # Base class for stateful keypad buttons
+            ├── base-volume-action.ts # Base class for volume keypad buttons
             ├── play-pause.ts    # Play / Pause dual-state key handler
-            ├── dial.ts          # Stream Deck + Rotary Dial & LCD Touchstrip handler
-            ├── next.ts          # Skip to next track
-            ├── previous.ts      # Skip to previous track
+            ├── dial.ts          # Track Controller (Dial & LCD)
+            ├── volume-dial.ts   # Volume Controller (Dial & LCD)
+            ├── seek-dial.ts     # Seek Controller (Dial & LCD)
+            ├── volume-up.ts     # Volume Up key
+            ├── volume-down.ts   # Volume Down key
+            ├── mute.ts          # Mute / Unmute toggle key
+            ├── next-track.ts    # Skip to next track
+            ├── previous-track.ts # Skip to previous track
             ├── like.ts          # Thumbs up toggle action
             ├── dislike.ts       # Thumbs down toggle action
             ├── shuffle.ts       # Shuffle playlist toggle action
@@ -261,9 +284,6 @@ npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
 npm run watch
 ```
 
-> [!NOTE]
-> The Elgato validator requires the staged plugin directory matching reverse-DNS naming with `.sdPlugin` suffix (`release/com.smok3y97.ytmusicweb.sdPlugin`), which is automatically staged during `npm run package`. Running the validator on the un-packaged `plugin/` source folder directly will trigger a naming schema error.
-
 ---
 
 ## 🏷️ Versioning Scheme
@@ -274,13 +294,13 @@ $$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
 
 | Component | Format | Example | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Stream Deck Plugin** (`plugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.3.2.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
-| **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.3.2.0"`<br>`"1.3.2"` | `version` handles internal browser update checks, while `version_name` provides clean display in Web Stores and UI. |
-| **Node.js Packages** (`package.json`) | 4-part / SemVer | `1.3.2.0` | Synchronized versioning across root and plugin package configurations. |
+| **Stream Deck Plugin** (`plugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.4.0.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
+| **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.4.0.0"`<br>`"1.4.0"` | `version` handles internal browser update checks, while `version_name` provides clean display in Web Stores and UI. |
+| **Node.js Packages** (`package.json`) | 4-part / SemVer | `1.4.0.0` | Synchronized versioning across root and plugin package configurations. |
 
 - **Major** (`1`): Significant architectural changes or SDK upgrades.
-- **Minor** (`3`): New features (e.g., Stream Deck + Dial support, Discord RPC integration).
-- **Patch** (`2`): Bug fixes, icon styling, and metadata corrections.
+- **Minor** (`4`): New features (Volume controllers, Seek dial, Marquee service, Base action classes).
+- **Patch** (`0`): Bug fixes, icon styling, and metadata corrections.
 - **Build** (`0`): Internal marketplace revision counter (incremented on store resubmissions without changing the release version).
 
 ---

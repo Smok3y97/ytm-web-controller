@@ -1,12 +1,12 @@
 /**
- * Dial Action for Stream Deck +
+ * Seek Dial Action for Stream Deck +
  * 
- * UUID: com.smok3y97.ytmusicweb.dial
+ * UUID: com.smok3y97.ytmusicweb.seekdial
  * Features:
- * - Encoder rotation: Skip Next Track (clockwise) / Previous Track (counter-clockwise)
+ * - Encoder rotation: Quick Seeking / Scrubbing in Track (customizable 1s - 60s step, default 10s)
  * - Dial push & touch tap: Play / Pause toggle
- * - Push-Jitter Lock: eliminates accidental track skipping during dial push
- * - Dynamic LCD Touchstrip feedback: Album Cover, Song Title (Full-Width Marquee), Remaining Time, Progress Bar
+ * - Push-Jitter Lock: eliminates accidental track seeking during dial push
+ * - Dynamic LCD Touchstrip feedback: Album Cover, Song Title (Marquee), Live Time / Duration, Progress Bar
  */
 
 import {
@@ -24,16 +24,15 @@ import {
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { MarqueeService } from '../services/marquee-service.js';
-import { DialSettings, YTMPlaybackState } from '../types/index.js';
+import { SeekDialSettings, YTMPlaybackState } from '../types/index.js';
 
-@action({ UUID: 'com.smok3y97.ytmusicweb.dial' })
-export class DialAction extends SingletonAction<DialSettings> {
-  private activeDials: Set<WillAppearEvent<DialSettings>['action']> = new Set();
+@action({ UUID: 'com.smok3y97.ytmusicweb.seekdial' })
+export class SeekDialAction extends SingletonAction<SeekDialSettings> {
+  private activeDials: Set<WillAppearEvent<SeekDialSettings>['action']> = new Set();
   private rotationTimer: NodeJS.Timeout | null = null;
   private pendingTicks: number = 0;
-  private lastTrackSkipTime: number = 0;
 
-  // Push-Jitter Suppression Lock
+  // Push-Jitter Lock
   private lastDialPressTime: number = 0;
 
   constructor() {
@@ -50,7 +49,7 @@ export class DialAction extends SingletonAction<DialSettings> {
     });
   }
 
-  override async onWillAppear(ev: WillAppearEvent<DialSettings>): Promise<void> {
+  override async onWillAppear(ev: WillAppearEvent<SeekDialSettings>): Promise<void> {
     this.activeDials.add(ev.action);
     MarqueeService.getInstance().registerConsumer();
 
@@ -66,7 +65,7 @@ export class DialAction extends SingletonAction<DialSettings> {
     WebSocketService.getInstance().sendCommand('requestState');
   }
 
-  override async onWillDisappear(ev: WillDisappearEvent<DialSettings>): Promise<void> {
+  override async onWillDisappear(ev: WillDisappearEvent<SeekDialSettings>): Promise<void> {
     for (const dial of this.activeDials) {
       if (dial.id === ev.action.id) {
         this.activeDials.delete(dial);
@@ -76,7 +75,7 @@ export class DialAction extends SingletonAction<DialSettings> {
     MarqueeService.getInstance().unregisterConsumer();
   }
 
-  override async onDialDown(_ev: DialDownEvent<DialSettings>): Promise<void> {
+  override async onDialDown(_ev: DialDownEvent<SeekDialSettings>): Promise<void> {
     this.lastDialPressTime = Date.now();
     this.pendingTicks = 0;
     if (this.rotationTimer) {
@@ -87,35 +86,66 @@ export class DialAction extends SingletonAction<DialSettings> {
     WebSocketService.getInstance().sendCommand('playPause');
   }
 
-  override async onDialUp(_ev: DialUpEvent<DialSettings>): Promise<void> {
+  override async onDialUp(_ev: DialUpEvent<SeekDialSettings>): Promise<void> {
     this.lastDialPressTime = Date.now();
     this.pendingTicks = 0;
   }
 
-  override async onTouchTap(_ev: TouchTapEvent<DialSettings>): Promise<void> {
+  override async onTouchTap(_ev: TouchTapEvent<SeekDialSettings>): Promise<void> {
     WebSocketService.getInstance().sendCommand('playPause');
   }
 
-  override async onKeyDown(_ev: KeyDownEvent<DialSettings>): Promise<void> {
+  override async onKeyDown(_ev: KeyDownEvent<SeekDialSettings>): Promise<void> {
     WebSocketService.getInstance().sendCommand('playPause');
   }
 
-  override async onDialRotate(ev: DialRotateEvent<DialSettings>): Promise<void> {
-    // Ignore physical push jitter within 250ms of a dial press
+  override async onDialRotate(ev: DialRotateEvent<SeekDialSettings>): Promise<void> {
+    // Ignore push jitter within 250ms of a dial press
     if (Date.now() - this.lastDialPressTime < 250) {
       return;
     }
 
     this.pendingTicks += ev.payload.ticks;
 
-    if (!this.rotationTimer) {
-      this.rotationTimer = setTimeout(() => {
-        this.flushRotation();
-      }, 50);
+    // Instant optimistic LCD feedback
+    if (ev.action.isDial()) {
+      const step = Math.min(60, Math.max(1, ev.payload.settings.seekStep || 10));
+      const currentState = StateManager.getInstance().getState();
+      const optimisticSeconds = Math.min(
+        currentState.duration || Infinity,
+        Math.max(0, currentState.currentTime + this.pendingTicks * step)
+      );
+
+      const indicatorValue = currentState.duration > 0
+        ? Math.min(100, Math.max(0, Math.round((optimisticSeconds / currentState.duration) * 100)))
+        : 0;
+
+      const timeTemplate = ev.payload.settings.timeTemplate || '{current} / {duration}';
+      const valueText = StateManager.getInstance().formatTimeTemplate(
+        timeTemplate,
+        optimisticSeconds,
+        currentState.duration
+      );
+
+      try {
+        await ev.action.setFeedback({
+          value: valueText,
+          indicator: indicatorValue
+        });
+      } catch { }
     }
+
+    if (this.rotationTimer) {
+      clearTimeout(this.rotationTimer);
+    }
+
+    // Smooth 85ms debounce window batches rotary clicks cleanly
+    this.rotationTimer = setTimeout(() => {
+      this.flushRotation(ev.payload.settings);
+    }, 85);
   }
 
-  private flushRotation(): void {
+  private flushRotation(settings: SeekDialSettings): void {
     if (this.rotationTimer) {
       clearTimeout(this.rotationTimer);
       this.rotationTimer = null;
@@ -131,23 +161,13 @@ export class DialAction extends SingletonAction<DialSettings> {
 
     if (ticks === 0) return;
 
-    // Debounce track skipping
-    const now = Date.now();
-    if (now - this.lastTrackSkipTime < 200) {
-      return;
-    }
-    this.lastTrackSkipTime = now;
+    const step = Math.min(60, Math.max(1, settings.seekStep || 10));
+    const deltaSeconds = ticks * step;
 
-    const ws = WebSocketService.getInstance();
-
-    if (ticks > 0) {
-      ws.sendCommand('next');
-    } else {
-      ws.sendCommand('previous');
-    }
+    WebSocketService.getInstance().sendCommand('seekRelative', { seconds: deltaSeconds });
   }
 
-  override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<DialSettings>): Promise<void> {
+  override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<SeekDialSettings>): Promise<void> {
     const state = StateManager.getInstance().getState();
     await this.updateDialDisplay(ev.action, state, ev.payload.settings);
   }
@@ -177,29 +197,34 @@ export class DialAction extends SingletonAction<DialSettings> {
   }
 
   private async updateDialDisplay(
-    dialAction: WillAppearEvent<DialSettings>['action'],
+    dialAction: WillAppearEvent<SeekDialSettings>['action'],
     state: YTMPlaybackState,
-    settings: DialSettings
+    settings: SeekDialSettings
   ): Promise<void> {
     try {
       if (dialAction.isDial()) {
-        const progressPercent = (state.duration > 0 && state.currentTime >= 0)
-          ? Math.min(100, Math.max(0, Math.round((Math.min(state.currentTime, state.duration) / state.duration) * 100)))
-          : 0;
-        const rawTitle = StateManager.getInstance().formatTitleTemplate(settings.titleTemplate || '{artist} - {title}');
-        const titleText = MarqueeService.getInstance().getDisplayText(rawTitle);
+        const fullTitle = StateManager.getInstance().formatTitleTemplate(settings.titleTemplate || '{artist} - {title}');
+        const marqueeTitle = MarqueeService.getInstance().getDisplayText(fullTitle);
 
-        const timeText = StateManager.getInstance().formatTimeTemplate(settings.timeTemplate || '{remaining}');
+        const timeTemplate = settings.timeTemplate || '{current} / {duration}';
+        const timeText = StateManager.getInstance().formatTimeTemplate(
+          timeTemplate,
+          state.currentTime,
+          state.duration
+        );
+        const indicatorValue = state.duration > 0
+          ? Math.min(100, Math.max(0, Math.round((state.currentTime / state.duration) * 100)))
+          : 0;
 
         const coverImage = (settings.showCover !== false && state.coverBase64)
           ? state.coverBase64
-          : 'assets/actions/dial/icon.png';
+          : (state.paused ? 'assets/actions/playpause/play.svg' : 'assets/actions/seekdial/icon.svg');
 
         await dialAction.setFeedback({
-          title: titleText,
+          title: marqueeTitle,
           value: timeText,
           icon: coverImage,
-          indicator: progressPercent
+          indicator: indicatorValue
         });
       } else if (dialAction.isKey()) {
         if (settings.showCover !== false && state.coverBase64) {

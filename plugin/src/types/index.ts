@@ -62,5 +62,20 @@ export interface DialSettings extends JsonObject {
 
 export interface VolumeSettings extends JsonObject {
   step?: number;
+  showVolumeTitle?: boolean;
+  titleTemplate?: string;
+}
+
+export interface VolumeDialSettings extends JsonObject {
+  step?: number;
+  titleTemplate?: string;
+  showCover?: boolean;
+}
+
+export interface SeekDialSettings extends JsonObject {
+  seekStep?: number;
+  titleTemplate?: string;
+  timeTemplate?: string;
+  showCover?: boolean;
 }
 

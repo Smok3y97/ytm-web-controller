@@ -199,6 +199,228 @@
   }
 
   /**
+   * Locate the YouTube Music player API instance
+   */
+  function getPlayerApi() {
+    const playerBar = $('ytmusic-player-bar');
+    if (playerBar?.playerApi_) return playerBar.playerApi_;
+
+    const moviePlayer = $('#movie_player') || $('#player') || $('.html5-video-player');
+    if (moviePlayer && typeof moviePlayer.setVolume === 'function') return moviePlayer;
+
+    const ytPlayer = $('ytmusic-player');
+    if (ytPlayer?.playerApi_) return ytPlayer.playerApi_;
+    if (ytPlayer?.getPlayer && typeof ytPlayer.getPlayer === 'function') {
+      try {
+        const p = ytPlayer.getPlayer();
+        if (p) return p;
+      } catch (e) { }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get current player volume (0 - 100)
+   */
+  function getPlayerVolume() {
+    const playerApi = getPlayerApi();
+    if (playerApi && typeof playerApi.getVolume === 'function') {
+      try {
+        const v = playerApi.getVolume();
+        if (typeof v === 'number' && !isNaN(v)) return Math.round(v);
+      } catch (e) { }
+    }
+
+    const playerBar = $('ytmusic-player-bar');
+    if (playerBar && typeof playerBar.volume_ === 'number') {
+      return Math.round(playerBar.volume_);
+    }
+
+    const slider = $('ytmusic-player-bar #volume-slider') || $('tp-yt-paper-slider#volume-slider') || $('#volume-slider');
+    if (slider) {
+      const val = slider.getAttribute('aria-valuenow') ?? slider.getAttribute('value') ?? slider.value;
+      const parsed = parseInt(val, 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+        return parsed;
+      }
+    }
+
+    const video = findVideoElement();
+    if (video && typeof video.volume === 'number' && !isNaN(video.volume)) {
+      return Math.round(video.volume * 100);
+    }
+
+    return currentVolumePercent;
+  }
+
+  /**
+   * Get current player muted status
+   */
+  function getPlayerMuted() {
+    const playerApi = getPlayerApi();
+    if (playerApi && typeof playerApi.isMuted === 'function') {
+      try {
+        return playerApi.isMuted();
+      } catch (e) { }
+    }
+
+    const playerBar = $('ytmusic-player-bar');
+    if (playerBar && typeof playerBar.muted_ === 'boolean') {
+      return playerBar.muted_;
+    }
+
+    const muteBtn = $('ytmusic-player-bar #volume-slider-volume-button') ||
+      $('ytmusic-player-bar .volume') ||
+      $('ytmusic-player-bar tp-yt-paper-icon-button.volume');
+    if (muteBtn) {
+      const label = (muteBtn.getAttribute('aria-label') || muteBtn.querySelector('button')?.getAttribute('aria-label') || '').toLowerCase();
+      const title = (muteBtn.getAttribute('title') || muteBtn.querySelector('button')?.getAttribute('title') || '').toLowerCase();
+      if (label.includes('unmute') || label.includes('stummschaltung aufheben') || title.includes('unmute') || title.includes('stummschaltung aufheben')) {
+        return true;
+      }
+    }
+
+    const video = findVideoElement();
+    if (video) return video.muted;
+
+    return false;
+  }
+
+  /**
+   * Set player volume (0 - 100) and sync UI
+   */
+  function setPlayerVolume(targetPercent) {
+    const clamped = Math.min(100, Math.max(0, Math.round(targetPercent)));
+    currentVolumePercent = clamped;
+
+    // 1. YouTube Music Player API
+    const playerApi = getPlayerApi();
+    if (playerApi) {
+      try {
+        if (typeof playerApi.setVolume === 'function') {
+          playerApi.setVolume(clamped);
+        }
+        if (clamped > 0 && typeof playerApi.isMuted === 'function' && playerApi.isMuted() && typeof playerApi.unMute === 'function') {
+          playerApi.unMute();
+        }
+      } catch (e) { }
+    }
+
+    // 2. Polymer playerBar
+    const playerBar = $('ytmusic-player-bar');
+    if (playerBar) {
+      try {
+        if (typeof playerBar.setVolume_ === 'function') playerBar.setVolume_(clamped);
+        if (typeof playerBar.volume_ !== 'undefined') playerBar.volume_ = clamped;
+        if (clamped > 0 && typeof playerBar.muted_ !== 'undefined') playerBar.muted_ = false;
+      } catch (e) { }
+    }
+
+    // 3. Update DOM slider element
+    try {
+      const slider = $('ytmusic-player-bar #volume-slider') ||
+        $('tp-yt-paper-slider#volume-slider') ||
+        $('#volume-slider') ||
+        $('.volume-slider');
+      if (slider) {
+        slider.value = clamped;
+        slider.setAttribute('value', String(clamped));
+        slider.setAttribute('aria-valuenow', String(clamped));
+      }
+    } catch (e) { }
+
+    // 4. HTML5 video fallback
+    const video = findVideoElement();
+    if (video) {
+      video.volume = clamped / 100;
+      if (clamped > 0 && video.muted) {
+        video.muted = false;
+      }
+    }
+
+    setTimeout(() => sendState(true), 50);
+    setTimeout(() => sendState(true), 150);
+  }
+
+  /**
+   * Adjust volume by relative delta
+   */
+  function adjustPlayerVolume(delta) {
+    const current = getPlayerVolume();
+    const target = Math.min(100, Math.max(0, Math.round(current + delta)));
+    setPlayerVolume(target);
+  }
+
+  /**
+   * Toggle mute / unmute
+   */
+  function togglePlayerMute() {
+    const muteBtn = $('ytmusic-player-bar #volume-slider-volume-button') ||
+      $('ytmusic-player-bar .volume') ||
+      $('ytmusic-player-bar tp-yt-paper-icon-button.volume') ||
+      $('#volume-slider-volume-button');
+
+    if (muteBtn) {
+      const btn = muteBtn.querySelector('button') || muteBtn;
+      try {
+        btn.click();
+      } catch (e) { }
+    } else {
+      const playerApi = getPlayerApi();
+      if (playerApi && typeof playerApi.isMuted === 'function') {
+        try {
+          if (playerApi.isMuted()) {
+            if (typeof playerApi.unMute === 'function') playerApi.unMute();
+          } else {
+            if (typeof playerApi.mute === 'function') playerApi.mute();
+          }
+        } catch (e) { }
+      } else {
+        const video = findVideoElement();
+        if (video) video.muted = !video.muted;
+      }
+    }
+
+    setTimeout(() => sendState(true), 60);
+    setTimeout(() => sendState(true), 200);
+  }
+
+  /**
+   * Seek playback by relative delta in seconds
+   */
+  function seekRelative(deltaSeconds) {
+    const video = findVideoElement();
+    const { currentTime, duration } = extractTrackTiming(video);
+    const target = duration > 0
+      ? Math.min(duration, Math.max(0, currentTime + deltaSeconds))
+      : Math.max(0, currentTime + deltaSeconds);
+    seekTo(target);
+  }
+
+  /**
+   * Seek playback to absolute position in seconds
+   */
+  function seekTo(targetSeconds) {
+    const playerApi = getPlayerApi();
+    if (playerApi && typeof playerApi.seekTo === 'function') {
+      try {
+        playerApi.seekTo(targetSeconds, true);
+      } catch (e) { }
+    }
+
+    const video = findVideoElement();
+    if (video) {
+      try {
+        video.currentTime = targetSeconds;
+      } catch (e) { }
+    }
+
+    setTimeout(() => sendState(true), 50);
+    setTimeout(() => sendState(true), 150);
+  }
+
+  /**
    * Convert an image URL to a clean Base64 Data URL in RAM
    */
   function processCoverImage(url) {
@@ -458,14 +680,12 @@
     }
 
     let paused = true;
-    let volPercent = 100;
-    let muted = false;
+    const volPercent = getPlayerVolume();
+    const muted = getPlayerMuted();
+    currentVolumePercent = volPercent;
 
     if (video) {
       paused = video.paused;
-      volPercent = Math.round(video.volume * 100);
-      muted = video.muted;
-      currentVolumePercent = volPercent;
     }
 
     const { currentTime, duration } = extractTrackTiming(video);
@@ -832,10 +1052,44 @@
           break;
         }
 
-        case 'seek': {
-          if (video && typeof payload.delta === 'number') {
-            video.currentTime = Math.min(video.duration || 0, Math.max(0, video.currentTime + payload.delta));
+        case 'volumeUp': {
+          adjustPlayerVolume(payload.step || 5);
+          break;
+        }
+
+        case 'volumeDown': {
+          adjustPlayerVolume(-(payload.step || 5));
+          break;
+        }
+
+        case 'adjustVolume': {
+          adjustPlayerVolume(payload.delta || 0);
+          break;
+        }
+
+        case 'setVolume': {
+          if (typeof payload.volume === 'number') {
+            setPlayerVolume(payload.volume);
           }
+          break;
+        }
+
+        case 'toggleMute':
+        case 'volumeMute': {
+          togglePlayerMute();
+          break;
+        }
+
+        case 'seek':
+        case 'seekRelative': {
+          const delta = typeof payload.seconds === 'number' ? payload.seconds : (typeof payload.delta === 'number' ? payload.delta : 0);
+          seekRelative(delta);
+          break;
+        }
+
+        case 'seekTo': {
+          const time = typeof payload.time === 'number' ? payload.time : (typeof payload.seconds === 'number' ? payload.seconds : 0);
+          seekTo(time);
           break;
         }
 
@@ -864,6 +1118,7 @@
     document.addEventListener('play', () => sendState(true), true);
     document.addEventListener('playing', () => sendState(true), true);
     document.addEventListener('pause', () => sendState(true), true);
+    document.addEventListener('volumechange', () => sendState(true), true);
     document.addEventListener('timeupdate', onTimeUpdate, true);
     document.addEventListener('ratechange', () => sendState(true), true);
     document.addEventListener('loadedmetadata', () => sendState(true), true);

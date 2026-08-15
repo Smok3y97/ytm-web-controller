@@ -13,24 +13,24 @@
     {
       "key": "icon",
       "type": "pixmap",
-      "rect": [8, 28, 56, 56],
+      "rect": [8, 28, 54, 54],
       "enabled": true,
       "zOrder": 0
     },
     {
       "key": "value",
       "type": "text",
-      "rect": [70, 32, 122, 28],
-      "font": { "size": 17, "weight": 700 },
+      "rect": [66, 28, 126, 34],
+      "font": { "size": 18, "weight": 700 },
       "alignment": "right",
-      "value": "100%",
+      "value": "-0:00",
       "zOrder": 2
     },
     {
       "key": "indicator",
       "type": "bar",
       "subtype": 0,
-      "rect": [70, 68, 122, 10],
+      "rect": [66, 68, 126, 12],
       "border_w": 0,
       "bar_fill_c": "#FF0000",
       "bar_bg_c": "#333333",

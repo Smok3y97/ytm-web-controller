@@ -270,14 +270,21 @@
     let artistUrl = '';
     let albumUrl = '';
 
-    // 1. Extract from YouTube Music Internal Player API
+    let videoId = '';
+
+    // 1. Extract from YouTube Music Internal Player API & Polymer Data
     try {
-      const playerBar = $('ytmusic-player-bar');
-      if (playerBar && playerBar.playerApi_?.getVideoData) {
-        const vData = playerBar.playerApi_.getVideoData();
-        if (vData?.title) title = vData.title.trim();
-        if (vData?.author) artist = vData.author.trim();
-        if (vData?.video_id) trackUrl = `https://music.youtube.com/watch?v=${vData.video_id}`;
+      const moviePlayer = $('#movie_player') || $('#player');
+      const playerApi = playerBar?.playerApi_ || (moviePlayer?.getVideoData ? moviePlayer : null);
+
+      if (playerApi?.getVideoData) {
+        const vData = playerApi.getVideoData();
+        if (vData?.title && !title) title = vData.title.trim();
+        if (vData?.author && !artist) artist = vData.author.trim();
+        if (vData?.video_id) videoId = vData.video_id;
+      }
+      if (!videoId && playerBar?.__data?.endpoint?.watchEndpoint?.videoId) {
+        videoId = playerBar.__data.endpoint.watchEndpoint.videoId;
       }
     } catch {}
 
@@ -289,8 +296,9 @@
           $('ytmusic-player-bar a.yt-simple-endpoint[href*="watch"]');
         if (titleLink) {
           title = titleLink.textContent?.trim() || '';
-          if (!trackUrl && titleLink.href) {
-            trackUrl = titleLink.href;
+          if (!videoId && titleLink.href) {
+            const match = titleLink.href.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+            if (match && match[1]) videoId = match[1];
           }
         }
       }
@@ -300,8 +308,56 @@
           $('.middle-controls .title');
         title = titleElem?.textContent?.trim() || mediaSession?.title || '';
       }
-      if (!trackUrl && window.location.href.includes('music.youtube.com/watch')) {
-        trackUrl = window.location.href;
+
+      // Extract videoId from any watch links in the player bar or player page
+      if (!videoId) {
+        const watchLinks = $$('ytmusic-player-bar a[href*="watch"], ytmusic-player-page a[href*="watch"], .middle-controls a[href*="watch"]');
+        for (const link of watchLinks) {
+          const href = link.getAttribute('href') || link.href || '';
+          const match = href.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+          if (match && match[1]) {
+            videoId = match[1];
+            break;
+          }
+        }
+      }
+
+      // Extract videoId from current window URL
+      if (!videoId && window.location.href.includes('watch')) {
+        const match = window.location.href.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+        if (match && match[1]) {
+          videoId = match[1];
+        }
+      }
+
+      // Extract videoId from artwork URLs (e.g. https://i.ytimg.com/vi/TVr_NgbzHqw/hqdefault.jpg)
+      if (!videoId) {
+        const artworks = mediaSession?.artwork || [];
+        for (const art of artworks) {
+          const src = art.src || '';
+          const match = src.match(/\/vi\/([a-zA-Z0-9_-]{11})\//) || src.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+          if (match && match[1]) {
+            videoId = match[1];
+            break;
+          }
+        }
+      }
+
+      if (!videoId) {
+        const imgs = $$('ytmusic-player-bar img, ytmusic-player-page img');
+        for (const img of imgs) {
+          const src = img.getAttribute('src') || img.src || '';
+          const match = src.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
+          if (match && match[1]) {
+            videoId = match[1];
+            break;
+          }
+        }
+      }
+
+      // Build canonical clean watch sharing URL if videoId found
+      if (videoId) {
+        trackUrl = `https://music.youtube.com/watch?v=${videoId}`;
       }
 
       // Query Byline element
@@ -358,12 +414,22 @@
       // Strip 4-digit years, explicit badges, and trailing separators
       artist = artist.replace(/\b\d{4}\b/g, '').trim();
       artist = artist.replace(/^(E|\[E\])\s+/i, '').trim();
-      artist = artist.replace(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/, '').trim();   // Normalize relative URLs
+      artist = artist.replace(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/, '').trim();
+
+      // Normalize relative URLs
       if (trackUrl && trackUrl.startsWith('/')) trackUrl = `https://music.youtube.com${trackUrl}`;
       if (artistUrl && artistUrl.startsWith('/')) artistUrl = `https://music.youtube.com${artistUrl}`;
       if (albumUrl && albumUrl.startsWith('/')) albumUrl = `https://music.youtube.com${albumUrl}`;
 
-      // Fallback URLs
+      // Clean up trackUrl to canonical watch URL if it contains watch?v=
+      if (trackUrl && trackUrl.includes('watch')) {
+        const vMatch = trackUrl.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+        if (vMatch && vMatch[1]) {
+          trackUrl = `https://music.youtube.com/watch?v=${vMatch[1]}`;
+        }
+      }
+
+      // Fallback URLs only if direct watch URL could not be constructed
       if (!trackUrl && title) {
         trackUrl = `https://music.youtube.com/search?q=${encodeURIComponent(title + ' ' + (artist || ''))}`;
       }

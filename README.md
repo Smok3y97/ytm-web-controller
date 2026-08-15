@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="screenshots/Banner.png" alt="YouTube Music Web Controller" width="100%">
+</p>
+
 # YouTube Music Web Controller (`ytm-web-controller`)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -6,35 +10,6 @@
 [![Manifest V3](https://img.shields.io/badge/Extension-Manifest%20V3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 
 An ultra-lightweight, event-driven, resource-efficient open-source controller bridge connecting the official [YouTube Music Web App](https://music.youtube.com) directly to your **Elgato Stream Deck** (including **Stream Deck + Dials & LCD Touchstrips**).
-
----
-
-## 📸 Screenshots & Preview
-
-<p align="center">
-  <img src="screenshots/StreamDeck.png" alt="Elgato Stream Deck Action Setup" width="800">
-  <br>
-  <em>Stream Deck Plugin Action Setup & Dynamic Controls</em>
-</p>
-
-<table align="center">
-  <tr>
-    <th align="center">🖥️ Discord Desktop Rich Presence</th>
-    <th align="center">📱 Discord Mobile App Rich Presence</th>
-  </tr>
-  <tr>
-    <td align="center" valign="middle">
-      <img src="screenshots/Discord-Rich-Presence.png" alt="Discord Rich Presence Desktop" width="440">
-    </td>
-    <td align="center" valign="middle">
-      <img src="screenshots/Discord-Mobile-RPC.png" alt="Discord Mobile App Rich Presence" width="260">
-    </td>
-  </tr>
-</table>
-
-<p align="center">
-  <em>Real-time Discord Rich Presence with live timeline progress, cover artwork, and clickable YouTube Music track links across Desktop and Mobile.</em>
-</p>
 
 ---
 
@@ -66,6 +41,35 @@ Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party 
 | **Copy Song URL** | Key | Copies the active YouTube Music song URL to your clipboard for instant track sharing, with visual success feedback (`showOk`). |
 | **Discord Rich Presence (RPC)** | Service Integration | Real-time Discord presence with live album cover, animated progress bar, clickable track/artist/album links, and custom Application ID support (visible on Desktop & Mobile). |
 | **OBS Text Export** | Service Integration | Automatically writes the currently playing track metadata to a local `.txt` file for OBS Studio stream overlays. |
+
+---
+
+## 📸 Screenshots & Live Preview
+
+<p align="center">
+  <img src="screenshots/StreamDeck.png" alt="Elgato Stream Deck Action Setup" width="800">
+  <br>
+  <em>Stream Deck Plugin Action Setup & Dynamic Key / Dial Configuration</em>
+</p>
+
+<table align="center">
+  <tr>
+    <th align="center">🖥️ Discord Desktop Rich Presence</th>
+    <th align="center">📱 Discord Mobile App Rich Presence</th>
+  </tr>
+  <tr>
+    <td align="center" valign="middle">
+      <img src="screenshots/Discord-Rich-Presence.png" alt="Discord Rich Presence Desktop" width="440">
+    </td>
+    <td align="center" valign="middle">
+      <img src="screenshots/Discord-Mobile-RPC.png" alt="Discord Mobile App Rich Presence" width="260">
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <em>Real-time Discord Rich Presence with live timeline progress, cover artwork, and clickable YouTube Music track links across Desktop and Mobile.</em>
+</p>
 
 ---
 
@@ -175,6 +179,7 @@ ytm-web-controller/
 ├── LICENSE                      # MIT License
 ├── README.md                    # Project documentation & setup guides
 ├── screenshots/                 # Visual documentation & preview screenshots
+│   ├── Banner.png               # GitHub hero banner & social preview
 │   ├── StreamDeck.png           # Stream Deck action configuration preview
 │   ├── Discord-Rich-Presence.png# Discord RPC desktop integration preview
 │   └── Discord-Mobile-RPC.png   # Discord Mobile App Rich Presence preview

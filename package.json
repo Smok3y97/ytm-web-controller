@@ -7,6 +7,7 @@
     "build": "npm run build --prefix plugin",
     "watch": "npm run watch --prefix plugin",
     "package": "powershell -ExecutionPolicy Bypass -File ./package_plugin.ps1",
+    "validate": "streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin",
     "pack": "npm run pack --prefix plugin",
     "lint": "npm run lint --prefix plugin"
   },

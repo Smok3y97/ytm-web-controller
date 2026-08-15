@@ -17,10 +17,23 @@ An ultra-lightweight, event-driven, resource-efficient open-source controller br
   <em>Stream Deck Plugin Action Setup & Dynamic Controls</em>
 </p>
 
+<table align="center">
+  <tr>
+    <th align="center">🖥️ Discord Desktop Rich Presence</th>
+    <th align="center">📱 Discord Mobile App Rich Presence</th>
+  </tr>
+  <tr>
+    <td align="center" valign="middle">
+      <img src="screenshots/Discord-Rich-Presence.png" alt="Discord Rich Presence Desktop" width="440">
+    </td>
+    <td align="center" valign="middle">
+      <img src="screenshots/Discord-Mobile-RPC.png" alt="Discord Mobile App Rich Presence" width="260">
+    </td>
+  </tr>
+</table>
+
 <p align="center">
-  <img src="screenshots/Discord-Rich-Presence.png" alt="Discord Rich Presence" width="450">
-  <br>
-  <em>Discord Rich Presence Integration with Live Progress & Interactive Buttons</em>
+  <em>Real-time Discord Rich Presence with live timeline progress, cover artwork, and clickable YouTube Music track links across Desktop and Mobile.</em>
 </p>
 
 ---
@@ -51,7 +64,7 @@ Most existing YouTube Music desktop solutions rely on heavy, outdated 3rd-party 
 | **Shuffle** | Dual-State Key | Toggles playlist shuffle mode on/off with real-time active state highlight. |
 | **Repeat Mode** | Tri-State Key | Cycles through repeat modes: **Off** ➔ **Repeat All** ➔ **Repeat One (1)**. |
 | **Copy Song URL** | Key | Copies the active YouTube Music song URL to your clipboard for instant track sharing, with visual success feedback (`showOk`). |
-| **Discord Rich Presence (RPC)** | Service Integration | Real-time Discord presence with live album cover, animated progress bar, clickable track/artist/album links, and custom Application ID support. |
+| **Discord Rich Presence (RPC)** | Service Integration | Real-time Discord presence with live album cover, animated progress bar, clickable track/artist/album links, and custom Application ID support (visible on Desktop & Mobile). |
 | **OBS Text Export** | Service Integration | Automatically writes the currently playing track metadata to a local `.txt` file for OBS Studio stream overlays. |
 
 ---
@@ -67,7 +80,7 @@ This plugin has been tested and verified with:
 - **Software**:
   - **Elgato Stream Deck Software** v7.5.1 (22901) (Minimum required: v6.5+)
   - **OBS Studio** (v28+)
-  - **Discord** 1.0.9253 x64
+  - **Discord** (Desktop 1.0.9253+ & Mobile iOS / Android App)
 
 ---
 
@@ -157,32 +170,59 @@ Configured in the Property Inspector of the **YTM Dial Controller** action:
 ```
 ytm-web-controller/
 ├── package.json                 # Monorepo root configuration & build scripts
-├── package_plugin.ps1           # Packaging & Stream Deck AppData deployment script
+├── package_plugin.ps1           # Packaging, asset generation & Stream Deck deployment
+├── AGENTS.md                    # Developer & AI Agent Guidelines
 ├── LICENSE                      # MIT License
-├── README.md                    # Documentation
+├── README.md                    # Project documentation & setup guides
 ├── screenshots/                 # Visual documentation & preview screenshots
 │   ├── StreamDeck.png           # Stream Deck action configuration preview
-│   └── Discord-Rich-Presence.png# Discord RPC integration preview
+│   ├── Discord-Rich-Presence.png# Discord RPC desktop integration preview
+│   └── Discord-Mobile-RPC.png   # Discord Mobile App Rich Presence preview
 ├── extension/                   # Manifest V3 Browser Extension
 │   ├── manifest.json            # MV3 Manifest with Chromium & Gecko support
 │   ├── content.js               # Event-driven DOM observer & WebSocket client
-│   ├── popup.html               # Minimalist status & port config popup
+│   ├── popup.html               # Status & port configuration popup UI
 │   ├── popup.css                # Modern dark theme popup styles
-│   ├── popup.js                 # Port storage & connection test logic
-│   └── icons/                   # Extension toolbar icons (16, 48, 128)
-└── plugin/                      # Elgato Stream Deck Plugin (Node.js SDK)
+│   ├── popup.js                 # Port storage & live connection tester
+│   └── icons/                   # Extension toolbar icons (16, 48, 128 px)
+└── plugin/                      # Elgato Stream Deck Plugin (Node.js SDK 2)
     ├── manifest.json            # Stream Deck Plugin Manifest (UUID: com.smok3y97.ytmusicweb)
-    ├── package.json             # Plugin dependencies & packaging scripts
+    ├── package.json             # Plugin dependencies & rollup scripts
     ├── rollup.config.mjs        # Standalone bundler configuration
-    ├── tsconfig.json            # TypeScript configuration
-    ├── assets/                  # High-resolution vector action icons (SVG)
+    ├── tsconfig.json            # TypeScript compiler configuration
+    ├── assets/                  # High-resolution vector & raster assets
+    │   ├── category-icon.svg    # Monochromatic category icon
+    │   ├── plugin-icon.png      # Full-color YouTube Music badge (256x256)
+    │   ├── plugin-icon@2x.png   # High-DPI YouTube Music badge (512x512)
+    │   ├── generate_assets.ps1  # Automated asset generation script
+    │   └── actions/             # SVG action icons (playpause, dial, like, repeat, etc.)
     ├── layouts/                 # Stream Deck + Dial LCD JSON layouts
+    │   └── dial_layout.json     # 4-item LCD strip layout definition
     ├── ui/                      # Property Inspector HTML/JS/CSS
-    └── src/
+    │   ├── playpause.html/.js   # Central plugin settings & Play/Pause inspector
+    │   ├── dial.html/.js        # Dial & LCD layout customization inspector
+    │   ├── common.html/.js      # Common keypad actions inspector
+    │   └── css/sdpi.css         # Stream Deck Property Inspector stylesheet
+    └── src/                     # Plugin TypeScript Source Code
         ├── index.ts             # Plugin entry point & action registration
-        ├── types/               # TypeScript interfaces
-        ├── services/            # WebSocket Server, In-Memory Image Renderer, State Manager, Discord RPC, OBS Exporter, Clipboard
-        └── actions/             # Handlers for Play/Pause, Dial, Next, Previous, Like, Dislike, Shuffle, Repeat, Copy URL
+        ├── types/               # TypeScript interfaces & event payloads
+        ├── services/            # Core backend services
+        │   ├── websocket-server.ts  # Local WebSocket server (port 39865)
+        │   ├── state-manager.ts     # Centralized playback state store
+        │   ├── image-renderer.ts    # In-memory RAM base64 cover/canvas renderer
+        │   ├── discord-rpc.ts       # Live Discord Rich Presence client
+        │   ├── obs-exporter.ts      # Live .txt track info exporter for OBS
+        │   └── clipboard.ts         # Native clipboard bridge for URL copying
+        └── actions/             # Action Controllers
+            ├── play-pause.ts    # Play / Pause dual-state key handler
+            ├── dial.ts          # Stream Deck + Rotary Dial & LCD Touchstrip handler
+            ├── next.ts          # Skip to next track
+            ├── previous.ts      # Skip to previous track
+            ├── like.ts          # Thumbs up toggle action
+            ├── dislike.ts       # Thumbs down toggle action
+            ├── shuffle.ts       # Shuffle playlist toggle action
+            ├── repeat.ts        # Repeat mode cycle (Off / All / One)
+            └── copy-url.ts      # Copy active song URL to clipboard
 ```
 
 ---
@@ -205,9 +245,17 @@ npm run package
 # (or execute directly with PowerShell):
 powershell -ExecutionPolicy Bypass -File .\package_plugin.ps1
 
+# 3. Validate packaged plugin against official Elgato SDK Schema
+npm run validate
+# (or directly via npx):
+npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
+
 # Optional: Watch mode for active development
 npm run watch
 ```
+
+> [!NOTE]
+> The Elgato validator requires the staged plugin directory matching reverse-DNS naming with `.sdPlugin` suffix (`release/com.smok3y97.ytmusicweb.sdPlugin`), which is automatically staged during `npm run package`. Running the validator on the un-packaged `plugin/` source folder directly will trigger a naming schema error.
 
 ---
 

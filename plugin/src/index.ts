@@ -21,6 +21,11 @@ import { DislikeAction } from './actions/dislike.js';
 import { ShuffleAction } from './actions/shuffle.js';
 import { RepeatAction } from './actions/repeat.js';
 import { CopyUrlAction } from './actions/copy-url.js';
+import { VolumeUpAction } from './actions/volume-up.js';
+import { VolumeDownAction } from './actions/volume-down.js';
+import { MuteAction } from './actions/mute.js';
+import { VolumeDialAction } from './actions/volume-dial.js';
+import { SeekDialAction } from './actions/seek-dial.js';
 
 // Enable logging
 streamDeck.logger.setLevel(LogLevel.INFO);
@@ -46,6 +51,11 @@ streamDeck.actions.registerAction(new DislikeAction());
 streamDeck.actions.registerAction(new ShuffleAction());
 streamDeck.actions.registerAction(new RepeatAction());
 streamDeck.actions.registerAction(new CopyUrlAction());
+streamDeck.actions.registerAction(new VolumeUpAction());
+streamDeck.actions.registerAction(new VolumeDownAction());
+streamDeck.actions.registerAction(new MuteAction());
+streamDeck.actions.registerAction(new VolumeDialAction());
+streamDeck.actions.registerAction(new SeekDialAction());
 
 // 3. Connect WebSocket state updates to StateManager
 wsService.on('stateUpdate', (state: YTMPlaybackState) => {

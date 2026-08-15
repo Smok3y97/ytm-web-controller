@@ -88,17 +88,20 @@ export class StateManager extends EventEmitter {
   /**
    * Render custom time template with placeholders: {current}, {remaining}, {duration}
    */
-  public formatTimeTemplate(template: string = '{remaining}'): string {
+  public formatTimeTemplate(template: string = '{remaining}', currentTime?: number, duration?: number): string {
     const state = this.currentState;
-    const currentStr = this.formatTime(state.currentTime);
-    const durationStr = this.formatTime(state.duration);
+    const cur = typeof currentTime === 'number' ? currentTime : state.currentTime;
+    const dur = typeof duration === 'number' ? duration : state.duration;
+
+    const currentStr = this.formatTime(cur);
+    const durationStr = this.formatTime(dur);
 
     let remainingStr = '-0:00';
-    if (state.duration > 0) {
-      const effectiveCurrent = Math.min(state.duration, Math.max(0, state.currentTime));
-      const remainingSeconds = Math.max(0, state.duration - effectiveCurrent);
+    if (dur > 0) {
+      const effectiveCurrent = Math.min(dur, Math.max(0, cur));
+      const remainingSeconds = Math.max(0, dur - effectiveCurrent);
       remainingStr = '-' + this.formatTime(remainingSeconds);
-    } else if (state.currentTime > 0) {
+    } else if (cur > 0) {
       remainingStr = currentStr;
     }
 
@@ -106,5 +109,23 @@ export class StateManager extends EventEmitter {
       .replace(/{(current|currentTime|current_time|elapsed|time)}/gi, currentStr)
       .replace(/{(duration|total|totalTime|total_time|length)}/gi, durationStr)
       .replace(/{(remaining|remainingTime|remaining_time|left)}/gi, remainingStr);
+  }
+
+  /**
+   * Render custom volume template with placeholders: {volume}, {step}
+   */
+  public formatVolumeTemplate(template: string = '{volume}%', volume?: number, muted?: boolean): string {
+    const state = this.currentState;
+    const vol = typeof volume === 'number' ? volume : (state.volume ?? 100);
+    const isMuted = typeof muted === 'boolean' ? muted : state.muted;
+
+    if (isMuted) {
+      if (template.includes('{volume}')) {
+        return template.replace(/\{volume\}/gi, 'MUTE');
+      }
+      return 'MUTE';
+    }
+
+    return (template || '{volume}%').replace(/\{volume\}/gi, String(vol));
   }
 }

@@ -10,23 +10,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const baseDir = __dirname;
 
 const icons = {
-  // Plugin & Category Icons
+  // Plugin Main Icon (Color for detail / marketplace pane)
   'plugin-icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
   <circle cx="12" cy="12" r="11" fill="#FF0033"/>
   <circle cx="12" cy="12" r="7" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
   <polygon points="10,8.5 16,12 10,15.5" fill="#FFFFFF"/>
 </svg>`,
 
-  'category-icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
-  <circle cx="12" cy="12" r="11" fill="#FF0033"/>
-  <circle cx="12" cy="12" r="7" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
-  <polygon points="10,8.5 16,12 10,15.5" fill="#FFFFFF"/>
+  // Category Icon (White monochrome for sidebar / action list)
+  'category-icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144" fill="none">
+  <circle cx="12" cy="12" r="10" stroke="#FFFFFF" stroke-width="2"/>
+  <circle cx="12" cy="12" r="6" stroke="#FFFFFF" stroke-width="1.5"/>
+  <polygon points="10,8.5 15.5,12 10,15.5" fill="#FFFFFF"/>
 </svg>`,
 
   // Play / Pause
-  'actions/playpause/icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
-  <circle cx="12" cy="12" r="11" fill="#FF0033"/>
-  <polygon points="10,8 16,12 10,16" fill="#FFFFFF"/>
+  'actions/playpause/icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144" fill="#FFFFFF">
+  <path d="M8 5v14l11-7z"/>
 </svg>`,
 
   'actions/playpause/play': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144" fill="#FFFFFF">
@@ -37,10 +37,10 @@ const icons = {
   <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
 </svg>`,
 
-  // Dial
+  // Dial (Monochromatic white)
   'actions/dial/icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
-  <circle cx="12" cy="12" r="10" fill="none" stroke="#FF0033" stroke-width="2" stroke-dasharray="45 10"/>
-  <polygon points="10,8.5 15.5,12 10,15.5" fill="#FF0033"/>
+  <circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="45 10"/>
+  <polygon points="10,8.5 15.5,12 10,15.5" fill="#FFFFFF"/>
 </svg>`,
 
   // Next / Previous

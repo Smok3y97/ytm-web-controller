@@ -211,6 +211,25 @@ npm run watch
 
 ---
 
+## 🏷️ Versioning Scheme
+
+This project follows the official **Elgato Stream Deck SDK 2** and **Browser Extension Manifest V3** version specifications:
+
+$$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
+
+| Component | Format | Example | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Stream Deck Plugin** (`plugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.3.2.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
+| **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.3.2.0"`<br>`"1.3.2"` | `version` handles internal browser update checks, while `version_name` provides clean display in Web Stores and UI. |
+| **Node.js Packages** (`package.json`) | 4-part / SemVer | `1.3.2.0` | Synchronized versioning across root and plugin package configurations. |
+
+- **Major** (`1`): Significant architectural changes or SDK upgrades.
+- **Minor** (`3`): New features (e.g., Stream Deck + Dial support, Discord RPC integration).
+- **Patch** (`2`): Bug fixes, icon styling, and metadata corrections.
+- **Build** (`0`): Internal marketplace revision counter (incremented on store resubmissions without changing the release version).
+
+---
+
 ## 🤖 AI Usage & Development
 
 This project was developed with the assistance of **Google Antigravity / Gemini AI**, utilizing agentic AI pair programming for architectural design, TypeScript SDK integration, SVG vector asset creation, and performance optimization.

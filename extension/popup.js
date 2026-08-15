@@ -16,8 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (versionText && typeof chrome !== 'undefined' && chrome.runtime?.getManifest) {
     const manifest = chrome.runtime.getManifest();
-    if (manifest.version) {
-      versionText.textContent = `v${manifest.version} • Open Source`;
+    const displayVersion = manifest.version_name || manifest.version;
+    if (displayVersion) {
+      versionText.textContent = `v${displayVersion} • Open Source`;
     }
   }
 

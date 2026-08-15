@@ -17,17 +17,17 @@ New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 Copy-Item (Join-Path $pluginDir "manifest.json") $stageDir
 Copy-Item (Join-Path $pluginDir "package.json") $stageDir
 
-# 2. Copy compiled binary (Build automatically if not present)
-$binSource = Join-Path $pluginDir "bin\plugin.js"
-if (!(Test-Path $binSource)) {
-    Write-Output "Compiled binary not found. Installing dependencies and building..."
-    Push-Location $pluginDir
-    if (!(Test-Path (Join-Path $pluginDir "node_modules"))) {
-        npm install
-    }
-    npm run build
-    Pop-Location
+# 2. Compile binary
+Write-Output "Building plugin bundle..."
+Push-Location $pluginDir
+if (!(Test-Path (Join-Path $pluginDir "node_modules"))) {
+    Write-Output "Installing plugin dependencies..."
+    npm install
 }
+npm run build
+Pop-Location
+
+$binSource = Join-Path $pluginDir "bin\plugin.js"
 
 $binTarget = Join-Path $stageDir "bin"
 New-Item -ItemType Directory -Path $binTarget -Force | Out-Null

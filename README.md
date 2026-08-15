@@ -113,8 +113,8 @@ The browser extension connects your YouTube Music tab to the Stream Deck plugin.
 
 You can display the currently playing track live in your OBS stream overlay using a standard **Text (GDI+)** source:
 
-1. In the Property Inspector of the **Play / Pause** action:
-   - Enable **OBS Text-Export aktivieren (.txt)**.
+1. In the Property Inspector of the **Play / Pause** or **Dial** action:
+   - Enable **Enable OBS text export (.txt)**.
    - Enter your desired target file path (e.g. `C:\Users\YourUsername\Documents\ytm_current_track.txt`).
    - (Optional) Customize the template (e.g. `Currently Playing: {artist} - {title}`).
 2. In **OBS Studio**:

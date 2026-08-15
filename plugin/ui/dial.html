@@ -7,40 +7,115 @@
 </head>
 <body>
   <div class="sdpi-wrapper">
-    <div class="sdpi-heading">Display Einstellungen</div>
+    <div class="sdpi-heading">Display Settings</div>
 
     <div class="sdpi-item">
-      <div class="sdpi-item-label">Titel Template</div>
+      <div class="sdpi-item-label">Title Template</div>
       <div class="sdpi-item-value">
         <input type="text" id="titleTemplate" placeholder="{artist} - {title}" value="{artist} - {title}">
       </div>
     </div>
     <div class="sdpi-hint">
-      Platzhalter: {title}, {artist}, {album}
+      Placeholders: {title}, {artist}, {album}
     </div>
 
     <div class="sdpi-item">
-      <div class="sdpi-item-label">Zeit Template</div>
+      <div class="sdpi-item-label">Time Template</div>
       <div class="sdpi-item-value">
         <input type="text" id="timeTemplate" placeholder="{remaining}" value="{remaining}">
       </div>
     </div>
     <div class="sdpi-hint">
-      Platzhalter: {current}, {duration}, {remaining}
+      Placeholders: {current}, {duration}, {remaining}
     </div>
 
     <div class="sdpi-item">
       <label class="sdpi-checkbox-wrap">
         <input type="checkbox" id="showCover" checked>
-        <span>Cover Thumbnail auf Touchstrip anzeigen</span>
+        <span>Show cover thumbnail on touchstrip</span>
       </label>
     </div>
 
-    <div class="sdpi-heading">Steuerung</div>
+    <!-- Global Settings -->
+    <div class="sdpi-heading">Global Settings (Plugin-Wide)</div>
+
+    <!-- OBS Studio Text Export -->
+    <div class="sdpi-item">
+      <label class="sdpi-checkbox-wrap">
+        <input type="checkbox" id="enableObsExport">
+        <span>Enable OBS text export (.txt)</span>
+      </label>
+    </div>
     <div class="sdpi-hint">
-      • <strong>Drehen nach rechts:</strong> Nächster Track<br>
-      • <strong>Drehen nach links:</strong> Vorheriger Track<br>
-      • <strong>Drücken / Tippen:</strong> Play / Pause
+      Writes live track information to a text file for OBS Studio overlays ("Text (GDI+)" ➔ "Read from file").
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">File Path (.txt)</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="obsFilePath" placeholder="C:\Users\...\ytm_current_track.txt">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Absolute path to the destination file (created automatically if needed).
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Format Template</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="obsFormatTemplate" placeholder="Currently Playing: {artist} - {title}" value="Currently Playing: {artist} - {title}">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Placeholders: {artist}, {title}, {album}
+    </div>
+
+    <div class="sdpi-item">
+      <label class="sdpi-checkbox-wrap">
+        <input type="checkbox" id="obsClearOnPause" checked>
+        <span>Clear file on pause/stop</span>
+      </label>
+    </div>
+    <div class="sdpi-hint">
+      When enabled, the file content is cleared whenever playback is paused or stopped.
+    </div>
+
+    <!-- Discord RPC -->
+    <div class="sdpi-item">
+      <label class="sdpi-checkbox-wrap">
+        <input type="checkbox" id="enableDiscordRPC">
+        <span>Enable Discord Rich Presence (RPC)</span>
+      </label>
+    </div>
+    <div class="sdpi-hint">
+      Displays current track live in Discord profile with progress bar and interactive links (Default: Disabled).
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Discord Client ID</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="discordClientId" placeholder="1537908230209019954">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Optional: Custom Discord Application ID (Default: 1537908230209019954).
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">WebSocket Port</div>
+      <div class="sdpi-item-value">
+        <input type="number" id="wsPort" min="1024" max="65535" value="39865" placeholder="39865">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Must match the port configured in the browser extension (Default: 39865).
+    </div>
+
+    <div class="sdpi-heading">Controls</div>
+    <div class="sdpi-hint">
+      • <strong>Rotate clockwise:</strong> Next track<br>
+      • <strong>Rotate counter-clockwise:</strong> Previous track<br>
+      • <strong>Press / Tap:</strong> Play / Pause
     </div>
   </div>
 

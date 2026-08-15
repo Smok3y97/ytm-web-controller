@@ -44,7 +44,9 @@ function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegist
     }));
 
     // Populate local UI
-    showCoverCheckbox.checked = !!settings.showCoverAsBackground;
+    if (showCoverCheckbox) {
+      showCoverCheckbox.checked = settings.showCoverAsBackground !== false;
+    }
   };
 
   websocket.onmessage = (evt) => {
@@ -54,10 +56,12 @@ function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegist
 
     if (event === 'didReceiveSettings') {
       settings = payload.settings || {};
-      showCoverCheckbox.checked = !!settings.showCoverAsBackground;
+      if (showCoverCheckbox) {
+        showCoverCheckbox.checked = settings.showCoverAsBackground !== false;
+      }
     } else if (event === 'didReceiveGlobalSettings') {
       globalSettings = payload.settings || {};
-      
+
       // OBS Settings
       if (enableObsCheckbox) {
         enableObsCheckbox.checked = !!globalSettings.enableObsExport;
@@ -90,7 +94,9 @@ function saveSettings() {
   if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
 
   // Save local settings
-  settings.showCoverAsBackground = showCoverCheckbox.checked;
+  if (showCoverCheckbox) {
+    settings.showCoverAsBackground = showCoverCheckbox.checked;
+  }
   websocket.send(JSON.stringify({
     event: 'setSettings',
     context: uuid,
@@ -134,7 +140,9 @@ function saveGlobalSettings() {
   }));
 }
 
-showCoverCheckbox.addEventListener('change', saveSettings);
+if (showCoverCheckbox) {
+  showCoverCheckbox.addEventListener('change', saveSettings);
+}
 
 if (enableObsCheckbox) {
   enableObsCheckbox.addEventListener('change', saveGlobalSettings);
@@ -156,6 +164,7 @@ if (enableDiscordCheckbox) {
 }
 if (discordClientIdInput) {
   discordClientIdInput.addEventListener('change', saveGlobalSettings);
+  discordClientIdInput.addEventListener('blur', saveGlobalSettings);
 }
 if (wsPortInput) {
   wsPortInput.addEventListener('change', saveGlobalSettings);
@@ -166,4 +175,3 @@ if (wsPortInput) {
     }
   });
 }
-

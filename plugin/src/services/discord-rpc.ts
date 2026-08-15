@@ -320,7 +320,7 @@ export class DiscordRpcService {
           large_text: albumDisplayText ? stringLimit(albumDisplayText, 128, 2) : undefined,
           large_url: albumUrlToUse || undefined,
           small_image: state.paused ? 'pause' : 'play',
-          small_text: state.paused ? 'Pausiert' : 'Wiedergabe'
+          small_text: state.paused ? 'Paused' : 'Playing'
         },
         instance: false
       };
@@ -336,18 +336,18 @@ export class DiscordRpcService {
       const buttons: Array<{ label: string; url: string }> = [];
       if (trackUrl) {
         buttons.push({
-          label: 'Song auf YouTube Music',
+          label: 'Listen on YouTube Music',
           url: trackUrl.substring(0, 512)
         });
       }
       if (artistUrl && buttons.length < 2) {
         buttons.push({
-          label: 'Künstlerprofil',
+          label: 'Artist Profile',
           url: artistUrl.substring(0, 512)
         });
       } else if (albumUrlToUse && buttons.length < 2) {
         buttons.push({
-          label: 'Album ansehen',
+          label: 'View Album',
           url: albumUrlToUse.substring(0, 512)
         });
       }

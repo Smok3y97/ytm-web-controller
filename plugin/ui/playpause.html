@@ -13,35 +13,35 @@
     <div class="sdpi-item">
       <label class="sdpi-checkbox-wrap">
         <input type="checkbox" id="showCoverAsBackground" checked>
-        <span>Album-Cover als Button-Hintergrund</span>
+        <span>Album cover as button background</span>
       </label>
     </div>
     <div class="sdpi-hint">
-      Wenn aktiv, wird das Album-Cover des aktuellen Songs direkt in den Button geladen.
+      When enabled, the album cover of the current track is displayed directly on the button.
     </div>
 
     <!-- Global Settings -->
-    <div class="sdpi-heading">Globale Einstellungen (Plugin-Weit)</div>
+    <div class="sdpi-heading">Global Settings (Plugin-Wide)</div>
 
     <!-- OBS Studio Text Export -->
     <div class="sdpi-item">
       <label class="sdpi-checkbox-wrap">
         <input type="checkbox" id="enableObsExport">
-        <span>OBS Text-Export aktivieren (.txt)</span>
+        <span>Enable OBS text export (.txt)</span>
       </label>
     </div>
     <div class="sdpi-hint">
-      Schreibt Track-Informationen live in eine Textdatei für OBS Studio Overlays ("Text (GDI+)" ➔ "Aus Datei lesen").
+      Writes live track information to a text file for OBS Studio overlays ("Text (GDI+)" ➔ "Read from file").
     </div>
 
     <div class="sdpi-item">
-      <div class="sdpi-item-label">Dateipfad (.txt)</div>
+      <div class="sdpi-item-label">File Path (.txt)</div>
       <div class="sdpi-item-value">
         <input type="text" id="obsFilePath" placeholder="C:\Users\...\ytm_current_track.txt">
       </div>
     </div>
     <div class="sdpi-hint">
-      Absoluter Pfad zur Zieldatei (wird bei Bedarf automatisch erstellt).
+      Absolute path to the destination file (created automatically if needed).
     </div>
 
     <div class="sdpi-item">
@@ -51,28 +51,28 @@
       </div>
     </div>
     <div class="sdpi-hint">
-      Platzhalter: {artist}, {title}, {album}
+      Placeholders: {artist}, {title}, {album}
     </div>
 
     <div class="sdpi-item">
       <label class="sdpi-checkbox-wrap">
         <input type="checkbox" id="obsClearOnPause" checked>
-        <span>Datei bei Pause/Stopp leeren</span>
+        <span>Clear file on pause/stop</span>
       </label>
     </div>
     <div class="sdpi-hint">
-      Wenn aktiv, wird der Dateiinhalt gelöscht sobald die Wiedergabe pausiert wird.
+      When enabled, the file content is cleared whenever playback is paused or stopped.
     </div>
 
     <!-- Discord RPC -->
     <div class="sdpi-item">
       <label class="sdpi-checkbox-wrap">
         <input type="checkbox" id="enableDiscordRPC">
-        <span>Discord Rich Presence (RPC) aktivieren</span>
+        <span>Enable Discord Rich Presence (RPC)</span>
       </label>
     </div>
     <div class="sdpi-hint">
-      Zeigt den aktuellen YouTube Music Track live im Discord Profil an mit Fortschrittsbalken und Links (Standard: Deaktiviert).
+      Displays current track live in Discord profile with progress bar and interactive links (Default: Disabled).
     </div>
 
     <div class="sdpi-item">
@@ -82,7 +82,7 @@
       </div>
     </div>
     <div class="sdpi-hint">
-      Optional: Eigene Discord Application ID eintragen (Standard: 1537908230209019954).
+      Optional: Custom Discord Application ID (Default: 1537908230209019954).
     </div>
 
     <div class="sdpi-item">
@@ -92,10 +92,9 @@
       </div>
     </div>
     <div class="sdpi-hint">
-      Muss mit dem Port in der Browser-Erweiterung übereinstimmen (Standard: 39865).
+      Must match the port configured in the browser extension (Default: 39865).
     </div>
   </div>
-
 
   <script src="playpause.js"></script>
 </body>

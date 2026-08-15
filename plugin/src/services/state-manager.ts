@@ -75,10 +75,14 @@ export class StateManager extends EventEmitter {
       return 'No Media';
     }
 
-    return template
-      .replace(/{title}/gi, state.title || 'Unknown Title')
-      .replace(/{artist}/gi, state.artist || 'Unknown Artist')
-      .replace(/{album}/gi, state.album || 'Unknown Album');
+    const titleStr = state.title || 'Unknown Title';
+    const artistStr = state.artist || 'Unknown Artist';
+    const albumStr = state.album || 'Unknown Album';
+
+    return (template || '{artist} - {title}')
+      .replace(/{(title|song|track)}/gi, titleStr)
+      .replace(/{(artist|author|channel)}/gi, artistStr)
+      .replace(/{(album)}/gi, albumStr);
   }
 
   /**
@@ -98,9 +102,9 @@ export class StateManager extends EventEmitter {
       remainingStr = currentStr;
     }
 
-    return template
-      .replace(/{current}/gi, currentStr)
-      .replace(/{remaining}/gi, remainingStr)
-      .replace(/{duration}/gi, durationStr);
+    return (template || '{remaining}')
+      .replace(/{(current|currentTime|current_time|elapsed|time)}/gi, currentStr)
+      .replace(/{(duration|total|totalTime|total_time|length)}/gi, durationStr)
+      .replace(/{(remaining|remainingTime|remaining_time|left)}/gi, remainingStr);
   }
 }

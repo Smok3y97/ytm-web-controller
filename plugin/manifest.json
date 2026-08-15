@@ -3,7 +3,7 @@
   "Name": "YouTube Music Web",
   "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence",
   "Author": "Smok3y97",
-  "Version": "1.2.1",
+  "Version": "1.2.2",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.5"

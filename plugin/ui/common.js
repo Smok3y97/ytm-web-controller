@@ -1,19 +1,12 @@
 /**
- * Property Inspector for Stream Deck + Dial Action
+ * Property Inspector for Common Actions (Next, Previous, Like, Dislike, Shuffle, Repeat)
+ * Manages Global Settings (OBS Text Export, Discord RPC, WebSocket Port)
  */
 
 let websocket = null;
 let uuid = null;
-let actionInfo = {};
-let settings = {};
 let globalSettings = {};
 
-// Local elements
-const titleTemplateInput = document.getElementById('titleTemplate');
-const timeTemplateInput = document.getElementById('timeTemplate');
-const showCoverCheckbox = document.getElementById('showCover');
-
-// Global elements
 const enableObsCheckbox = document.getElementById('enableObsExport');
 const obsFilePathInput = document.getElementById('obsFilePath');
 const obsFormatTemplateInput = document.getElementById('obsFormatTemplate');
@@ -24,8 +17,6 @@ const wsPortInput = document.getElementById('wsPort');
 
 function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
   uuid = inPropertyInspectorUUID;
-  actionInfo = JSON.parse(inActionInfo);
-  settings = actionInfo.payload?.settings || {};
 
   websocket = new WebSocket(`ws://127.0.0.1:${inPort}`);
 
@@ -41,17 +32,6 @@ function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegist
       event: 'getGlobalSettings',
       context: uuid
     }));
-
-    // Request local settings
-    websocket.send(JSON.stringify({
-      event: 'getSettings',
-      context: uuid
-    }));
-
-    // Populate local fields
-    if (titleTemplateInput) titleTemplateInput.value = settings.titleTemplate || '{artist} - {title}';
-    if (timeTemplateInput) timeTemplateInput.value = settings.timeTemplate || '{remaining}';
-    if (showCoverCheckbox) showCoverCheckbox.checked = settings.showCover !== false;
   };
 
   websocket.onmessage = (evt) => {
@@ -59,12 +39,7 @@ function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegist
     const event = jsonObj.event;
     const payload = jsonObj.payload;
 
-    if (event === 'didReceiveSettings') {
-      settings = payload.settings || {};
-      if (titleTemplateInput) titleTemplateInput.value = settings.titleTemplate || '{artist} - {title}';
-      if (timeTemplateInput) timeTemplateInput.value = settings.timeTemplate || '{remaining}';
-      if (showCoverCheckbox) showCoverCheckbox.checked = settings.showCover !== false;
-    } else if (event === 'didReceiveGlobalSettings') {
+    if (event === 'didReceiveGlobalSettings') {
       globalSettings = payload.settings || {};
 
       // OBS Settings
@@ -93,20 +68,6 @@ function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegist
       }
     }
   };
-}
-
-function saveSettings() {
-  if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
-
-  if (titleTemplateInput) settings.titleTemplate = titleTemplateInput.value;
-  if (timeTemplateInput) settings.timeTemplate = timeTemplateInput.value;
-  if (showCoverCheckbox) settings.showCover = showCoverCheckbox.checked;
-
-  websocket.send(JSON.stringify({
-    event: 'setSettings',
-    context: uuid,
-    payload: settings
-  }));
 }
 
 function saveGlobalSettings() {
@@ -143,21 +104,6 @@ function saveGlobalSettings() {
     context: uuid,
     payload: globalSettings
   }));
-}
-
-// Local listeners
-if (titleTemplateInput) {
-  titleTemplateInput.addEventListener('input', saveSettings);
-  titleTemplateInput.addEventListener('change', saveSettings);
-  titleTemplateInput.addEventListener('blur', saveSettings);
-}
-if (timeTemplateInput) {
-  timeTemplateInput.addEventListener('input', saveSettings);
-  timeTemplateInput.addEventListener('change', saveSettings);
-  timeTemplateInput.addEventListener('blur', saveSettings);
-}
-if (showCoverCheckbox) {
-  showCoverCheckbox.addEventListener('change', saveSettings);
 }
 
 // Global listeners

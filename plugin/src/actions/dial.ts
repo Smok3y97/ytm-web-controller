@@ -170,23 +170,36 @@ export class DialAction extends SingletonAction<DialSettings> {
     this.updateAllDials(state);
   }
 
-  private ensureMarqueeRunning(state: YTMPlaybackState): void {
-    if (this.activeDials.size === 0) return;
+  private async ensureMarqueeRunning(state: YTMPlaybackState): Promise<void> {
+    if (this.activeDials.size === 0 || state.paused) {
+      if (this.marqueeTimer) {
+        clearInterval(this.marqueeTimer);
+        this.marqueeTimer = null;
+      }
+      return;
+    }
 
-    const fullTitle = StateManager.getInstance().formatTitleTemplate('{artist} - {title}');
-    const needsScroll = fullTitle.length > FULL_LCD_CHAR_WIDTH;
+    let anyNeedsScroll = false;
+    for (const dial of this.activeDials) {
+      try {
+        const settings = await dial.getSettings();
+        const fullTitle = StateManager.getInstance().formatTitleTemplate(settings.titleTemplate || '{artist} - {title}');
+        if (fullTitle.length > FULL_LCD_CHAR_WIDTH) {
+          anyNeedsScroll = true;
+          break;
+        }
+      } catch { }
+    }
 
-    if (needsScroll && !state.paused) {
+    if (anyNeedsScroll) {
       if (!this.marqueeTimer) {
         this.marqueeTimer = setInterval(() => {
           this.tickMarquee();
         }, MARQUEE_SPEED_MS);
       }
-    } else {
-      if (this.marqueeTimer) {
-        clearInterval(this.marqueeTimer);
-        this.marqueeTimer = null;
-      }
+    } else if (this.marqueeTimer) {
+      clearInterval(this.marqueeTimer);
+      this.marqueeTimer = null;
     }
   }
 
@@ -196,20 +209,14 @@ export class DialAction extends SingletonAction<DialSettings> {
       return;
     }
 
-    const fullTitle = StateManager.getInstance().formatTitleTemplate('{artist} - {title}');
-    const spacer = '    •    ';
-    const loopLength = fullTitle.length + spacer.length;
-
-    this.marqueeOffset = (this.marqueeOffset + 1) % loopLength;
-    if (this.marqueeOffset === 0) {
-      this.marqueePauseTicks = INITIAL_PAUSE_TICKS;
-    }
-
-    const currentText = this.getDisplayText(fullTitle);
+    this.marqueeOffset++;
 
     for (const dialAction of this.activeDials) {
       try {
         if (dialAction.isDial()) {
+          const settings = await dialAction.getSettings();
+          const fullTitle = StateManager.getInstance().formatTitleTemplate(settings.titleTemplate || '{artist} - {title}');
+          const currentText = this.getDisplayText(fullTitle);
           await dialAction.setFeedback({ title: currentText });
         }
       } catch { }
@@ -221,14 +228,18 @@ export class DialAction extends SingletonAction<DialSettings> {
       return fullText;
     }
 
-    if (this.marqueePauseTicks > 0 && this.marqueeOffset === 0) {
-      return fullText.substring(0, FULL_LCD_CHAR_WIDTH);
-    }
-
     const spacer = '    •    ';
     const loopString = fullText + spacer;
     const doubleString = loopString + loopString;
     const start = this.marqueeOffset % loopString.length;
+
+    if (start === 0 && this.marqueeOffset > 0) {
+      this.marqueePauseTicks = INITIAL_PAUSE_TICKS;
+    }
+
+    if (this.marqueePauseTicks > 0 && start === 0) {
+      return fullText.substring(0, FULL_LCD_CHAR_WIDTH);
+    }
 
     return doubleString.substring(start, start + FULL_LCD_CHAR_WIDTH);
   }

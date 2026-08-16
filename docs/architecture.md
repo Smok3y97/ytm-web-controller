@@ -113,8 +113,9 @@ ytm-web-controller/
     │   ├── category-icon.svg    # Monochromatic category icon (28x28 / 56x56)
     │   ├── plugin-icon.png      # Official Full-Color YouTube Music badge (256x256)
     │   ├── plugin-icon@2x.png   # High-DPI YouTube Music badge (512x512)
-    │   ├── generate_assets.ps1  # Automated asset generator script
-    │   └── actions/             # SVG action icons (playpause, dial, volumedial, etc.)
+    │   ├── generate_assets.ps1  # Automated asset generator script (PNG & invokes SVG generator)
+    │   ├── generate_official_svgs.mjs # Official SVG vector icons generator
+    │   └── actions/             # SVG action icons (playpause, trackdial, volumedial, seekdial, etc.)
     ├── layouts/                 # Stream Deck + Dial LCD JSON layouts
     │   └── dial_layout.json     # Single-source-of-truth 4-item LCD strip layout
     ├── ui/                      # Modular Property Inspector (PI) Frontend
@@ -243,26 +244,26 @@ Each Stream Deck key and dial is an independent controller registered with the `
 The Property Inspector frontend uses a component-based modular structure:
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│  Property Inspector View (e.g. dial.html / volume.html)  │
-├──────────────────────────────────────────────────────────┤
-│  0. Version Warning Banner (id="version-warning-banner") │
-│     - Dynamically rendered on mismatch                   │
-├──────────────────────────────────────────────────────────┤
-│  1. Action-Specific Controls (Local Inputs)              │
-│     - Handled by action script (e.g. dial.js)            │
-│     - Uses StreamDeckClient.onLocalSettings() / save()   │
-├──────────────────────────────────────────────────────────┤
-│  2. Global Plugin Settings (<div id="global-settings">)  │
-│     - Injected dynamically by global-settings.js         │
-│     - Discord Rich Presence (RPC) Toggle                 │
-│     - Streamer Settings (OBS Export Accordion)           │
-│     - Advanced / Connection Settings Accordion           │
-├──────────────────────────────────────────────────────────┤
-│  3. StreamDeckClient Bridge (streamdeck-client.js)       │
-│     - Low-level WebSocket client to Stream Deck software │
-│     - Auto-save dispatch (setSettings/setGlobalSettings) │
-└──────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  Property Inspector View (e.g. track-dial.html / volume)   │
+├────────────────────────────────────────────────────────────┤
+│  0. Version Warning Banner (id="version-warning-banner")   │
+│     - Dynamically rendered on mismatch                     │
+├────────────────────────────────────────────────────────────┤
+│  1. Action-Specific Controls (Local Inputs)                │
+│     - Handled by action script (e.g. track-dial.js)        │
+│     - Uses StreamDeckClient.onLocalSettings() / save()     │
+├────────────────────────────────────────────────────────────┤
+│  2. Global Plugin Settings (<div id="global-settings">)    │
+│     - Injected dynamically by global-settings.js           │
+│     - Discord Rich Presence (RPC) Toggle                   │
+│     - Streamer Settings (OBS Export Accordion)             │
+│     - Advanced / Connection Settings Accordion             │
+├────────────────────────────────────────────────────────────┤
+│  3. StreamDeckClient Bridge (streamdeck-client.js)         │
+│     - Low-level WebSocket client to Stream Deck software   │
+│     - Auto-save dispatch (setSettings/setGlobalSettings)   │
+└────────────────────────────────────────────────────────────┘
 ```
 
 ---

@@ -43,11 +43,6 @@ const icons = {
   <polygon points="10,8.5 15.5,12 10,15.5" fill="#FFFFFF"/>
 </svg>`,
 
-  'actions/dial/icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
-  <circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="45 10"/>
-  <polygon points="10,8.5 15.5,12 10,15.5" fill="#FFFFFF"/>
-</svg>`,
-
   // Next / Previous
   'actions/next/icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144" fill="#FFFFFF">
   <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>

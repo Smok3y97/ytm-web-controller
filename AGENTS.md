@@ -18,7 +18,7 @@ The project consists of two core components working together over a local WebSoc
 │  - Listens to <video> events  │  Port 39865   │  - Manages Keypad & Dial states │
 │  - MutationObserver for DOM   │               │  - Discord RPC Broadcaster      │
 │  - Zero polling overhead      │               │  - OBS Text Exporter (.txt)     │
-│  - In-memory canvas renderer  │               │  - In-Memory Album Art Buffer   │
+│  - Auto-reconnect & Handshake │               │  - In-Memory Canvas & Art Buffer│
 └───────────────────────────────┘               └─────────────────────────────────┘
 ```
 

@@ -2,6 +2,7 @@ import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
+import terser from '@rollup/plugin-terser';
 import { builtinModules } from 'module';
 
 export default {
@@ -26,6 +27,16 @@ export default {
       tsconfig: './tsconfig.json',
       compilerOptions: {
         outDir: './bin'
+      }
+    }),
+    terser({
+      ecma: 2022,
+      compress: {
+        drop_console: false,
+        drop_debugger: true
+      },
+      output: {
+        comments: false
       }
     })
   ]

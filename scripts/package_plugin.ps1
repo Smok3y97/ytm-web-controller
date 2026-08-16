@@ -35,9 +35,6 @@ New-Item -ItemType Directory -Path $binTarget -Force | Out-Null
 if (Test-Path $binSource) {
     Copy-Item $binSource $binTarget
 }
-if (Test-Path (Join-Path $pluginDir "bin\plugin.js.map")) {
-    Copy-Item (Join-Path $pluginDir "bin\plugin.js.map") $binTarget
-}
 
 # 3. Generate & Copy Assets (excluding script files)
 if (Test-Path (Join-Path $pluginDir "assets\generate_assets.ps1")) {

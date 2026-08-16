@@ -36,8 +36,8 @@ The project consists of two core components working together over a local WebSoc
 ### 🧩 Modular Architecture & Single Responsibility Principle (SRP)
 The entire codebase strictly follows a decoupled, modular architecture adhering to the Single Responsibility Principle:
 
-- **Backend Services Layer (`plugin/src/services/`)**: Centralized, isolated services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`) consumed exclusively via Singleton patterns.
-- **Action Controllers Layer (`plugin/src/actions/`)**: Independent action handlers inheriting from shared base classes (`base-state-action.ts`, `base-volume-action.ts`).
+- **Backend Services Layer (`plugin/src/services/`)**: Centralized, isolated services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `warning-icons.ts`, `version-control.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`) consumed exclusively via Singleton patterns.
+- **Action Controllers Layer (`plugin/src/actions/`)**: Independent action handlers inheriting from shared base classes (`base-state-action.ts`, `base-volume-action.ts`, `base-dial-action.ts`).
 - **Property Inspector Frontend Layer (`plugin/ui/`)**: Strict separation between the low-level SDK WebSocket bridge ([`streamdeck-client.js`](plugin/ui/streamdeck-client.js)), the modular global settings component ([`global-settings.js`](plugin/ui/global-settings.js)), and action-specific scripts.
 - **Full Architecture & Component Reference**: Detailed diagrams, data flows, and full directory trees are maintained in [`docs/architecture.md`](docs/architecture.md).
 

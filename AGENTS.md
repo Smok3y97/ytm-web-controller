@@ -34,26 +34,12 @@ The project consists of two core components working together over a local WebSoc
    - **Zero Disk Footprint**: Computes dynamic images, cover thumbnails, and marquee LCD text strictly in memory using Base64 data URLs.
 
 ### 🧩 Modular Architecture & Single Responsibility Principle (SRP)
-The entire project strictly follows a modular, decoupled architecture:
+The entire codebase strictly follows a decoupled, modular architecture adhering to the Single Responsibility Principle:
 
-* **Backend Services Layer ([`plugin/src/services/`](plugin/src/services/))**:
-  * [`websocket-server.ts`](plugin/src/services/websocket-server.ts): Manages browser extension WebSocket connections and command routing.
-  * [`state-manager.ts`](plugin/src/services/state-manager.ts): Centralized, single-source-of-truth playback state store emitting `stateChanged` events.
-  * [`marquee-service.ts`](plugin/src/services/marquee-service.ts): Centralized Ping-Pong (bounce) scroller with dynamic character-width estimation for Stream Deck + LCDs.
-  * [`image-renderer.ts`](plugin/src/services/image-renderer.ts): In-memory RAM base64 cover/canvas rendering without disk I/O.
-  * [`discord-rpc.ts`](plugin/src/services/discord-rpc.ts): Isolated Discord Rich Presence client with automatic backoff and reconnection.
-  * [`obs-exporter.ts`](plugin/src/services/obs-exporter.ts): Isolated Streamer text exporter writing track information to local `.txt` files.
-  * [`clipboard.ts`](plugin/src/services/clipboard.ts): Cross-platform clipboard bridge for song URL sharing.
-
-* **Action Controllers Layer ([`plugin/src/actions/`](plugin/src/actions/))**:
-  * Each action (`play-pause.ts`, `dial.ts`, `volume-dial.ts`, `seek-dial.ts`, etc.) is fully decoupled and acts as an independent consumer of backend services via Singletons (`StateManager.getInstance()`, `MarqueeService.getInstance()`, etc.).
-  * Shared keypad behaviors inherit from [`base-state-action.ts`](plugin/src/actions/base-state-action.ts) or [`base-volume-action.ts`](plugin/src/actions/base-volume-action.ts).
-
-* **Property Inspector (PI) Frontend Layer ([`plugin/ui/`](plugin/ui/))**:
-  * [`streamdeck-client.js`](plugin/ui/streamdeck-client.js): Low-level SDK WebSocket bridge (`StreamDeckClient`) managing Elgato events, settings registration, and dispatch. Completely decoupled from UI presentation.
-  * [`global-settings.js`](plugin/ui/global-settings.js): Modular UI component managing plugin-wide settings (Discord RPC toggle, collapsible Streamer Settings accordion, Connection settings) and auto-save.
-  * Action-specific scripts (`dial.js`, `volume.js`, `playpause.js`): Contain strictly action-local settings, consuming `StreamDeckClient` callbacks.
-  * [`common.html`](plugin/ui/common.html): Reusable UI container for all trigger actions without local settings (`next`, `prev`, `like`, `dislike`, `shuffle`, `repeat`, `copyurl`).
+- **Backend Services Layer (`plugin/src/services/`)**: Centralized, isolated services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`) consumed exclusively via Singleton patterns.
+- **Action Controllers Layer (`plugin/src/actions/`)**: Independent action handlers inheriting from shared base classes (`base-state-action.ts`, `base-volume-action.ts`).
+- **Property Inspector Frontend Layer (`plugin/ui/`)**: Strict separation between the low-level SDK WebSocket bridge ([`streamdeck-client.js`](plugin/ui/streamdeck-client.js)), the modular global settings component ([`global-settings.js`](plugin/ui/global-settings.js)), and action-specific scripts.
+- **Full Architecture & Component Reference**: Detailed diagrams, data flows, and full directory trees are maintained in [`docs/architecture.md`](docs/architecture.md).
 
 ---
 

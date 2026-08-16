@@ -99,4 +99,13 @@ updateJsonFile(path.join(rootDir, 'extension', 'manifest.json'), (json) => {
   json.version_name = shortVersion;
 });
 
-console.log(`\n✅ Successfully synchronized all 5 version files to ${targetVersion}!\n`);
+// 6. extension/popup.html static fallback
+const popupHtmlPath = path.join(rootDir, 'extension', 'popup.html');
+if (fs.existsSync(popupHtmlPath)) {
+  let html = fs.readFileSync(popupHtmlPath, 'utf8');
+  html = html.replace(/<span id="version-text">v[0-9.]+\s*•\s*Open Source<\/span>/i, `<span id="version-text">v${shortVersion} • Open Source</span>`);
+  fs.writeFileSync(popupHtmlPath, html, 'utf8');
+  console.log(`  ✓ Updated: ${path.relative(rootDir, popupHtmlPath)}`);
+}
+
+console.log(`\n✅ Successfully synchronized all version files to ${targetVersion}!\n`);

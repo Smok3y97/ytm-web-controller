@@ -63,6 +63,80 @@
   };
 
   /**
+   * Safely click a DOM element by selector
+   */
+  function clickElement(selector, parent = document) {
+    const elem = $(selector, parent);
+    if (elem) {
+      const btn = elem.querySelector('button') || elem;
+      try {
+        btn.click();
+        return true;
+      } catch (e) { }
+    }
+    return false;
+  }
+
+  /**
+   * Normalize whitespace and special spaces
+   */
+  function cleanWhitespace(str) {
+    return (str || '').replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
+  }
+
+  /**
+   * Determine if a text fragment represents non-album metadata (view count, upload date, year, likes, etc.)
+   */
+  function isNonAlbumText(text) {
+    if (!text || typeof text !== 'string') return true;
+    const s = text.trim();
+    if (!s) return true;
+
+    // 1. Year only (e.g. "2024", "1998")
+    if (/^\d{4}$/.test(s)) return true;
+
+    // 2. Explicit / parental badge
+    if (/^(e|\[e\])$/i.test(s)) return true;
+
+    // 3. Time duration format (e.g. "3:45", "01:23:45")
+    if (/^\d+:\d+(?::\d+)?$/.test(s)) return true;
+
+    // 4. Track count format (e.g. "12 tracks", "10 Titel", "8 morceaux", "15 canciones")
+    if (/^\d+\s*(?:tracks?|titel|songs?|morceaux|canciones|brani|трек\w*|піс\w*)$/i.test(s)) return true;
+
+    const hasDigits = /\d/.test(s);
+
+    // 5. View count patterns across all YouTube languages (digits + view keyword or pure view keyword with count):
+    // e.g. "20 Mio. Aufrufe", "20M views", "1.2M views", "500 Aufrufe", "1 Aufruf", "20 M de vues", "10 млн просмотров", "500 次观看", "100万回視聴", "1.2만회 조회"
+    const hasViewKeyword = /(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)/i.test(s);
+    if (hasDigits && hasViewKeyword) return true;
+
+    // 6. Relative upload times across languages:
+    // e.g. "vor 3 Jahren", "3 years ago", "il y a 2 ans", "hace 5 meses", "2 anni fa", "3 года назад", "1年前", "3년 전", "há 3 anos"
+    const hasTimeKeyword = /(?:^vor\s|\bago$|^il y a\b|^hace\s|^há\s|\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\s|^pred\s|^acum\s|^πριν\s|^pre\s|לפני|قبل|trước$|ที่แล้ว$|年前|前$|전$)/i.test(s);
+    if (hasTimeKeyword) return true;
+
+    // 7. Date units with digits (e.g. "3 Jahre", "5 months", "2 days", etc.)
+    const hasDateUnit = /(?:year|jahr|ans?|año|anno|год|лет|рок|month|monat|mois|mes|mese|месяц|місяц|week|woche|semaine|semana|settiman|недел|тижд|day|tag|jour|día|giorno|день|дней|днів|hour|stunde|heure|hora|ora|час|minute|минут|хвилин)/i.test(s);
+    if (hasDigits && hasDateUnit && /(?:vor|ago|hace|há|fa|назад|тому|önce|temu|előtt|sedan|siden|sitten|yang lalu|před|pred|acum|πριν|pre|לפני|قبل|trước|ที่แล้ว)/i.test(s)) {
+      return true;
+    }
+
+    // 8. Like / reaction / subscriber counts (e.g. "500k likes", "12 Tsd. Gefällt mir", "1.2M subscribers")
+    const hasLikeKeyword = /(?:like|gefällt|gusta|j'aime|mi piace|лайк|좋아요|讚|赞|subscribers?|abonnenten?|abonnés?|suscriptores?|iscritti)/i.test(s);
+    if (hasDigits && hasLikeKeyword) return true;
+
+    return false;
+  }
+
+  /**
+   * Schedule state broadcasts at staggered intervals
+   */
+  function scheduleStateUpdates(delays = [50, 150, 350]) {
+    delays.forEach(d => setTimeout(() => sendState(true), d));
+  }
+
+  /**
    * Parse mm:ss or hh:mm:ss string to integer seconds
    */
   function parseTimeString(str) {
@@ -90,37 +164,71 @@
 
   /**
    * Extract accurate track-relative timing & duration
-   * Resolves continuous MSE buffer offsets across playlist tracks
+   * Supports Player API, YouTube Music Player Bar, Video Overlay, and HTML5 video
    */
   function extractTrackTiming(video) {
     let currentTime = 0;
     let duration = 0;
     let hasUiTiming = false;
 
-    // 1. Try reading from .time-info text (most reliable for track-relative time in YTM)
-    const timeInfoElem = $('ytmusic-player-bar .time-info') ||
-      $('ytmusic-player-bar span.time-info') ||
-      $('#time-info') ||
-      $('.time-info');
+    // 1. Try reading directly from Player API (highest precision)
+    const playerApi = getPlayerApi();
+    if (playerApi) {
+      try {
+        const pDur = typeof playerApi.getDuration === 'function' ? playerApi.getDuration() : 0;
+        const pCur = typeof playerApi.getCurrentTime === 'function' ? playerApi.getCurrentTime() : 0;
+        if (typeof pDur === 'number' && !isNaN(pDur) && isFinite(pDur) && pDur > 0) {
+          duration = Math.floor(pDur);
+          if (typeof pCur === 'number' && !isNaN(pCur) && isFinite(pCur) && pCur >= 0) {
+            currentTime = Math.min(duration, Math.floor(pCur));
+          }
+          hasUiTiming = true;
+        }
+      } catch (e) { }
+    }
 
-    if (timeInfoElem && timeInfoElem.textContent) {
-      const text = timeInfoElem.textContent.trim();
-      if (text.includes('/')) {
-        const parts = text.split('/');
-        if (parts.length === 2) {
-          const parsedCurrent = parseTimeString(parts[0]);
-          const parsedDuration = parseTimeString(parts[1]);
+    // 2. Try reading from .time-info text (standard YouTube Music Player Bar)
+    if (!hasUiTiming || duration === 0) {
+      const timeInfoElem = $('ytmusic-player-bar .time-info') ||
+        $('ytmusic-player-bar span.time-info') ||
+        $('#time-info') ||
+        $('.time-info');
 
-          if (parsedDuration > 0) {
-            duration = parsedDuration;
-            currentTime = parsedCurrent;
-            hasUiTiming = true;
+      if (timeInfoElem && timeInfoElem.textContent) {
+        const text = timeInfoElem.textContent.trim();
+        if (text.includes('/')) {
+          const parts = text.split('/');
+          if (parts.length === 2) {
+            const parsedCurrent = parseTimeString(parts[0]);
+            const parsedDuration = parseTimeString(parts[1]);
+
+            if (parsedDuration > 0) {
+              duration = parsedDuration;
+              currentTime = parsedCurrent;
+              hasUiTiming = true;
+            }
           }
         }
       }
     }
 
-    // 2. Try reading from Progress Bar slider attributes
+    // 3. Try reading from YouTube Video Player Overlay (.ytp-time-display, .ytp-time-current, .ytp-time-duration)
+    if (!hasUiTiming || duration === 0) {
+      const ytpDuration = $('.ytp-time-duration')?.textContent?.trim();
+      const ytpCurrent = $('.ytp-time-current')?.textContent?.trim();
+      if (ytpDuration) {
+        const parsedDur = parseTimeString(ytpDuration);
+        if (parsedDur > 0) {
+          duration = parsedDur;
+          if (ytpCurrent) {
+            currentTime = parseTimeString(ytpCurrent);
+          }
+          hasUiTiming = true;
+        }
+      }
+    }
+
+    // 4. Try reading from Progress Bar slider attributes
     if (!hasUiTiming || duration === 0) {
       const progressBar = $('ytmusic-player-bar #progress-bar') ||
         $('#progress-bar') ||
@@ -145,7 +253,7 @@
       }
     }
 
-    // 3. Fallback / Fine-tune with HTML5 video element
+    // 5. Fallback / Fine-tune with HTML5 video element
     if (video) {
       const vCur = (!isNaN(video.currentTime) && isFinite(video.currentTime)) ? Math.floor(video.currentTime) : 0;
       const vDur = (!isNaN(video.duration) && isFinite(video.duration) && video.duration > 0) ? Math.floor(video.duration) : 0;
@@ -154,7 +262,6 @@
         duration = vDur;
       }
 
-      // If duration is known, verify if video.currentTime is valid track time (not MSE cumulative buffer time)
       if (duration > 0) {
         if (vCur <= duration && (!hasUiTiming || Math.abs(vCur - currentTime) <= 3)) {
           currentTime = vCur;
@@ -182,20 +289,16 @@
     if (video) {
       if (video.paused) {
         video.play().catch(() => {
-          const playBtn = $('#play-pause-button, ytmusic-player-bar #play-pause-button');
-          if (playBtn) playBtn.click();
+          clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button');
         });
       } else {
         video.pause();
       }
     } else {
-      const playBtn = $('#play-pause-button, ytmusic-player-bar #play-pause-button');
-      if (playBtn) playBtn.click();
+      clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button');
     }
 
-    setTimeout(() => sendState(true), 50);
-    setTimeout(() => sendState(true), 150);
-    setTimeout(() => sendState(true), 350);
+    scheduleStateUpdates([50, 150, 350]);
   }
 
   /**
@@ -339,8 +442,7 @@
       }
     }
 
-    setTimeout(() => sendState(true), 50);
-    setTimeout(() => sendState(true), 150);
+    scheduleStateUpdates([50, 150]);
   }
 
   /**
@@ -356,17 +458,8 @@
    * Toggle mute / unmute
    */
   function togglePlayerMute() {
-    const muteBtn = $('ytmusic-player-bar #volume-slider-volume-button') ||
-      $('ytmusic-player-bar .volume') ||
-      $('ytmusic-player-bar tp-yt-paper-icon-button.volume') ||
-      $('#volume-slider-volume-button');
-
-    if (muteBtn) {
-      const btn = muteBtn.querySelector('button') || muteBtn;
-      try {
-        btn.click();
-      } catch (e) { }
-    } else {
+    const muteBtnSelector = 'ytmusic-player-bar #volume-slider-volume-button, ytmusic-player-bar .volume, ytmusic-player-bar tp-yt-paper-icon-button.volume, #volume-slider-volume-button';
+    if (!clickElement(muteBtnSelector)) {
       const playerApi = getPlayerApi();
       if (playerApi && typeof playerApi.isMuted === 'function') {
         try {
@@ -382,8 +475,7 @@
       }
     }
 
-    setTimeout(() => sendState(true), 60);
-    setTimeout(() => sendState(true), 200);
+    scheduleStateUpdates([60, 200]);
   }
 
   /**
@@ -416,8 +508,7 @@
       } catch (e) { }
     }
 
-    setTimeout(() => sendState(true), 50);
-    setTimeout(() => sendState(true), 150);
+    scheduleStateUpdates([50, 150]);
   }
 
   /**
@@ -592,31 +683,48 @@
         $('ytmusic-player-bar .content-info-wrapper .subtitle');
 
       if (bylineElem) {
-        const bylineRawText = (bylineElem.textContent || '').replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
-        const parts = bylineRawText.split(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•|]/).map(p => p.trim()).filter(Boolean);
-
-        if (parts.length > 0) {
-          artist = parts[0];
-        }
-        if (parts.length > 1 && !/^\d{4}$/.test(parts[1])) {
-          album = parts[1];
-        }
-
+        // 1. Check explicit structured anchor links first
         const allLinks = Array.from(bylineElem.querySelectorAll('a'));
+        let foundAlbumLink = false;
+
         for (const a of allLinks) {
           const href = a.getAttribute('href') || a.href || '';
-          if (!href) continue;
+          const text = a.textContent?.trim() || '';
+          if (!href || !text) continue;
 
-          if (href.includes('browse/MPRE') || href.includes('browse/FEmusic_library_album') || href.includes('album')) {
+          if (href.includes('browse/MPRE') || href.includes('browse/FEmusic_library_album') || href.includes('browse/FEmusic_album') || href.includes('/album')) {
+            if (!album && !isNonAlbumText(text)) {
+              album = text;
+              foundAlbumLink = true;
+            }
             if (!albumUrl) albumUrl = a.href;
           } else if (href.includes('channel/') || href.includes('browse/UC') || href.includes('artist')) {
             if (!artistUrl) artistUrl = a.href;
           }
         }
+
+        // 2. Parse byline textual segments (delimited by • or · or |)
+        const bylineRawText = cleanWhitespace(bylineElem.textContent || '');
+        const parts = bylineRawText.split(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•|]/).map(p => p.trim()).filter(Boolean);
+
+        if (!artist && parts.length > 0) {
+          artist = parts[0];
+        }
+
+        // Only search textual parts for album if no structured album link was found
+        if (!album && !foundAlbumLink && parts.length > 1) {
+          for (let i = 1; i < parts.length; i++) {
+            const candidate = parts[i];
+            if (!isNonAlbumText(candidate)) {
+              album = candidate;
+              break;
+            }
+          }
+        }
       }
 
       // Fallbacks from MediaSession
-      if (!album && mediaSession?.album) {
+      if (!album && mediaSession?.album && !isNonAlbumText(mediaSession.album)) {
         album = mediaSession.album.trim();
       }
       if (!artist && mediaSession?.artist) {
@@ -624,17 +732,23 @@
       }
 
       // Clean artist and album
-      artist = artist.replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
-      album = album.replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
+      artist = cleanWhitespace(artist);
+      album = cleanWhitespace(album);
 
-      // If album name is present inside artist string, strip it completely!
-      if (album && artist.toLowerCase().includes(album.toLowerCase())) {
-        const escapedAlbum = album.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        artist = artist.replace(new RegExp(`\\s*${escapedAlbum}`, 'gi'), '').trim();
+      // Extra safeguard against non-album text strings
+      if (album && isNonAlbumText(album)) {
+        album = '';
+        albumUrl = '';
       }
 
-      // Strip 4-digit years, explicit badges, and trailing separators
-      artist = artist.replace(/\b\d{4}\b/g, '').trim();
+      // If album name is present as a standalone segment or whole word inside artist, strip it safely!
+      if (album && album.length >= 3 && artist.length > album.length) {
+        const escapedAlbum = album.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        artist = artist.replace(new RegExp(`(^|\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+)${escapedAlbum}(\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+|$)`, 'gi'), '$1').trim();
+      }
+
+      // Strip trailing 4-digit release years at the very end of string (preserving band names like "The 1975" or "1984")
+      artist = artist.replace(/(?:[\s\u2022\u00B7·•\-|]|\s+)\b(19|20)\d{2}\b$/g, '').trim();
       artist = artist.replace(/^(E|\[E\])\s+/i, '').trim();
       artist = artist.replace(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/, '').trim();
 
@@ -686,6 +800,18 @@
 
     if (video) {
       paused = video.paused;
+    }
+    const playerApi = getPlayerApi();
+    if (playerApi && typeof playerApi.getPlayerState === 'function') {
+      try {
+        const pState = playerApi.getPlayerState();
+        // 1 = PLAYING, 3 = BUFFERING
+        if (pState === 1 || pState === 3) {
+          paused = false;
+        } else if (pState === 2) {
+          paused = true;
+        }
+      } catch (e) { }
     }
 
     const { currentTime, duration } = extractTrackTiming(video);
@@ -941,114 +1067,60 @@
         }
 
         case 'play': {
-          const playBtn = $('#play-pause-button') ||
-            $('ytmusic-player-bar #play-pause-button') ||
-            $('tp-yt-paper-icon-button#play-pause-button') ||
-            $('.play-pause-button');
           const video = findVideoElement();
-          if (video && video.paused && playBtn) {
-            const btn = playBtn.querySelector('button') || playBtn;
-            try { btn.click(); } catch (e) { }
-          } else if (video && video.paused) {
-            video.play().catch(() => { });
+          if (video && video.paused) {
+            if (!clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button')) {
+              video.play().catch(() => { });
+            }
           }
-          setTimeout(() => sendState(true), 100);
+          scheduleStateUpdates([100]);
           break;
         }
 
         case 'pause': {
-          const playBtn = $('#play-pause-button') ||
-            $('ytmusic-player-bar #play-pause-button') ||
-            $('tp-yt-paper-icon-button#play-pause-button') ||
-            $('.play-pause-button');
           const video = findVideoElement();
-          if (video && !video.paused && playBtn) {
-            const btn = playBtn.querySelector('button') || playBtn;
-            try { btn.click(); } catch (e) { }
-          } else if (video && !video.paused) {
-            video.pause();
+          if (video && !video.paused) {
+            if (!clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button')) {
+              video.pause();
+            }
           }
-          setTimeout(() => sendState(true), 100);
+          scheduleStateUpdates([100]);
           break;
         }
 
         case 'next': {
-          const nextBtn = $('.next-button, tp-yt-paper-icon-button.next-button, #next-button');
-          if (nextBtn) {
-            const btn = nextBtn.querySelector('button') || nextBtn;
-            try { btn.click(); } catch (e) { }
-          }
-          setTimeout(() => sendState(true), 150);
+          clickElement('.next-button, tp-yt-paper-icon-button.next-button, #next-button');
+          scheduleStateUpdates([150]);
           break;
         }
 
         case 'previous': {
-          const prevBtn = $('.previous-button, tp-yt-paper-icon-button.previous-button, #previous-button');
-          if (prevBtn) {
-            const btn = prevBtn.querySelector('button') || prevBtn;
-            try { btn.click(); } catch (e) { }
-          }
-          setTimeout(() => sendState(true), 150);
+          clickElement('.previous-button, tp-yt-paper-icon-button.previous-button, #previous-button');
+          scheduleStateUpdates([150]);
           break;
         }
 
         case 'like': {
-          const likeBtn = $('#like-button-renderer #button-shape-like button') ||
-            $('#like-button-renderer tp-yt-paper-icon-button#like-button') ||
-            $('ytmusic-like-button-renderer #button-shape-like');
-          if (likeBtn) {
-            const btn = likeBtn.querySelector('button') || likeBtn;
-            try { btn.click(); } catch (e) { }
-          }
-          setTimeout(() => sendState(true), 60);
-          setTimeout(() => sendState(true), 200);
-          setTimeout(() => sendState(true), 450);
+          clickElement('#like-button-renderer #button-shape-like button, #like-button-renderer tp-yt-paper-icon-button#like-button, ytmusic-like-button-renderer #button-shape-like');
+          scheduleStateUpdates([60, 200, 450]);
           break;
         }
 
         case 'dislike': {
-          const dislikeBtn = $('#like-button-renderer #button-shape-dislike button') ||
-            $('#like-button-renderer tp-yt-paper-icon-button#dislike-button') ||
-            $('ytmusic-like-button-renderer #button-shape-dislike');
-          if (dislikeBtn) {
-            const btn = dislikeBtn.querySelector('button') || dislikeBtn;
-            try { btn.click(); } catch (e) { }
-          }
-          setTimeout(() => sendState(true), 60);
-          setTimeout(() => sendState(true), 200);
-          setTimeout(() => sendState(true), 450);
+          clickElement('#like-button-renderer #button-shape-dislike button, #like-button-renderer tp-yt-paper-icon-button#dislike-button, ytmusic-like-button-renderer #button-shape-dislike');
+          scheduleStateUpdates([60, 200, 450]);
           break;
         }
 
         case 'shuffle': {
-          const shuffleBtn = $('ytmusic-player-bar .shuffle') ||
-            $('tp-yt-paper-icon-button.shuffle') ||
-            $('.shuffle-button') ||
-            $('[aria-label*="shuffle" i]') ||
-            $('[aria-label*="zufall" i]');
-          if (shuffleBtn) {
-            const btn = shuffleBtn.querySelector('button') || shuffleBtn;
-            try { btn.click(); } catch (e) { }
-          }
-          setTimeout(() => sendState(true), 60);
-          setTimeout(() => sendState(true), 200);
-          setTimeout(() => sendState(true), 450);
+          clickElement('ytmusic-player-bar .shuffle, tp-yt-paper-icon-button.shuffle, .shuffle-button, [aria-label*="shuffle" i], [aria-label*="zufall" i]');
+          scheduleStateUpdates([60, 200, 450]);
           break;
         }
 
         case 'repeat': {
-          const repeatBtn = $('ytmusic-player-bar .repeat') ||
-            $('tp-yt-paper-icon-button.repeat') ||
-            $('.repeat-button') ||
-            $('[aria-label*="repeat" i]') ||
-            $('[aria-label*="wiederhol" i]');
-          if (repeatBtn) {
-            const btn = repeatBtn.querySelector('button') || repeatBtn;
-            try { btn.click(); } catch (e) { }
-          }
-          setTimeout(() => sendState(true), 60);
-          setTimeout(() => sendState(true), 200);
-          setTimeout(() => sendState(true), 450);
+          clickElement('ytmusic-player-bar .repeat, tp-yt-paper-icon-button.repeat, .repeat-button, [aria-label*="repeat" i], [aria-label*="wiederhol" i]');
+          scheduleStateUpdates([60, 200, 450]);
           break;
         }
 
@@ -1094,7 +1166,9 @@
         }
 
         case 'requestState': {
+          lastSentState = {};
           sendState(true);
+          scheduleStateUpdates([50, 200]);
           break;
         }
 
@@ -1146,7 +1220,7 @@
     }, 500);
   }
 
-  let bridgeVersion = '1.5.0.0';
+  let bridgeVersion = '1.5.1.0';
 
   function detectBrowserPlatform() {
     const ua = (navigator.userAgent || '').toLowerCase();
@@ -1211,6 +1285,8 @@
         reconnectAttempts = 0;
         console.log(`[YTM Controller] 🟢 Connected to Stream Deck on port ${currentPort}`);
 
+        lastSentState = {};
+
         const extVersion = bridgeVersion || '1.5.0.0';
         const platform = detectBrowserPlatform();
 
@@ -1235,6 +1311,7 @@
         } catch (e) { }
 
         sendState(true);
+        scheduleStateUpdates([50, 150, 400]);
       };
 
       ws.onmessage = (event) => {
@@ -1246,6 +1323,8 @@
             if (comp === 0) {
               console.log(`[YTM Controller] 🟢 Handshake ACK received (Plugin v${data.version})`);
               reportMismatchStatus(false);
+              sendState(true);
+              scheduleStateUpdates([50, 200]);
             } else if (comp > 0) {
               console.warn(`[YTM Controller] ⚠️ Plugin v${data.version} is older than Extension v${bridgeVersion}`);
               reportMismatchStatus(true, bridgeVersion, data.version, `Stream Deck Plugin (v${data.version}) is outdated!`);

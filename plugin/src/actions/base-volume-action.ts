@@ -19,6 +19,8 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
   protected abstract readonly command: 'volumeUp' | 'volumeDown';
   protected actionKey: string = '';
   protected abstract calculateOptimisticVolume(currentVolume: number, step: number): number;
+  private lastRenderedTitle: Map<string, string> = new Map();
+  private lastRenderedMismatch: Map<string, boolean> = new Map();
 
   constructor() {
     super();
@@ -30,12 +32,16 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
 
   override async onWillAppear(ev: WillAppearEvent<VolumeSettings>): Promise<void> {
     this.activeActions.add(ev.action);
+    this.lastRenderedTitle.delete(ev.action.id);
+    this.lastRenderedMismatch.delete(ev.action.id);
     const state = StateManager.getInstance().getState();
     await this.updateInstance(ev.action, state, ev.payload.settings);
     WebSocketService.getInstance().sendCommand('requestState');
   }
 
   override async onWillDisappear(ev: WillDisappearEvent<VolumeSettings>): Promise<void> {
+    this.lastRenderedTitle.delete(ev.action.id);
+    this.lastRenderedMismatch.delete(ev.action.id);
     for (const a of this.activeActions) {
       if (a.id === ev.action.id) {
         this.activeActions.delete(a);
@@ -45,6 +51,7 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
   }
 
   override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<VolumeSettings>): Promise<void> {
+    this.lastRenderedTitle.delete(ev.action.id);
     const state = StateManager.getInstance().getState();
     await this.updateInstance(ev.action, state, ev.payload.settings);
   }
@@ -66,6 +73,7 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
       const template = ev.payload.settings.titleTemplate || '{volume}%';
       const text = StateManager.getInstance().formatVolumeTemplate(template, optimisticVolume, false);
       await ev.action.setTitle(text);
+      this.lastRenderedTitle.set(ev.action.id, text);
     }
 
     WebSocketService.getInstance().sendCommand(this.command, { step });
@@ -88,20 +96,34 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
     if (!actionInstance.isKey()) return;
 
     try {
-      if (state.isVersionMismatch) {
-        await actionInstance.setTitle('');
-        const key = this.actionKey || (this.command === 'volumeUp' ? 'volumeup' : 'volumedown');
-        await actionInstance.setImage(getActionWarningSvgDataUrl(key));
+      const isMismatch = !!state.isVersionMismatch;
+      const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
+
+      if (isMismatch) {
+        if (prevMismatch !== true) {
+          await actionInstance.setTitle('');
+          const key = this.actionKey || (this.command === 'volumeUp' ? 'volumeup' : 'volumedown');
+          await actionInstance.setImage(getActionWarningSvgDataUrl(key));
+          this.lastRenderedMismatch.set(actionInstance.id, true);
+        }
         return;
       }
 
-      await actionInstance.setImage(undefined);
+      let text = '';
       if (settings.showVolumeTitle !== false) {
         const template = settings.titleTemplate || '{volume}%';
-        const text = StateManager.getInstance().formatVolumeTemplate(template, state.volume, state.muted);
+        text = StateManager.getInstance().formatVolumeTemplate(template, state.volume, state.muted);
+      }
+
+      const prevText = this.lastRenderedTitle.get(actionInstance.id);
+
+      if (prevText !== text || prevMismatch === true) {
+        if (prevMismatch === true) {
+          await actionInstance.setImage(undefined);
+        }
         await actionInstance.setTitle(text);
-      } else {
-        await actionInstance.setTitle('');
+        this.lastRenderedTitle.set(actionInstance.id, text);
+        this.lastRenderedMismatch.set(actionInstance.id, false);
       }
     } catch { }
   }

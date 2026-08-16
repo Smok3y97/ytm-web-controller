@@ -1,5 +1,5 @@
 /**
- * Property Inspector for Stream Deck + Dial Action
+ * Property Inspector for Stream Deck + Track Dial Action
  */
 const titleTemplateInput = document.getElementById('titleTemplate');
 const timeTemplateInput = document.getElementById('timeTemplate');

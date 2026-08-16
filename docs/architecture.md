@@ -121,7 +121,7 @@ ytm-web-controller/
     │   ├── streamdeck-client.js # Low-level Stream Deck WebSocket SDK bridge
     │   ├── global-settings.js   # Global settings UI component (Discord / Streamer / Top Mismatch banner)
     │   ├── common.html          # Standard inspector for stateless/trigger keys
-    │   ├── dial.html / dial.js  # Track Controller Dial inspector
+    │   ├── track-dial.html/.js  # Track Controller Dial inspector
     │   ├── volume-dial.html/.js # Volume Controller Dial inspector
     │   ├── seek-dial.html/.js   # Seek Controller Dial inspector
     │   ├── playpause.html/.js   # Play/Pause inspector (Album cover toggle)
@@ -143,8 +143,9 @@ ytm-web-controller/
         └── actions/             # Independent Action Controllers
             ├── base-state-action.ts  # Base class for stateful keypad buttons
             ├── base-volume-action.ts # Base class for volume keypad buttons
+            ├── base-dial-action.ts   # Base class for Stream Deck + dials & LCDs
             ├── play-pause.ts    # Play / Pause dual-state key handler
-            ├── dial.ts          # Track Controller (Dial & LCD)
+            ├── track-dial.ts    # Track Controller (Dial & LCD)
             ├── volume-dial.ts   # Volume Controller (Dial & LCD)
             ├── seek-dial.ts     # Seek Controller (Dial & LCD)
             ├── volume-up.ts     # Volume Up key
@@ -216,12 +217,13 @@ Each Stream Deck key and dial is an independent controller registered with the `
 * **Base Controllers**:
   * [`base-state-action.ts`](../plugin/src/actions/base-state-action.ts): Common base class handling connection indicators, dynamic SVG state switching, version mismatch guards, and StateManager lifecycle.
   * [`base-volume-action.ts`](../plugin/src/actions/base-volume-action.ts): Common base class for volume keys handling percentage formatting and Title Styler integration.
+  * [`base-dial-action.ts`](../plugin/src/actions/base-dial-action.ts): Common base class for Stream Deck + dials handling push-jitter suppression, marquee listeners, feedback layout assignment, and unified LCD rendering.
 * **Keypad Actions**:
   * [`play-pause.ts`](../plugin/src/actions/play-pause.ts): Dual-state key with live album art canvas background rendering.
   * [`volume-up.ts`](../plugin/src/actions/volume-up.ts) & [`volume-down.ts`](../plugin/src/actions/volume-down.ts): Step-based volume adjustment with live `{volume}%` text.
   * [`mute.ts`](../plugin/src/actions/mute.ts), [`next.ts`](../plugin/src/actions/next.ts), [`prev.ts`](../plugin/src/actions/prev.ts), [`like.ts`](../plugin/src/actions/like.ts), [`dislike.ts`](../plugin/src/actions/dislike.ts), [`shuffle.ts`](../plugin/src/actions/shuffle.ts), [`repeat.ts`](../plugin/src/actions/repeat.ts), [`copyurl.ts`](../plugin/src/actions/copyurl.ts).
 * **Stream Deck + Rotary Dials & LCD Touchstrips**:
-  * [`dial.ts`](../plugin/src/actions/dial.ts) (Track Controller): Rotary track skipping, tap play/pause, animated LCD layout with marquee title scroller, progress bar, and dynamic mismatch warning.
+  * [`track-dial.ts`](../plugin/src/actions/track-dial.ts) (Track Controller): Rotary track skipping, tap play/pause, animated LCD layout with marquee title scroller, progress bar, and dynamic mismatch warning.
   * [`volume-dial.ts`](../plugin/src/actions/volume-dial.ts) (Volume Controller): Rotary volume control, tap mute/unmute, live percentage and volume bar LCD feedback.
   * [`seek-dial.ts`](../plugin/src/actions/seek-dial.ts) (Seek Controller): Rotary scrub controller, tap play/pause, live time and progress LCD indicator.
 

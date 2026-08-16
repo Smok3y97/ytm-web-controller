@@ -2,10 +2,12 @@
  * Property Inspector for Stream Deck + Volume Dial Action
  */
 const volumeStepInput = document.getElementById('volumeStep');
+const titleTemplateInput = document.getElementById('titleTemplate');
 const showCoverCheckbox = document.getElementById('showCover');
 
 StreamDeckClient.onLocalSettings((settings) => {
   if (volumeStepInput) volumeStepInput.value = settings.step || 5;
+  if (titleTemplateInput) titleTemplateInput.value = settings.titleTemplate || 'YouTube Music Volume';
   if (showCoverCheckbox) showCoverCheckbox.checked = settings.showCover !== false;
 });
 
@@ -16,6 +18,7 @@ function saveSettings() {
 
   StreamDeckClient.saveLocalSettings({
     step: stepVal,
+    titleTemplate: titleTemplateInput ? titleTemplateInput.value : 'YouTube Music Volume',
     showCover: showCoverCheckbox ? showCoverCheckbox.checked : true
   });
 }
@@ -26,6 +29,10 @@ if (volumeStepInput) {
     const val = parseInt(volumeStepInput.value, 10);
     if (val >= 1 && val <= 25) saveSettings();
   });
+}
+if (titleTemplateInput) {
+  titleTemplateInput.addEventListener('input', saveSettings);
+  titleTemplateInput.addEventListener('change', saveSettings);
 }
 if (showCoverCheckbox) {
   showCoverCheckbox.addEventListener('change', saveSettings);

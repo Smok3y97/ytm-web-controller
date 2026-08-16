@@ -54,7 +54,7 @@ const GlobalSettingsComponent = (function () {
             </div>
           </div>
           <div class="sdpi-hint">
-            Placeholders: {artist}, {title}, {album}
+            Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>
           </div>
 
           <div class="sdpi-item">

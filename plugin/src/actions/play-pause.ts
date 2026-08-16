@@ -15,6 +15,9 @@ import { getActionWarningSvgDataUrl } from '../services/warning-icons.js';
 @action({ UUID: 'com.smok3y97.ytmusicweb.playpause' })
 export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
   private activeActions: Set<WillAppearEvent<PlayPauseSettings>['action']> = new Set();
+  private lastRenderedState: Map<string, number> = new Map();
+  private lastRenderedImage: Map<string, string | undefined> = new Map();
+  private lastRenderedMismatch: Map<string, boolean> = new Map();
 
   constructor() {
     super();
@@ -27,12 +30,18 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 
   override async onWillAppear(ev: WillAppearEvent<PlayPauseSettings>): Promise<void> {
     this.activeActions.add(ev.action);
+    this.lastRenderedState.delete(ev.action.id);
+    this.lastRenderedImage.delete(ev.action.id);
+    this.lastRenderedMismatch.delete(ev.action.id);
     const state = StateManager.getInstance().getState();
     await this.updateInstance(ev.action, state, ev.payload.settings);
     WebSocketService.getInstance().sendCommand('requestState');
   }
 
   override async onWillDisappear(ev: WillDisappearEvent<PlayPauseSettings>): Promise<void> {
+    this.lastRenderedState.delete(ev.action.id);
+    this.lastRenderedImage.delete(ev.action.id);
+    this.lastRenderedMismatch.delete(ev.action.id);
     for (const a of this.activeActions) {
       if (a.id === ev.action.id) {
         this.activeActions.delete(a);
@@ -53,6 +62,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
   }
 
   override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<PlayPauseSettings>): Promise<void> {
+    this.lastRenderedImage.delete(ev.action.id);
     const state = StateManager.getInstance().getState();
     await this.updateInstance(ev.action, state, ev.payload.settings);
   }
@@ -74,28 +84,46 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
     if (!actionInstance.isKey()) return;
 
     try {
-      if (state.isVersionMismatch) {
-        await actionInstance.setTitle('');
-        await actionInstance.setImage(getActionWarningSvgDataUrl('playpause'));
-        await actionInstance.setState(0);
+      const isMismatch = !!state.isVersionMismatch;
+      const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
+
+      if (isMismatch) {
+        if (prevMismatch !== true) {
+          await actionInstance.setTitle('');
+          await actionInstance.setImage(getActionWarningSvgDataUrl('playpause'));
+          await actionInstance.setState(0);
+          this.lastRenderedMismatch.set(actionInstance.id, true);
+          this.lastRenderedState.set(actionInstance.id, 0);
+          this.lastRenderedImage.set(actionInstance.id, getActionWarningSvgDataUrl('playpause'));
+        }
         return;
       }
 
-      await actionInstance.setTitle('');
       const targetState = state.paused ? 0 : 1;
-      await actionInstance.setState(targetState);
+      const prevState = this.lastRenderedState.get(actionInstance.id);
 
-      // Render live album cover if enabled
-      if (settings.showCoverAsBackground && (state.coverBase64 || state.coverUrl)) {
-        const coverBase64 = state.coverBase64 || await ImageRenderer.getInstance().getCoverAsBase64(state.coverUrl);
-        if (coverBase64) {
-          await actionInstance.setImage(coverBase64);
-          return;
+      if (prevState !== targetState || prevMismatch === true) {
+        await actionInstance.setState(targetState);
+        this.lastRenderedState.set(actionInstance.id, targetState);
+      }
+
+      // Calculate target custom image (default enabled unless explicitly unchecked)
+      let targetImage: string | undefined = undefined;
+      if (settings.showCoverAsBackground !== false && (state.coverBase64 || state.coverUrl)) {
+        const rawCover = state.coverBase64 || await ImageRenderer.getInstance().getCoverAsBase64(state.coverUrl);
+        if (rawCover) {
+          targetImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(rawCover, state.paused);
         }
       }
 
-      // Reset custom image to use default manifest state icons
-      await actionInstance.setImage(undefined);
+      const hasPrevImage = this.lastRenderedImage.has(actionInstance.id);
+      const prevImage = this.lastRenderedImage.get(actionInstance.id);
+      if (!hasPrevImage || prevImage !== targetImage || prevMismatch === true) {
+        await actionInstance.setImage(targetImage);
+        this.lastRenderedImage.set(actionInstance.id, targetImage);
+      }
+
+      this.lastRenderedMismatch.set(actionInstance.id, false);
     } catch { }
   }
 }

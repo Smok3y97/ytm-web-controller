@@ -69,10 +69,13 @@ Running `npm run bump` automatically updates and synchronizes all required files
 | [`extension/popup.html`](extension/popup.html) & [`extension/popup.js`](extension/popup.js) | Version string | `v1.5.0` | Dynamically reads `manifest.version_name || manifest.version`. |
 
 ### Segment Semantics:
-* **Major** (`1`): Fundamental architectural overhauls or SDK major upgrades.
-* **Minor** (`5`): Substantial new user features (e.g., Stream Deck + Dial support, Discord RPC, Version Handshake).
-* **Patch** (`0`): Bug fixes, icon styling adjustments, metadata/URL fixes.
-* **Build** (`0`): Internal marketplace submission counter. Allows resubmissions without changing the public release version.
+* **Major** (`{Major}`): Fundamental architectural overhauls, breaking changes, or SDK major upgrades.
+* **Minor** (`{Minor}`): Substantial new user features or hardware integrations (e.g., dial support, new background services, or protocol handshakes).
+* **Patch** (`{Patch}`): Bug fixes, icon styling adjustments, code refactoring, and metadata/URL fixes.
+* **Build** (`{Build}`): Internal marketplace submission counter. Allows resubmissions without changing the public release version.
+
+> [!NOTE]
+> Version numbers appearing in code snippets, tables, or guides within [`docs/development.md`](docs/development.md) serve strictly as **illustrative examples** and do **not** need to be edited or bumped with each release. The live version is defined solely by [`version.json`](version.json) and synchronized across the 5 manifest/package files.
 
 ---
 
@@ -176,4 +179,5 @@ The packaging script automates:
   - `extension/`: Browser companion extension.
   - `docs/`: Specifications and marketplace guidelines.
   - `release/`: Generated distribution packages.
+* **No Redundant Version Bumps in Documentation Examples**: Version numbers in [`docs/development.md`](docs/development.md) serve strictly as illustrative examples / placeholders and do **not** need to be bumped with every release. The single source of truth for the project version is [`version.json`](version.json).
 * **Always Run Validation on Code Changes**: Before submitting any manifest or code changes, execute `npx streamdeck validate` on the staged plugin to guarantee `√ Validation successful (0 errors, 0 warnings)`.

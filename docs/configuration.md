@@ -16,11 +16,11 @@ Global settings are accessible in the Property Inspector of **every single butto
 - **Enable OBS text export (.txt)**: Automatically writes metadata of the currently playing track to a local text file for streaming overlays.
 - **File Path**: Absolute destination path where the `.txt` file is saved (e.g. `C:\Users\username\Documents\ytm_current_track.txt`). Parent directories are created automatically if they do not exist.
 - **Format Template**: Fully customizable string with placeholders:
-  - `{artist}`: Performing artist(s)
-  - `{title}`: Song title
+  - `{artist}` / `{author}` / `{channel}`: Performing artist(s)
+  - `{title}` / `{song}` / `{track}`: Song title
   - `{album}`: Album name
   - *Default:* `Currently Playing: {artist} - {title}`
-- **Clear file on pause/stop**: When enabled (default), empties the text file whenever music is paused or stopped.
+- **Clear file on pause/stop**: When enabled (default), empties the text file whenever music is paused or stopped. Disabling OBS export also clears the file cleanly.
 
 ### 🔌 Advanced / Connection Settings
 - **WebSocket Port** (Default: `39865`):

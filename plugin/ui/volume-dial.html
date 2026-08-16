@@ -7,7 +7,7 @@
 </head>
 <body>
   <div class="sdpi-wrapper">
-    <div class="sdpi-heading">Display & Volume Settings</div>
+    <div class="sdpi-heading">Volume Dial Settings</div>
 
     <div class="sdpi-item">
       <div class="sdpi-item-label">Step Size (%)</div>
@@ -16,7 +16,17 @@
       </div>
     </div>
     <div class="sdpi-hint">
-      Percentage amount adjusted per rotary encoder tick (1% - 25%, Default: 5%).
+      Percentage amount adjusted per rotary encoder tick (1% – 25%, Default: 5%).
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Title Template</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="titleTemplate" placeholder="YouTube Music Volume" value="YouTube Music Volume">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code> (or static title like <code>YouTube Music Volume</code>)
     </div>
 
     <div class="sdpi-item">
@@ -31,8 +41,8 @@
 
     <div class="sdpi-heading">Controls</div>
     <div class="sdpi-hint">
-      • <strong>Rotate Clockwise</strong>: Volume Up (+5%)<br>
-      • <strong>Rotate Counter-Clockwise</strong>: Volume Down (-5%)<br>
+      • <strong>Rotate Clockwise</strong>: Volume Up<br>
+      • <strong>Rotate Counter-Clockwise</strong>: Volume Down<br>
       • <strong>Push Dial</strong>: Toggle Mute / Unmute<br>
       • <strong>Touch Tap</strong>: Toggle Mute / Unmute
     </div>

@@ -37,7 +37,12 @@ const icons = {
   <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
 </svg>`,
 
-  // Dial (Monochromatic white)
+  // Track Dial (Monochromatic white)
+  'actions/trackdial/icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
+  <circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="45 10"/>
+  <polygon points="10,8.5 15.5,12 10,15.5" fill="#FFFFFF"/>
+</svg>`,
+
   'actions/dial/icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
   <circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="45 10"/>
   <polygon points="10,8.5 15.5,12 10,15.5" fill="#FFFFFF"/>

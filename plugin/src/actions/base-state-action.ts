@@ -12,6 +12,8 @@ export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends
   protected abstract readonly command: string;
   protected actionKey: string = '';
   protected activeActions: Set<WillAppearEvent<T>['action']> = new Set();
+  private lastRenderedState: Map<string, number> = new Map();
+  private lastRenderedMismatch: Map<string, boolean> = new Map();
 
   constructor() {
     super();
@@ -24,11 +26,15 @@ export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends
 
   override async onWillAppear(ev: WillAppearEvent<T>): Promise<void> {
     this.activeActions.add(ev.action);
+    this.lastRenderedState.delete(ev.action.id);
+    this.lastRenderedMismatch.delete(ev.action.id);
     const state = StateManager.getInstance().getState();
     await this.updateInstance(ev.action, state);
   }
 
   override async onWillDisappear(ev: WillDisappearEvent<T>): Promise<void> {
+    this.lastRenderedState.delete(ev.action.id);
+    this.lastRenderedMismatch.delete(ev.action.id);
     for (const a of this.activeActions) {
       if (a.id === ev.action.id) {
         this.activeActions.delete(a);
@@ -64,17 +70,31 @@ export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends
     if (!actionInstance.isKey()) return;
 
     try {
-      if (state.isVersionMismatch) {
-        await actionInstance.setTitle('');
-        const key = this.actionKey || this.command;
-        await actionInstance.setImage(getActionWarningSvgDataUrl(key));
+      const isMismatch = !!state.isVersionMismatch;
+      const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
+
+      if (isMismatch) {
+        if (prevMismatch !== true) {
+          await actionInstance.setTitle('');
+          const key = this.actionKey || this.command;
+          await actionInstance.setImage(getActionWarningSvgDataUrl(key));
+          this.lastRenderedMismatch.set(actionInstance.id, true);
+        }
         return;
       }
 
-      await actionInstance.setTitle('');
-      await actionInstance.setImage(undefined);
       const targetState = this.calculateState(state);
-      await actionInstance.setState(targetState);
+      const prevState = this.lastRenderedState.get(actionInstance.id);
+
+      if (prevState !== targetState || prevMismatch === true) {
+        if (prevMismatch === true) {
+          await actionInstance.setImage(undefined);
+          await actionInstance.setTitle('');
+        }
+        await actionInstance.setState(targetState);
+        this.lastRenderedState.set(actionInstance.id, targetState);
+        this.lastRenderedMismatch.set(actionInstance.id, false);
+      }
     } catch { }
   }
 }

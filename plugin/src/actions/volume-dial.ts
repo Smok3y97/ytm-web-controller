@@ -12,72 +12,35 @@
 import {
   action,
   DialDownEvent,
-  DialUpEvent,
   DialRotateEvent,
   KeyDownEvent,
-  SingletonAction,
+  TitleParametersDidChangeEvent,
   TouchTapEvent,
   WillAppearEvent,
-  WillDisappearEvent,
-  DidReceiveSettingsEvent,
-  TitleParametersDidChangeEvent
+  WillDisappearEvent
 } from '@elgato/streamdeck';
+import { BaseDialAction } from './base-dial-action.js';
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { MarqueeService } from '../services/marquee-service.js';
+import { ImageRenderer } from '../services/image-renderer.js';
 import { VersionControlService } from '../services/version-control.js';
 import { VolumeDialSettings, YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.volumedial' })
-export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
-  private activeDials: Set<WillAppearEvent<VolumeDialSettings>['action']> = new Set();
+export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
   private dialTitles: Map<string, string> = new Map();
-  private rotationTimer: NodeJS.Timeout | null = null;
-  private pendingTicks: number = 0;
-  private lastDialPressTime: number = 0;
-
-  constructor() {
-    super();
-
-    const stateManager = StateManager.getInstance();
-    stateManager.on('stateChanged', (state: YTMPlaybackState) => {
-      this.updateAllDials(state);
-    });
-
-    const marqueeService = MarqueeService.getInstance();
-    marqueeService.on('tick', () => {
-      this.updateMarqueeTitles();
-    });
-  }
 
   override async onWillAppear(ev: WillAppearEvent<VolumeDialSettings>): Promise<void> {
-    this.activeDials.add(ev.action);
     if ('title' in ev.payload && typeof ev.payload.title === 'string' && ev.payload.title) {
       this.dialTitles.set(ev.action.id, ev.payload.title);
     }
-    MarqueeService.getInstance().registerConsumer();
-
-    if (ev.action.isDial()) {
-      try {
-        await ev.action.setFeedbackLayout('layouts/dial_layout.json');
-      } catch { }
-    }
-    const state = StateManager.getInstance().getState();
-    await this.updateDialDisplay(ev.action, state, ev.payload.settings);
-
-    // Request instantaneous state sync from browser
-    WebSocketService.getInstance().sendCommand('requestState');
+    await super.onWillAppear(ev);
   }
 
   override async onWillDisappear(ev: WillDisappearEvent<VolumeDialSettings>): Promise<void> {
-    for (const dial of this.activeDials) {
-      if (dial.id === ev.action.id) {
-        this.activeDials.delete(dial);
-        break;
-      }
-    }
     this.dialTitles.delete(ev.action.id);
-    MarqueeService.getInstance().unregisterConsumer();
+    await super.onWillDisappear(ev);
   }
 
   override async onTitleParametersDidChange(ev: TitleParametersDidChangeEvent<VolumeDialSettings>): Promise<void> {
@@ -90,48 +53,16 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
     await this.updateDialDisplay(ev.action, state, ev.payload.settings);
   }
 
-  override async onDialDown(ev: DialDownEvent<VolumeDialSettings>): Promise<void> {
-    this.lastDialPressTime = Date.now();
-    this.pendingTicks = 0;
-    if (this.rotationTimer) {
-      clearTimeout(this.rotationTimer);
-      this.rotationTimer = null;
-    }
-
-    if (StateManager.getInstance().isVersionMismatch()) {
-      await ev.action.showAlert();
-      return;
-    }
-
-    WebSocketService.getInstance().sendCommand('toggleMute');
+  protected override getTitleTemplate(settings: VolumeDialSettings, actionId?: string): string {
+    return (actionId && this.dialTitles.get(actionId)) || (settings as Record<string, unknown>).titleTemplate as string || 'YouTube Music Volume';
   }
 
-  override async onDialUp(_ev: DialUpEvent<VolumeDialSettings>): Promise<void> {
-    this.lastDialPressTime = Date.now();
-    this.pendingTicks = 0;
-  }
-
-  override async onTouchTap(ev: TouchTapEvent<VolumeDialSettings>): Promise<void> {
-    if (StateManager.getInstance().isVersionMismatch()) {
-      await ev.action.showAlert();
-      return;
-    }
-    WebSocketService.getInstance().sendCommand('toggleMute');
-  }
-
-  override async onKeyDown(ev: KeyDownEvent<VolumeDialSettings>): Promise<void> {
-    if (StateManager.getInstance().isVersionMismatch()) {
-      await ev.action.showAlert();
-      return;
-    }
+  protected handleDialPress(_ev: DialDownEvent<VolumeDialSettings> | TouchTapEvent<VolumeDialSettings> | KeyDownEvent<VolumeDialSettings>): void {
     WebSocketService.getInstance().sendCommand('toggleMute');
   }
 
   override async onDialRotate(ev: DialRotateEvent<VolumeDialSettings>): Promise<void> {
-    // Ignore physical push jitter within 250ms of a dial press
-    if (Date.now() - this.lastDialPressTime < 250) {
-      return;
-    }
+    if (this.isPushJitterActive()) return;
 
     if (StateManager.getInstance().isVersionMismatch()) {
       await ev.action.showAlert();
@@ -160,7 +91,6 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
       clearTimeout(this.rotationTimer);
     }
 
-    // Smooth 85ms debounce window batches rotary clicks cleanly
     this.rotationTimer = setTimeout(() => {
       this.flushRotation(ev.payload.settings);
     }, 85);
@@ -172,7 +102,7 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
       this.rotationTimer = null;
     }
 
-    if (Date.now() - this.lastDialPressTime < 250) {
+    if (this.isPushJitterActive()) {
       this.pendingTicks = 0;
       return;
     }
@@ -188,38 +118,7 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
     WebSocketService.getInstance().sendCommand('adjustVolume', { delta });
   }
 
-  override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<VolumeDialSettings>): Promise<void> {
-    const state = StateManager.getInstance().getState();
-    await this.updateDialDisplay(ev.action, state, ev.payload.settings);
-  }
-
-  private async updateMarqueeTitles(): Promise<void> {
-    if (StateManager.getInstance().isVersionMismatch()) {
-      return;
-    }
-
-    for (const dialAction of this.activeDials) {
-      try {
-        if (dialAction.isDial()) {
-          const rawTitle = this.dialTitles.get(dialAction.id) || 'YouTube Music Volume';
-          const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
-          const currentText = MarqueeService.getInstance().getDisplayText(fullTitle);
-          await dialAction.setFeedback({ title: currentText });
-        }
-      } catch { }
-    }
-  }
-
-  private async updateAllDials(state: YTMPlaybackState): Promise<void> {
-    for (const dialAction of this.activeDials) {
-      try {
-        const settings = await dialAction.getSettings();
-        await this.updateDialDisplay(dialAction, state, settings);
-      } catch { }
-    }
-  }
-
-  private async updateDialDisplay(
+  protected async updateDialDisplay(
     dialAction: WillAppearEvent<VolumeDialSettings>['action'],
     state: YTMPlaybackState,
     settings: VolumeDialSettings
@@ -241,12 +140,11 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
         const valueText = state.muted ? 'MUTED' : `${volPercent}%`;
         const indicatorValue = state.muted ? 0 : volPercent;
 
-        const rawTitle = this.dialTitles.get(dialAction.id) || 'YouTube Music Volume';
-        const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
-        const titleText = MarqueeService.getInstance().getDisplayText(fullTitle);
+        const rawTitle = this.getTitleTemplate(settings, dialAction.id);
+        const titleText = MarqueeService.getInstance().getDisplayText(StateManager.getInstance().formatTitleTemplate(rawTitle));
 
         const coverImage = (settings.showCover !== false && state.coverBase64)
-          ? state.coverBase64
+          ? ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
           : (state.muted ? 'assets/actions/mute/muted.svg' : 'assets/actions/volumedial/icon.svg');
 
         await dialAction.setFeedback({
@@ -257,7 +155,8 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
         });
       } else if (dialAction.isKey()) {
         if (settings.showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
-          await dialAction.setImage(state.coverBase64);
+          const keyImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused);
+          await dialAction.setImage(keyImage);
         } else {
           await dialAction.setImage(undefined);
         }

@@ -14,10 +14,10 @@
   function getManifestVersion() {
     try {
       if (extensionApi.runtime?.getManifest) {
-        return extensionApi.runtime.getManifest().version || '1.5.0.0';
+        return extensionApi.runtime.getManifest().version || '1.5.1.0';
       }
     } catch (e) { }
-    return '1.5.0.0';
+    return '1.5.1.0';
   }
 
   function getStorage() {
@@ -70,8 +70,8 @@
       if (storage) {
         storage.set({
           isMismatch: !!event.data.isMismatch,
-          requiredPluginVersion: event.data.requiredPluginVersion || '1.5.0.0',
-          currentPluginVersion: event.data.currentPluginVersion || '1.5.0.0',
+          requiredPluginVersion: event.data.requiredPluginVersion || '1.5.1.0',
+          currentPluginVersion: event.data.currentPluginVersion || '1.5.1.0',
           mismatchMessage: event.data.mismatchMessage || ''
         });
       }

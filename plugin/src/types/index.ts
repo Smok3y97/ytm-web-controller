@@ -80,13 +80,15 @@ export interface PlayPauseSettings extends JsonObject {
   obsClearOnPause?: boolean;
 }
 
-export interface DialSettings extends JsonObject {
+export interface TrackDialSettings extends JsonObject {
   mode?: 'volume' | 'track';
   volumeStep?: number;
   titleTemplate?: string;
   timeTemplate?: string;
   showCover?: boolean;
 }
+
+export type DialSettings = TrackDialSettings;
 
 export interface VolumeSettings extends JsonObject {
   step?: number;

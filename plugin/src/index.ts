@@ -14,7 +14,7 @@ import { GlobalSettings, YTMPlaybackState } from './types/index.js';
 
 // Action Handlers
 import { PlayPauseAction } from './actions/play-pause.js';
-import { DialAction } from './actions/dial.js';
+import { TrackDialAction } from './actions/track-dial.js';
 import { NextAction } from './actions/next.js';
 import { PreviousAction } from './actions/previous.js';
 import { LikeAction } from './actions/like.js';
@@ -28,15 +28,15 @@ import { MuteAction } from './actions/mute.js';
 import { VolumeDialAction } from './actions/volume-dial.js';
 import { SeekDialAction } from './actions/seek-dial.js';
 
-// Enable logging
-streamDeck.logger.setLevel(LogLevel.INFO);
-streamDeck.logger.info('[YTM Controller] Initializing plugin (v1.5.0.0)...');
-
 const wsService = WebSocketService.getInstance();
 const stateManager = StateManager.getInstance();
 const discordService = DiscordRpcService.getInstance();
 const obsService = ObsExporterService.getInstance();
 const versionService = VersionControlService.getInstance();
+
+// Enable logging
+streamDeck.logger.setLevel(LogLevel.INFO);
+streamDeck.logger.info(`[YTM Controller] Initializing plugin (v${versionService.currentPluginVersion})...`);
 
 // 1. Start WebSocket server immediately on default/fallback port
 wsService.start(39865).catch((err) => {
@@ -45,7 +45,7 @@ wsService.start(39865).catch((err) => {
 
 // 2. Register active Action singletons
 streamDeck.actions.registerAction(new PlayPauseAction());
-streamDeck.actions.registerAction(new DialAction());
+streamDeck.actions.registerAction(new TrackDialAction());
 streamDeck.actions.registerAction(new NextAction());
 streamDeck.actions.registerAction(new PreviousAction());
 streamDeck.actions.registerAction(new LikeAction());
@@ -81,10 +81,10 @@ wsService.on('handshake', async ({ isMismatch, version }: { isMismatch: boolean;
   }
 });
 
-// 5. Handle Client Disconnect: Reset version mismatch if all clients disconnect
+// 5. Handle Client Disconnect: Reset active playback state and version mismatch if all clients disconnect
 wsService.on('clientDisconnected', async () => {
   if (!wsService.hasConnectedClients()) {
-    stateManager.resetVersionStatus();
+    stateManager.handleClientsDisconnected();
     try {
       const globalSettings = await streamDeck.settings.getGlobalSettings<GlobalSettings>();
       if (globalSettings.isVersionMismatch) {

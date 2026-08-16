@@ -8,6 +8,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import streamDeck from '@elgato/streamdeck';
 import { GlobalSettings, YTMPlaybackState } from '../types/index.js';
+import { StateManager } from './state-manager.js';
 
 export const DEFAULT_OBS_TEMPLATE = 'Currently Playing: {artist} - {title}';
 
@@ -62,12 +63,15 @@ export class ObsExporterService {
         `[OBS Exporter] Settings updated: enabled=${this.isEnabled}, path="${this.filePath}", clearOnPause=${this.clearOnPause}`
       );
 
-      // Force an immediate file update if settings changed
-      if (this.lastState) {
-        this.updateExport(this.lastState, true);
-      } else if (this.isEnabled && this.filePath) {
-        // If no playback state yet, ensure file state is synchronized
+      // If export was disabled or path changed, clear old output
+      if (prevEnabled && !this.isEnabled) {
         await this.queueWrite('');
+      } else if (this.isEnabled && this.filePath) {
+        if (this.lastState) {
+          this.updateExport(this.lastState, true);
+        } else {
+          await this.queueWrite('');
+        }
       }
     }
   }
@@ -113,28 +117,8 @@ export class ObsExporterService {
       return '';
     }
 
-    const artist = (state.artist || '').trim();
-    const title = (state.title || '').trim();
-    const album = (state.album || '').trim();
-
-    let output = this.formatTemplate
-      .replace(/{artist}/gi, artist)
-      .replace(/{title}/gi, title)
-      .replace(/{album}/gi, album);
-
-    // Clean up empty parentheses/brackets if album or variable was empty: e.g. " ()", " []"
-    output = output.replace(/\(\s*\)/g, '').replace(/\[\s*\]/g, '');
-
-    // Collapse multiple spaces
-    output = output.replace(/\s+/g, ' ').trim();
-
-    // Clean up dangling leading or trailing dashes / separators
-    output = output
-      .replace(/^[\s\-\–\—\•\|\:]+/, '')
-      .replace(/[\s\-\–\—\•\|\:]+$/, '')
-      .trim();
-
-    return output;
+    const formatted = StateManager.getInstance().formatTitleTemplate(this.formatTemplate);
+    return formatted === 'No Media' ? '' : formatted;
   }
 
   /**

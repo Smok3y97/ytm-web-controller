@@ -78,6 +78,8 @@ export class WebSocketService extends EventEmitter {
                   streamDeck.logger.info(
                     `[WebSocket] Handshake SUCCESS from extension v${extVersion} (min required: ${versionService.minRequiredExtensionVersion})`
                   );
+                  // Request immediate full state upon successful handshake
+                  this.sendToClient(ws, { command: 'requestState' });
                 } else {
                   streamDeck.logger.warn(
                     `[WebSocket] Handshake MISMATCH from extension v${extVersion} (min required: ${versionService.minRequiredExtensionVersion})`

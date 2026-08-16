@@ -27,7 +27,7 @@ npm run package
 powershell -ExecutionPolicy Bypass -File .\scripts\package_plugin.ps1
 
 # 3. Synchronize versions centrally across all manifests & packages
-npm run bump 1.5.0.0
+npm run bump 1.5.1.0
 
 # 4. Validate packaged plugin against official Elgato SDK Schema
 npm run validate
@@ -54,18 +54,21 @@ The automated packaging script performs the following tasks:
 
 ## 🏷️ Versioning Scheme
 
+> [!NOTE]
+> All version numbers shown in this guide (e.g. `1.5.0.0`, `1.5.1.0`) serve strictly as **illustrative examples** explaining formatting rules and command syntax. Version numbers in this document do **not** need to be updated with each release. The live active version is defined centrally in [`version.json`](../version.json) and synchronized automatically across all manifests via `npm run bump`.
+
 The project follows the official **4-digit Elgato Stream Deck Manifest Specification**:
 
 $$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
 
 | Component | Format | Example | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Stream Deck Plugin** (`plugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.4.2.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
-| **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.4.2.0"`<br>`"1.4.2"` | `version` handles browser update comparisons; `version_name` defines user-facing store display. |
-| **Node.js Packages** (`package.json`, `plugin/package.json`) | 4-part / SemVer | `1.4.2.0` | Synchronized monorepo package versions. |
+| **Stream Deck Plugin** (`plugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.5.0.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
+| **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.5.0.0"`<br>`"1.5.0"` | `version` handles browser update comparisons; `version_name` defines user-facing store display. |
+| **Node.js Packages** (`package.json`, `plugin/package.json`) | 4-part / SemVer | `1.5.0.0` | Synchronized monorepo package versions. |
 
 ### Version Semantics:
-- **Major** (`1`): Fundamental architectural changes or SDK upgrades.
-- **Minor** (`4`): Substantial new user features (Dials, Discord RPC, OBS Exporter).
-- **Patch** (`2`): Bug fixes, icon styling, and metadata corrections.
-- **Build** (`0`): Internal marketplace submission counter.
+- **Major** (`{Major}`): Fundamental architectural overhauls, breaking changes, or SDK major upgrades.
+- **Minor** (`{Minor}`): Substantial new user features or hardware integrations (e.g., adding dial actions, new background services, or handshake systems).
+- **Patch** (`{Patch}`): Bug fixes, icon styling adjustments, code refactoring, and string corrections.
+- **Build** (`{Build}`): Internal marketplace submission counter. Allows resubmissions without changing the public release version.

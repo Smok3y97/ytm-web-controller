@@ -204,9 +204,18 @@ The browser companion extension runs in the context of `https://music.youtube.co
 | **Marquee Service** | [`marquee-service.ts`](../plugin/src/services/marquee-service.ts) | Centralized Ping-Pong (bounce) scroller with character-width estimation for Stream Deck + LCDs. |
 | **Image Renderer** | [`image-renderer.ts`](../plugin/src/services/image-renderer.ts) | In-memory RAM base64 cover/canvas rendering without disk I/O. |
 | **Warning Icons** | [`warning-icons.ts`](../plugin/src/services/warning-icons.ts) | Generates dynamic pixel-perfect SVG warning badges for keypad actions during version mismatch. |
-| **Discord RPC** | [`discord-rpc.ts`](../plugin/src/services/discord-rpc.ts) | Isolated Discord Rich Presence client with automatic backoff and reconnection. |
+| **Discord RPC** | [`discord-rpc.ts`](../plugin/src/services/discord-rpc.ts) | Isolated Discord Rich Presence client with automatic backoff and reconnection (powered by `@xhayper/discord-rpc`). |
 | **OBS Exporter** | [`obs-exporter.ts`](../plugin/src/services/obs-exporter.ts) | Isolated text file exporter for streamers (`.txt` overlay files). |
 | **Clipboard** | [`clipboard.ts`](../plugin/src/services/clipboard.ts) | Cross-platform clipboard bridge for song URL sharing. |
+
+### 📦 Core Production Dependencies
+
+| Dependency | Version | Role in Architecture |
+| :--- | :--- | :--- |
+| [`@elgato/streamdeck`](https://www.npmjs.com/package/@elgato/streamdeck) | `^2.1.1` | Official Stream Deck SDK v2 (Action handlers, dial events, logger, and lifecycle management). |
+| [`@elgato/utils`](https://www.npmjs.com/package/@elgato/utils) | `^0.5.0` | Official Elgato utility library providing typed JSON data structures (`JsonObject`, `JsonValue`). |
+| [`@xhayper/discord-rpc`](https://www.npmjs.com/package/@xhayper/discord-rpc) | `^1.3.4` | Modern, TypeScript-native Discord RPC client utilizing local IPC socket communication. |
+| [`ws`](https://www.npmjs.com/package/ws) | `^8.18.0` | Fast, robust local WebSocket server (`127.0.0.1:39865`) connecting browser companion to Stream Deck. |
 
 ---
 

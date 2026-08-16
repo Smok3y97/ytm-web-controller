@@ -2,7 +2,7 @@
  * TypeScript Interfaces for YouTube Music Web Controller
  */
 
-import type { JsonObject } from '@elgato/streamdeck';
+import type { JsonObject, JsonValue } from '@elgato/utils';
 
 export interface YTMPlaybackState {
   title: string;
@@ -59,6 +59,7 @@ export interface WSMessage<T = unknown> {
 }
 
 export interface GlobalSettings extends JsonObject {
+  [key: string]: JsonValue | undefined;
   wsPort?: number;
   enableDiscordRPC?: boolean;
   discordClientId?: string;
@@ -73,6 +74,7 @@ export interface GlobalSettings extends JsonObject {
 }
 
 export interface PlayPauseSettings extends JsonObject {
+  [key: string]: JsonValue | undefined;
   showCoverAsBackground?: boolean;
   enableObsExport?: boolean;
   obsFilePath?: string;
@@ -81,6 +83,7 @@ export interface PlayPauseSettings extends JsonObject {
 }
 
 export interface TrackDialSettings extends JsonObject {
+  [key: string]: JsonValue | undefined;
   mode?: 'volume' | 'track';
   volumeStep?: number;
   titleTemplate?: string;
@@ -91,18 +94,21 @@ export interface TrackDialSettings extends JsonObject {
 export type DialSettings = TrackDialSettings;
 
 export interface VolumeSettings extends JsonObject {
+  [key: string]: JsonValue | undefined;
   step?: number;
   showVolumeTitle?: boolean;
   titleTemplate?: string;
 }
 
 export interface VolumeDialSettings extends JsonObject {
+  [key: string]: JsonValue | undefined;
   step?: number;
   titleTemplate?: string;
   showCover?: boolean;
 }
 
 export interface SeekDialSettings extends JsonObject {
+  [key: string]: JsonValue | undefined;
   seekStep?: number;
   titleTemplate?: string;
   timeTemplate?: string;

@@ -64,6 +64,7 @@ Running `npm run bump` automatically updates and synchronizes all required files
 | [`plugin/manifest.json`](plugin/manifest.json) | `"Version"` | `"1.5.0.0"` | **Must be 4 numeric parts** matching regex `^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`. Required by Elgato CLI validation. |
 | [`extension/manifest.json`](extension/manifest.json) | `"version"`<br>`"version_name"` | `"1.5.0.0"`<br>`"1.5.0"` | `version` must be 4-digit for automated update comparisons; `version_name` defines user-facing display. |
 | [`plugin/package.json`](plugin/package.json) | `"version"` | `"1.5.0.0"` | Synchronized with plugin manifest version. |
+| [`plugin/package-lock.json`](plugin/package-lock.json) | `"version"` | `"1.5.0.0"` | Synchronized natively via `npm install --package-lock-only` (never edited manually). |
 | [`package.json`](package.json) | `"version"` | `"1.5.0.0"` | Synchronized monorepo root package version. |
 | `plugin/src/services/version-control.ts` | Dynamic Import | — | Dynamically imports `manifest.json` at build time; requires **zero** manual editing. |
 | [`extension/popup.html`](extension/popup.html) & [`extension/popup.js`](extension/popup.js) | Version string | `v1.5.0` | Dynamically reads `manifest.version_name || manifest.version`. |
@@ -180,4 +181,5 @@ The packaging script automates:
   - `docs/`: Specifications and marketplace guidelines.
   - `release/`: Generated distribution packages.
 * **No Redundant Version Bumps in Documentation Examples**: Version numbers in [`docs/development.md`](docs/development.md) serve strictly as illustrative examples / placeholders and do **not** need to be bumped with every release. The single source of truth for the project version is [`version.json`](version.json).
+* **Never Manually Edit `package-lock.json`**: Lockfiles (`plugin/package-lock.json`) must always be committed to Git, but **never** manually edited, rewritten, or modified via text tools. Changes must always be generated natively by npm (`npm install <pkg>`, `npm update`, or `npm install --package-lock-only` via `npm run bump`).
 * **Always Run Validation on Code Changes**: Before submitting any manifest or code changes, execute `npx streamdeck validate` on the staged plugin to guarantee `√ Validation successful (0 errors, 0 warnings)`.

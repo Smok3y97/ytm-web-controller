@@ -9,13 +9,13 @@ import {
   DialDownEvent,
   DialUpEvent,
   KeyDownEvent,
-  JsonObject,
   SingletonAction,
   TouchTapEvent,
   WillAppearEvent,
   WillDisappearEvent,
   DidReceiveSettingsEvent
 } from '@elgato/streamdeck';
+import type { JsonObject } from '@elgato/utils';
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { MarqueeService } from '../services/marquee-service.js';

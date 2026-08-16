@@ -4,7 +4,7 @@
  * UUID: com.smok3y97.ytmusicweb
  */
 
-import streamDeck, { LogLevel } from '@elgato/streamdeck';
+import streamDeck from '@elgato/streamdeck';
 import { WebSocketService } from './services/websocket-server.js';
 import { StateManager } from './services/state-manager.js';
 import { DiscordRpcService } from './services/discord-rpc.js';
@@ -35,7 +35,7 @@ const obsService = ObsExporterService.getInstance();
 const versionService = VersionControlService.getInstance();
 
 // Enable logging
-streamDeck.logger.setLevel(LogLevel.INFO);
+streamDeck.logger.setLevel('info');
 streamDeck.logger.info(`[YTM Controller] Initializing plugin (v${versionService.currentPluginVersion})...`);
 
 // 1. Start WebSocket server immediately on default/fallback port

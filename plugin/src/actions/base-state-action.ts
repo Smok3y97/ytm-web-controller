@@ -2,7 +2,8 @@
  * Base Class for Stateful Keypad Actions
  */
 
-import { JsonObject, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent } from '@elgato/streamdeck';
+import { KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent } from '@elgato/streamdeck';
+import type { JsonObject } from '@elgato/utils';
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { YTMPlaybackState } from '../types/index.js';

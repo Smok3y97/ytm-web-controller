@@ -16,6 +16,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -84,12 +85,13 @@ updateJsonFile(path.join(rootDir, 'package.json'), (json) => {
 });
 
 // 3. plugin/package.json
-updateJsonFile(path.join(rootDir, 'plugin', 'package.json'), (json) => {
+const pluginDir = path.join(rootDir, 'plugin');
+updateJsonFile(path.join(pluginDir, 'package.json'), (json) => {
   json.version = targetVersion;
 });
 
 // 4. plugin/manifest.json
-updateJsonFile(path.join(rootDir, 'plugin', 'manifest.json'), (json) => {
+updateJsonFile(path.join(pluginDir, 'manifest.json'), (json) => {
   json.Version = targetVersion;
 });
 
@@ -106,6 +108,16 @@ if (fs.existsSync(popupHtmlPath)) {
   html = html.replace(/<span id="version-text">v[0-9.]+\s*•\s*Open Source<\/span>/i, `<span id="version-text">v${shortVersion} • Open Source</span>`);
   fs.writeFileSync(popupHtmlPath, html, 'utf8');
   console.log(`  ✓ Updated: ${path.relative(rootDir, popupHtmlPath)}`);
+}
+
+// 7. Let npm natively update package-lock.json files without manual JSON manipulation
+try {
+  if (fs.existsSync(path.join(pluginDir, 'package-lock.json'))) {
+    execSync('npm install --package-lock-only', { cwd: pluginDir, stdio: 'ignore' });
+    console.log(`  ✓ Updated (via npm): plugin/package-lock.json`);
+  }
+} catch (e) {
+  console.warn(`  ⚠️ Warning: Could not update plugin/package-lock.json via npm.`);
 }
 
 console.log(`\n✅ Successfully synchronized all version files to ${targetVersion}!\n`);

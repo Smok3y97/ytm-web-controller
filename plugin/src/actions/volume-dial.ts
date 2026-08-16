@@ -19,15 +19,18 @@ import {
   TouchTapEvent,
   WillAppearEvent,
   WillDisappearEvent,
-  DidReceiveSettingsEvent
+  DidReceiveSettingsEvent,
+  TitleParametersDidChangeEvent
 } from '@elgato/streamdeck';
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
+import { MarqueeService } from '../services/marquee-service.js';
 import { VolumeDialSettings, YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.volumedial' })
 export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
   private activeDials: Set<WillAppearEvent<VolumeDialSettings>['action']> = new Set();
+  private dialTitles: Map<string, string> = new Map();
   private rotationTimer: NodeJS.Timeout | null = null;
   private pendingTicks: number = 0;
   private lastDialPressTime: number = 0;
@@ -39,10 +42,20 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
     stateManager.on('stateChanged', (state: YTMPlaybackState) => {
       this.updateAllDials(state);
     });
+
+    const marqueeService = MarqueeService.getInstance();
+    marqueeService.on('tick', () => {
+      this.updateMarqueeTitles();
+    });
   }
 
   override async onWillAppear(ev: WillAppearEvent<VolumeDialSettings>): Promise<void> {
     this.activeDials.add(ev.action);
+    if ('title' in ev.payload && typeof ev.payload.title === 'string' && ev.payload.title) {
+      this.dialTitles.set(ev.action.id, ev.payload.title);
+    }
+    MarqueeService.getInstance().registerConsumer();
+
     if (ev.action.isDial()) {
       try {
         await ev.action.setFeedbackLayout('layouts/dial_layout.json');
@@ -62,6 +75,18 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
         break;
       }
     }
+    this.dialTitles.delete(ev.action.id);
+    MarqueeService.getInstance().unregisterConsumer();
+  }
+
+  override async onTitleParametersDidChange(ev: TitleParametersDidChangeEvent<VolumeDialSettings>): Promise<void> {
+    if (ev.payload.title) {
+      this.dialTitles.set(ev.action.id, ev.payload.title);
+    } else {
+      this.dialTitles.delete(ev.action.id);
+    }
+    const state = StateManager.getInstance().getState();
+    await this.updateDialDisplay(ev.action, state, ev.payload.settings);
   }
 
   override async onDialDown(_ev: DialDownEvent<VolumeDialSettings>): Promise<void> {
@@ -149,6 +174,19 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
     await this.updateDialDisplay(ev.action, state, ev.payload.settings);
   }
 
+  private async updateMarqueeTitles(): Promise<void> {
+    for (const dialAction of this.activeDials) {
+      try {
+        if (dialAction.isDial()) {
+          const rawTitle = this.dialTitles.get(dialAction.id) || 'YouTube Music Volume';
+          const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
+          const currentText = MarqueeService.getInstance().getDisplayText(fullTitle);
+          await dialAction.setFeedback({ title: currentText });
+        }
+      } catch { }
+    }
+  }
+
   private async updateAllDials(state: YTMPlaybackState): Promise<void> {
     for (const dialAction of this.activeDials) {
       try {
@@ -171,10 +209,9 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
         const valueText = state.muted ? 'MUTED' : `${volPercent}%`;
         const indicatorValue = state.muted ? 0 : volPercent;
 
-        let titleText = 'Volume';
-        if (settings.titleTemplate) {
-          titleText = StateManager.getInstance().formatTitleTemplate(settings.titleTemplate);
-        }
+        const rawTitle = this.dialTitles.get(dialAction.id) || 'YouTube Music Volume';
+        const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
+        const titleText = MarqueeService.getInstance().getDisplayText(fullTitle);
 
         const coverImage = (settings.showCover !== false && state.coverBase64)
           ? state.coverBase64

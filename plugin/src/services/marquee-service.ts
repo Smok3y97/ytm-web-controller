@@ -2,15 +2,68 @@ import { EventEmitter } from 'events';
 import { StateManager } from './state-manager.js';
 import { YTMPlaybackState } from '../types/index.js';
 
-export const FULL_LCD_CHAR_WIDTH = 26; // 184px width at 13px font
-export const MARQUEE_SPEED_MS = 320;    // Fluid, smooth scroll interval
-export const INITIAL_PAUSE_TICKS = 6;   // ~1.9 seconds readable pause at track start
+export const MAX_LCD_PIXEL_WIDTH = 198; // Full 200px touchstrip width for Stream Deck +
+export const MARQUEE_SPEED_MS = 320;      // ~3.1 Hz: calm, pleasant and easy-to-follow reading pace
+export const START_PAUSE_TICKS = 9;      // ~2.9 seconds comfortable pause at beginning of song title
+export const END_PAUSE_TICKS = 8;        // ~2.5 seconds comfortable pause at the end of song title
+
+function estimateCharWidthPx(char: string): number {
+  if ('ilj!:. ,\'|/\\()[]{}'.includes(char)) return 3.4;
+  if ('mwMW'.includes(char)) return 10.5;
+  if (char >= 'A' && char <= 'Z') return 7.8;
+  if ('@%#&'.includes(char)) return 9.0;
+  if (char >= '0' && char <= '9') return 6.8;
+  if ('-–—+*'.includes(char)) return 5.0;
+  return 6.2; // standard lowercase characters
+}
+
+export function estimateTextWidthPx(text: string): number {
+  let width = 0;
+  for (let i = 0; i < text.length; i++) {
+    width += estimateCharWidthPx(text[i]);
+  }
+  return width;
+}
+
+export function findMaxMarqueeOffset(fullText: string, maxPx: number = MAX_LCD_PIXEL_WIDTH): number {
+  if (!fullText || estimateTextWidthPx(fullText) <= maxPx) {
+    return 0;
+  }
+  for (let offset = 0; offset < fullText.length; offset++) {
+    if (estimateTextWidthPx(fullText.substring(offset)) <= maxPx) {
+      return offset;
+    }
+  }
+  return Math.max(0, fullText.length - 1);
+}
+
+export function getFittingTextSlice(fullText: string, startOffset: number, maxPx: number = MAX_LCD_PIXEL_WIDTH): string {
+  if (!fullText) return '';
+  if (estimateTextWidthPx(fullText) <= maxPx) {
+    return fullText;
+  }
+
+  let currentWidth = 0;
+  let end = startOffset;
+
+  while (end < fullText.length) {
+    const charWidth = estimateCharWidthPx(fullText[end]);
+    if (currentWidth + charWidth > maxPx) {
+      break;
+    }
+    currentWidth += charWidth;
+    end++;
+  }
+
+  return fullText.substring(startOffset, end);
+}
 
 export class MarqueeService extends EventEmitter {
   private static instance: MarqueeService;
   private marqueeTimer: NodeJS.Timeout | null = null;
-  private marqueeOffset: number = 0;
-  private marqueePauseTicks: number = INITIAL_PAUSE_TICKS;
+  private currentOffset: number = 0;
+  private direction: number = 1; // 1 = scroll forward/left, -1 = scroll backward/right
+  private pauseTicks: number = START_PAUSE_TICKS;
   private lastTrackKey: string = '';
   private activeConsumerCount: number = 0;
 
@@ -44,8 +97,9 @@ export class MarqueeService extends EventEmitter {
     const trackKey = `${state.artist} - ${state.title}`;
     if (trackKey !== this.lastTrackKey) {
       this.lastTrackKey = trackKey;
-      this.marqueeOffset = 0;
-      this.marqueePauseTicks = INITIAL_PAUSE_TICKS;
+      this.currentOffset = 0;
+      this.direction = 1;
+      this.pauseTicks = START_PAUSE_TICKS;
     }
     this.checkTimer();
   }
@@ -67,36 +121,44 @@ export class MarqueeService extends EventEmitter {
   }
 
   private tick(): void {
-    if (this.marqueePauseTicks > 0) {
-      this.marqueePauseTicks--;
+    if (this.pauseTicks > 0) {
+      this.pauseTicks--;
       return;
     }
 
-    this.marqueeOffset++;
+    const state = StateManager.getInstance().getState();
+    const rawTitle = StateManager.getInstance().formatTitleTemplate('{artist} - {title}');
+    const maxOffset = findMaxMarqueeOffset(rawTitle, MAX_LCD_PIXEL_WIDTH);
+
+    if (maxOffset <= 0) {
+      this.currentOffset = 0;
+      return;
+    }
+
+    if (this.direction === 1) {
+      this.currentOffset++;
+      if (this.currentOffset >= maxOffset) {
+        this.currentOffset = maxOffset;
+        this.direction = -1;
+        this.pauseTicks = END_PAUSE_TICKS;
+      }
+    } else {
+      this.currentOffset--;
+      if (this.currentOffset <= 0) {
+        this.currentOffset = 0;
+        this.direction = 1;
+        this.pauseTicks = START_PAUSE_TICKS;
+      }
+    }
+
     this.emit('tick');
   }
 
   /**
-   * Pure formatting function to get the current marquee slice for a given full string
+   * Pure formatting function to get the current pixel-fitted marquee slice for a given full string
    */
-  public getDisplayText(fullText: string, charWidth: number = FULL_LCD_CHAR_WIDTH): string {
-    if (!fullText || fullText.length <= charWidth) {
-      return fullText || '';
-    }
-
-    const spacer = '    •    ';
-    const loopString = fullText + spacer;
-    const doubleString = loopString + loopString;
-    const start = this.marqueeOffset % loopString.length;
-
-    if (start === 0 && this.marqueeOffset > 0) {
-      this.marqueePauseTicks = INITIAL_PAUSE_TICKS;
-    }
-
-    if (this.marqueePauseTicks > 0 && start === 0) {
-      return fullText.substring(0, charWidth);
-    }
-
-    return doubleString.substring(start, start + charWidth);
+  public getDisplayText(fullText: string): string {
+    if (!fullText) return '';
+    return getFittingTextSlice(fullText, this.currentOffset, MAX_LCD_PIXEL_WIDTH);
   }
 }

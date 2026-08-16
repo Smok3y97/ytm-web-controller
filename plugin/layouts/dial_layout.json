@@ -4,8 +4,8 @@
     {
       "key": "title",
       "type": "text",
-      "font": { "size": 13, "weight": 600 },
-      "rect": [8, 4, 184, 20],
+      "font": { "size": 12, "weight": 600 },
+      "rect": [0, 4, 200, 22],
       "alignment": "left",
       "value": "Song Title",
       "zOrder": 1

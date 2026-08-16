@@ -36,89 +36,20 @@
       </label>
     </div>
 
-    <!-- Global Settings -->
-    <div class="sdpi-heading">Global Settings (Plugin-Wide)</div>
-
-    <!-- OBS Studio Text Export -->
-    <div class="sdpi-item">
-      <label class="sdpi-checkbox-wrap">
-        <input type="checkbox" id="enableObsExport">
-        <span>Enable OBS text export (.txt)</span>
-      </label>
-    </div>
-    <div class="sdpi-hint">
-      Writes live track information to a text file for OBS Studio overlays ("Text (GDI+)" ➔ "Read from file").
-    </div>
-
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">File Path (.txt)</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="obsFilePath" placeholder="C:\Users\...\ytm_current_track.txt">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Absolute path to the destination file (created automatically if needed).
-    </div>
-
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Format Template</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="obsFormatTemplate" placeholder="Currently Playing: {artist} - {title}" value="Currently Playing: {artist} - {title}">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Placeholders: {artist}, {title}, {album}
-    </div>
-
-    <div class="sdpi-item">
-      <label class="sdpi-checkbox-wrap">
-        <input type="checkbox" id="obsClearOnPause" checked>
-        <span>Clear file on pause/stop</span>
-      </label>
-    </div>
-    <div class="sdpi-hint">
-      When enabled, the file content is cleared whenever playback is paused or stopped.
-    </div>
-
-    <!-- Discord RPC -->
-    <div class="sdpi-item">
-      <label class="sdpi-checkbox-wrap">
-        <input type="checkbox" id="enableDiscordRPC">
-        <span>Enable Discord Rich Presence (RPC)</span>
-      </label>
-    </div>
-    <div class="sdpi-hint">
-      Displays current track live in Discord profile with progress bar and interactive links (Default: Disabled).
-    </div>
-
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Discord Client ID</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="discordClientId" placeholder="1537908230209019954">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Optional: Custom Discord Application ID (Default: 1537908230209019954).
-    </div>
-
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">WebSocket Port</div>
-      <div class="sdpi-item-value">
-        <input type="number" id="wsPort" min="1024" max="65535" value="39865" placeholder="39865">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Must match the port configured in the browser extension (Default: 39865).
-    </div>
+    <!-- Global Settings container dynamically rendered by global-settings.js -->
+    <div id="global-settings-container"></div>
 
     <div class="sdpi-heading">Controls</div>
     <div class="sdpi-hint">
-      • <strong>Rotate clockwise:</strong> Next track<br>
-      • <strong>Rotate counter-clockwise:</strong> Previous track<br>
-      • <strong>Press / Tap:</strong> Play / Pause
+      • <strong>Rotate Clockwise</strong>: Next Track<br>
+      • <strong>Rotate Counter-Clockwise</strong>: Previous Track<br>
+      • <strong>Push Dial</strong>: Play / Pause<br>
+      • <strong>Touch Tap</strong>: Play / Pause
     </div>
   </div>
 
+  <script src="streamdeck-client.js"></script>
+  <script src="global-settings.js"></script>
   <script src="dial.js"></script>
 </body>
 </html>

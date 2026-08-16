@@ -6,6 +6,8 @@ This document serves as the persistent technical guideline and architectural ref
 
 ## 🏛️ 1. Architecture & Component Interaction
 
+For detailed architectural diagrams, service descriptions, and data flows, refer to [`docs/architecture.md`](docs/architecture.md).
+
 The project consists of two core components working together over a local WebSocket connection:
 
 ```
@@ -30,6 +32,28 @@ The project consists of two core components working together over a local WebSoc
    - Hosts a local `ws.Server` (Default port: `39865`).
    - Handles multi-controller setups: standard Keypad actions and Stream Deck + Rotary Encoders (Dials & LCD Touchstrips).
    - **Zero Disk Footprint**: Computes dynamic images, cover thumbnails, and marquee LCD text strictly in memory using Base64 data URLs.
+
+### 🧩 Modular Architecture & Single Responsibility Principle (SRP)
+The entire project strictly follows a modular, decoupled architecture:
+
+* **Backend Services Layer ([`plugin/src/services/`](plugin/src/services/))**:
+  * [`websocket-server.ts`](plugin/src/services/websocket-server.ts): Manages browser extension WebSocket connections and command routing.
+  * [`state-manager.ts`](plugin/src/services/state-manager.ts): Centralized, single-source-of-truth playback state store emitting `stateChanged` events.
+  * [`marquee-service.ts`](plugin/src/services/marquee-service.ts): Centralized Ping-Pong (bounce) scroller with dynamic character-width estimation for Stream Deck + LCDs.
+  * [`image-renderer.ts`](plugin/src/services/image-renderer.ts): In-memory RAM base64 cover/canvas rendering without disk I/O.
+  * [`discord-rpc.ts`](plugin/src/services/discord-rpc.ts): Isolated Discord Rich Presence client with automatic backoff and reconnection.
+  * [`obs-exporter.ts`](plugin/src/services/obs-exporter.ts): Isolated Streamer text exporter writing track information to local `.txt` files.
+  * [`clipboard.ts`](plugin/src/services/clipboard.ts): Cross-platform clipboard bridge for song URL sharing.
+
+* **Action Controllers Layer ([`plugin/src/actions/`](plugin/src/actions/))**:
+  * Each action (`play-pause.ts`, `dial.ts`, `volume-dial.ts`, `seek-dial.ts`, etc.) is fully decoupled and acts as an independent consumer of backend services via Singletons (`StateManager.getInstance()`, `MarqueeService.getInstance()`, etc.).
+  * Shared keypad behaviors inherit from [`base-state-action.ts`](plugin/src/actions/base-state-action.ts) or [`base-volume-action.ts`](plugin/src/actions/base-volume-action.ts).
+
+* **Property Inspector (PI) Frontend Layer ([`plugin/ui/`](plugin/ui/))**:
+  * [`streamdeck-client.js`](plugin/ui/streamdeck-client.js): Low-level SDK WebSocket bridge (`StreamDeckClient`) managing Elgato events, settings registration, and dispatch. Completely decoupled from UI presentation.
+  * [`global-settings.js`](plugin/ui/global-settings.js): Modular UI component managing plugin-wide settings (Discord RPC toggle, collapsible Streamer Settings accordion, Connection settings) and auto-save.
+  * Action-specific scripts (`dial.js`, `volume.js`, `playpause.js`): Contain strictly action-local settings, consuming `StreamDeckClient` callbacks.
+  * [`common.html`](plugin/ui/common.html): Reusable UI container for all trigger actions without local settings (`next`, `prev`, `like`, `dislike`, `shuffle`, `repeat`, `copyurl`).
 
 ---
 
@@ -145,6 +169,10 @@ The packaging script automates:
 
 ## ⚠️ 6. Critical Guidelines for AI Agents
 
+* **Maintain Architecture Documentation**: Always keep [`docs/architecture.md`](docs/architecture.md) up-to-date whenever new services, actions, UI components, or architectural workflows are added or modified.
+* **Conditional Build & Validation**:
+  - Run packaging and validation (`npm run package` / `npm run validate`) **only** when modifying code, assets, UI, or manifests (`plugin/`, `extension/`, `package.json`).
+  - Do **not** trigger unnecessary build/package/validation runs when making changes strictly to markdown documentation (`.md` files).
 * **Do Not Introduce Polling**: Always rely on WebSocket event messages from `content.js`. Do not add `setInterval` loops for querying music state.
 * **Respect the 10 Hz Rendering Rate Limit**: Never flood Stream Deck hardware with canvas or LCD layout updates faster than 10 Hz.
 * **Keep Memory-Only Buffering**: Do not write temporary album artwork to the local file system. Always use Base64 data URLs.
@@ -154,4 +182,4 @@ The packaging script automates:
   - `extension/`: Browser companion extension.
   - `docs/`: Specifications and marketplace guidelines.
   - `release/`: Generated distribution packages.
-* **Always Run Validation**: Before submitting any manifest changes, execute `npx streamdeck validate` on the staged plugin to guarantee `√ Validation successful (0 errors, 0 warnings)`.
+* **Always Run Validation on Code Changes**: Before submitting any manifest or code changes, execute `npx streamdeck validate` on the staged plugin to guarantee `√ Validation successful (0 errors, 0 warnings)`.

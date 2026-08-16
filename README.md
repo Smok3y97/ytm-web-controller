@@ -118,7 +118,7 @@ The browser extension connects your YouTube Music tab to the Stream Deck plugin.
 1. Download and unzip `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page (or use the [`extension/`](extension/) folder from the cloned repository).
 2. Navigate to `chrome://extensions` (or `edge://extensions` / `brave://extensions`).
 3. Enable **Developer mode** (toggle in the top-right corner).
-4. Click **Load unpacked** (*Entpackte Erweiterung laden*) and select the unzipped `extension` folder.
+4. Click **Load unpacked** and select the unzipped `extension` folder.
 
 #### Mozilla Firefox:
 1. Download and unzip `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page (or use the [`extension/`](extension/) folder from the cloned repository).
@@ -154,15 +154,17 @@ You can display the currently playing track live in your OBS stream overlay usin
 
 ## ⚙️ Configuration & Customization
 
-### 1. Central Plugin Settings
-Configured inside the Property Inspector of any action:
-- **OBS Text-Export**:
+### 1. Central Plugin Integrations (Global Settings)
+Available across the Property Inspector of every single action and dial:
+- **Discord Rich Presence (RPC)**: Activate live Discord profile presence with animated timeline and direct track/artist profile buttons. You can also specify an optional custom Discord Application ID (Default: `1537908230209019954`).
+- **Streamer Settings (OBS Text-Export)**:
   - **Enable OBS Export**: Toggle the `.txt` export feature on/off.
   - **File Path**: Absolute path where the text file will be saved (e.g. `C:\Users\username\Documents\ytm_current_track.txt`). The directory is created automatically if it does not exist.
   - **Format Template**: Customize the format. Supports `{artist}`, `{title}`, `{album}` placeholders (Default: `Currently Playing: {artist} - {title}`).
   - **Clear on Pause**: If enabled, empties the text file when music is paused or stopped.
-- **WebSocket Port** (Default: `39865`): If port `39865` conflicts with other software on your PC, change it here and update the extension popup to match. The server rebinds dynamically without restarting Stream Deck.
-- **Discord Rich Presence (RPC)**: Activate live Discord presence broadcasting with animated timeline and direct track/artist profile buttons. You can also specify a custom Discord Application ID (Default: `1537908230209019954`).
+- **Advanced / Connection Settings**:
+  - **WebSocket Port** (Default: `39865`): If port `39865` conflicts with other software on your PC, change it here and update the extension popup to match. The server rebinds dynamically without restarting Stream Deck.
+  - **Custom Discord Application ID**: Override the default RPC client ID if you create your own Discord Developer App.
 
 ### 2. Volume Controllers (Keys & Dial)
 - **Volume Up & Volume Down (Keys)**:
@@ -183,79 +185,13 @@ Configured inside the Property Inspector of any action:
 
 ---
 
-## 🛠️ Architecture & Monorepo Structure
+## 🛠️ Architecture & Developer Documentation
 
-```
-ytm-web-controller/
-├── package.json                 # Monorepo root configuration & build scripts
-├── package_plugin.ps1           # Packaging, asset generation & Stream Deck deployment
-├── AGENTS.md                    # Developer & AI Agent Guidelines
-├── LICENSE                      # MIT License
-├── README.md                    # Project documentation & setup guides
-├── docs/                        # Specifications & developer documentation
-│   └── plugin-guideline.md      # Elgato Stream Deck Marketplace & Plugin Guidelines
-├── screenshots/                 # Visual documentation & preview screenshots
-│   ├── Banner.png               # GitHub hero banner & social preview
-│   ├── StreamDeck.png           # Stream Deck action configuration preview
-│   ├── Discord-Desktop-RPC.png  # Discord RPC desktop integration preview
-│   └── Discord-Mobile-RPC.png   # Discord Mobile App Rich Presence preview
-├── extension/                   # Manifest V3 Browser Extension
-│   ├── manifest.json            # MV3 Manifest with Chromium & Gecko support
-│   ├── content.js               # Event-driven DOM observer & WebSocket client
-│   ├── popup.html               # Status & port configuration popup UI
-│   ├── popup.css                # Modern dark theme popup styles
-│   ├── popup.js                 # Port storage & live connection tester
-│   └── icons/                   # Extension toolbar icons (16, 48, 128 px)
-└── plugin/                      # Elgato Stream Deck Plugin (Node.js SDK 2)
-    ├── manifest.json            # Stream Deck Plugin Manifest (UUID: com.smok3y97.ytmusicweb)
-    ├── package.json             # Plugin dependencies & rollup scripts
-    ├── rollup.config.mjs        # Standalone bundler configuration
-    ├── tsconfig.json            # TypeScript compiler configuration
-    ├── assets/                  # High-resolution vector & raster assets
-    │   ├── category-icon.svg    # Monochromatic category icon
-    │   ├── plugin-icon.png      # Full-color YouTube Music badge (256x256)
-    │   ├── plugin-icon@2x.png   # High-DPI YouTube Music badge (512x512)
-    │   ├── generate_assets.ps1  # Automated asset generation script
-    │   └── actions/             # SVG action icons (playpause, dial, volumedial, seekdial, etc.)
-    ├── layouts/                 # Stream Deck + Dial LCD JSON layouts
-    │   └── dial_layout.json     # Single-source-of-truth 4-item LCD strip layout
-    ├── ui/                      # Property Inspector HTML/JS/CSS
-    │   ├── common-pi.js         # Shared global settings & WebSocket helper
-    │   ├── playpause.html/.js   # Play/Pause inspector
-    │   ├── dial.html/.js        # Track Controller Dial inspector
-    │   ├── volume.html/.js      # Volume Up & Down keys inspector
-    │   ├── volume-dial.html/.js # Volume Controller Dial inspector
-    │   ├── seek-dial.html/.js   # Seek Controller Dial inspector
-    │   └── css/sdpi.css         # Stream Deck Property Inspector stylesheet
-    └── src/                     # Plugin TypeScript Source Code
-        ├── index.ts             # Plugin entry point & action registration
-        ├── types/               # TypeScript interfaces & event payloads
-        ├── services/            # Core backend services
-        │   ├── websocket-server.ts  # Local WebSocket server (port 39865)
-        │   ├── state-manager.ts     # Centralized playback state store
-        │   ├── marquee-service.ts   # Centralized synchronized marquee scroller
-        │   ├── image-renderer.ts    # In-memory RAM base64 cover/canvas renderer
-        │   ├── discord-rpc.ts       # Live Discord Rich Presence client
-        │   ├── obs-exporter.ts      # Live .txt track info exporter for OBS
-        │   └── clipboard.ts         # Native clipboard bridge for URL copying
-        └── actions/             # Action Controllers
-            ├── base-state-action.ts  # Base class for stateful keypad buttons
-            ├── base-volume-action.ts # Base class for volume keypad buttons
-            ├── play-pause.ts    # Play / Pause dual-state key handler
-            ├── dial.ts          # Track Controller (Dial & LCD)
-            ├── volume-dial.ts   # Volume Controller (Dial & LCD)
-            ├── seek-dial.ts     # Seek Controller (Dial & LCD)
-            ├── volume-up.ts     # Volume Up key
-            ├── volume-down.ts   # Volume Down key
-            ├── mute.ts          # Mute / Unmute toggle key
-            ├── next-track.ts    # Skip to next track
-            ├── previous-track.ts # Skip to previous track
-            ├── like.ts          # Thumbs up toggle action
-            ├── dislike.ts       # Thumbs down toggle action
-            ├── shuffle.ts       # Shuffle playlist toggle action
-            ├── repeat.ts        # Repeat mode cycle (Off / All / One)
-            └── copy-url.ts      # Copy active song URL to clipboard
-```
+The project is designed with a strictly decoupled, modular architecture adhering to the Single Responsibility Principle:
+
+- 📖 **[System Architecture & Data Flows (`docs/architecture.md`)](docs/architecture.md)**: Comprehensive technical documentation, end-to-end Mermaid architecture diagrams, service breakdowns, zero-polling lifecycles, and the complete monorepo file tree.
+- 📋 **[Marketplace Guidelines Compliance (`docs/plugin-guideline.md`)](docs/plugin-guideline.md)**: Elgato Stream Deck marketplace standards, asset dimensions, performance rate-limiting rules, and packaging specifications.
+- 🤖 **[Agent Guidelines (`AGENTS.md`)](AGENTS.md)**: Persistent guidelines for AI coding agents and human contributors.
 
 ---
 

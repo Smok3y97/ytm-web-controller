@@ -4,16 +4,31 @@
  * UUID: com.smok3y97.ytmusicweb.copyurl
  */
 
-import { action, KeyDownEvent, SingletonAction } from '@elgato/streamdeck';
+import { action, KeyDownEvent } from '@elgato/streamdeck';
 import streamDeck from '@elgato/streamdeck';
+import { BaseStateAction } from './base-state-action.js';
 import { StateManager } from '../services/state-manager.js';
 import { copyToClipboard } from '../services/clipboard.js';
+import { YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.copyurl' })
-export class CopyUrlAction extends SingletonAction {
+export class CopyUrlAction extends BaseStateAction {
+  protected readonly command = '';
+  protected override actionKey = 'copyurl';
   private feedbackTimers: Map<string, NodeJS.Timeout> = new Map();
 
+  protected calculateState(_state: YTMPlaybackState): number {
+    return 0;
+  }
+
   override async onKeyDown(ev: KeyDownEvent): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      if (ev.action.isKey()) {
+        await ev.action.showAlert();
+      }
+      return;
+    }
+
     const state = StateManager.getInstance().getState();
     const trackUrl = (state.trackUrl && state.trackUrl.startsWith('http')) ? state.trackUrl : '';
 
@@ -28,7 +43,7 @@ export class CopyUrlAction extends SingletonAction {
     try {
       await copyToClipboard(trackUrl);
       streamDeck.logger.info(`[CopyUrlAction] Successfully copied track URL to clipboard: ${trackUrl}`);
-      
+
       if (ev.action.isKey()) {
         const actionId = ev.action.id;
         const existingTimer = this.feedbackTimers.get(actionId);

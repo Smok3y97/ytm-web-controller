@@ -24,9 +24,12 @@ npm run build
 # 2. Package release archive & automatically deploy to local Stream Deck plugins folder
 npm run package
 # (or execute directly with PowerShell):
-powershell -ExecutionPolicy Bypass -File .\package_plugin.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\package_plugin.ps1
 
-# 3. Validate packaged plugin against official Elgato SDK Schema
+# 3. Synchronize versions centrally across all manifests & packages
+npm run bump 1.5.0.0
+
+# 4. Validate packaged plugin against official Elgato SDK Schema
 npm run validate
 # (or directly via npx):
 npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
@@ -37,7 +40,7 @@ npm run watch
 
 ---
 
-## 📦 Packaging Pipeline (`package_plugin.ps1`)
+## 📦 Packaging Pipeline (`scripts/package_plugin.ps1`)
 
 The automated packaging script performs the following tasks:
 1. Compiles the plugin bundle with Rollup to `plugin/bin/plugin.js`.

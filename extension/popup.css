@@ -110,6 +110,50 @@ body {
   border-color: rgba(241, 179, 38, 0.3);
 }
 
+.status-badge.mismatch .dot {
+  background-color: var(--warning);
+}
+.status-badge.mismatch {
+  color: #fcd34d;
+  border-color: rgba(241, 179, 38, 0.4);
+}
+
+.mismatch-card {
+  background: rgba(241, 179, 38, 0.12);
+  border: 1px solid rgba(241, 179, 38, 0.4);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mismatch-card.hidden {
+  display: none;
+}
+
+.mismatch-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.mismatch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mismatch-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fcd34d;
+}
+
+.mismatch-desc {
+  font-size: 11px;
+  color: #d1d5db;
+}
+
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);

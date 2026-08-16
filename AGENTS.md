@@ -43,27 +43,35 @@ The entire codebase strictly follows a decoupled, modular architecture adhering 
 
 ---
 
-## 🏷️ 2. Versioning Specification & Synchronization
+## 🏷️ 2. Versioning Specification & Centralized Synchronization
 
 The project strictly follows the **4-digit Elgato Stream Deck Manifest Specification**:
 
 $$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
 
-### Strict Version Rules:
-Whenever bumping versions, **ALL** of the following files MUST be synchronized:
+### 🚀 Centralized Single Command Versioning:
+Versions are managed centrally via [`version.json`](version.json) and automated with:
+```bash
+npm run bump <version>
+# Example:
+npm run bump 1.5.0.0
+```
 
+Running `npm run bump` automatically updates and synchronizes all required files:
 | File | Property | Format Example | Requirement |
 | :--- | :--- | :--- | :--- |
-| [`plugin/manifest.json`](plugin/manifest.json) | `"Version"` | `"1.3.2.0"` | **Must be 4 numeric parts** matching regex `^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`. Required by Elgato CLI validation. |
-| [`extension/manifest.json`](extension/manifest.json) | `"version"`<br>`"version_name"` | `"1.3.2.0"`<br>`"1.3.2"` | `version` must be 4-digit for automated update comparisons; `version_name` defines user-facing display. |
-| [`plugin/package.json`](plugin/package.json) | `"version"` | `"1.3.2.0"` | Synchronized with plugin manifest version. |
-| [`package.json`](package.json) | `"version"` | `"1.3.2.0"` | Synchronized monorepo root package version. |
-| [`extension/popup.html`](extension/popup.html) & [`extension/popup.js`](extension/popup.js) | Version string | `v1.3.2` | Dynamically reads `manifest.version_name || manifest.version`. |
+| [`version.json`](version.json) | `"version"` | `"1.5.0.0"` | **Single Source of Truth** for the entire monorepo. |
+| [`plugin/manifest.json`](plugin/manifest.json) | `"Version"` | `"1.5.0.0"` | **Must be 4 numeric parts** matching regex `^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`. Required by Elgato CLI validation. |
+| [`extension/manifest.json`](extension/manifest.json) | `"version"`<br>`"version_name"` | `"1.5.0.0"`<br>`"1.5.0"` | `version` must be 4-digit for automated update comparisons; `version_name` defines user-facing display. |
+| [`plugin/package.json`](plugin/package.json) | `"version"` | `"1.5.0.0"` | Synchronized with plugin manifest version. |
+| [`package.json`](package.json) | `"version"` | `"1.5.0.0"` | Synchronized monorepo root package version. |
+| `plugin/src/services/version-control.ts` | Dynamic Import | — | Dynamically imports `manifest.json` at build time; requires **zero** manual editing. |
+| [`extension/popup.html`](extension/popup.html) & [`extension/popup.js`](extension/popup.js) | Version string | `v1.5.0` | Dynamically reads `manifest.version_name || manifest.version`. |
 
 ### Segment Semantics:
 * **Major** (`1`): Fundamental architectural overhauls or SDK major upgrades.
-* **Minor** (`3`): Substantial new user features (e.g., Stream Deck + Dial support, Discord RPC, OBS Text Export).
-* **Patch** (`2`): Bug fixes, icon styling adjustments, metadata/URL fixes.
+* **Minor** (`5`): Substantial new user features (e.g., Stream Deck + Dial support, Discord RPC, Version Handshake).
+* **Patch** (`0`): Bug fixes, icon styling adjustments, metadata/URL fixes.
 * **Build** (`0`): Internal marketplace submission counter. Allows resubmissions without changing the public release version.
 
 ---
@@ -135,7 +143,7 @@ npm run build
 # 2. Package release archive & update local Stream Deck plugins
 npm run package
 # or directly:
-powershell -ExecutionPolicy Bypass -File .\package_plugin.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\package_plugin.ps1
 
 # 3. Validate packaged plugin against official Elgato SDK Schema
 npm run validate
@@ -143,7 +151,7 @@ npm run validate
 npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
 ```
 
-### Packaging Script (`package_plugin.ps1`):
+### Packaging Script (`scripts/package_plugin.ps1`):
 The packaging script automates:
 1. Building plugin JS bundle with Rollup.
 2. Invoking `generate_assets.ps1` to ensure all vector and raster assets are up to date.

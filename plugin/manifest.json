@@ -5,7 +5,7 @@
   "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. GitHub: https://github.com/Smok3y97/ytm-web-controller",
   "Author": "Smok3y97",
   "URL": "https://github.com/Smok3y97/ytm-web-controller",
-  "Version": "1.4.2.0",
+  "Version": "1.5.0.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.5"
@@ -40,13 +40,13 @@
       "States": [
         {
           "Image": "assets/actions/playpause/play",
-          "TitleAlignment": "middle",
-          "FontSize": 10
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         },
         {
           "Image": "assets/actions/playpause/pause",
-          "TitleAlignment": "middle",
-          "FontSize": 10
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     },
@@ -167,10 +167,14 @@
       ],
       "States": [
         {
-          "Image": "assets/actions/mute/unmuted"
+          "Image": "assets/actions/mute/unmuted",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         },
         {
-          "Image": "assets/actions/mute/muted"
+          "Image": "assets/actions/mute/muted",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     },
@@ -185,7 +189,9 @@
       ],
       "States": [
         {
-          "Image": "assets/actions/next/icon"
+          "Image": "assets/actions/next/icon",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     },
@@ -200,7 +206,9 @@
       ],
       "States": [
         {
-          "Image": "assets/actions/prev/icon"
+          "Image": "assets/actions/prev/icon",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     },
@@ -215,10 +223,14 @@
       ],
       "States": [
         {
-          "Image": "assets/actions/like/like-inactive"
+          "Image": "assets/actions/like/like-inactive",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         },
         {
-          "Image": "assets/actions/like/like-active"
+          "Image": "assets/actions/like/like-active",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     },
@@ -233,10 +245,14 @@
       ],
       "States": [
         {
-          "Image": "assets/actions/dislike/dislike-inactive"
+          "Image": "assets/actions/dislike/dislike-inactive",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         },
         {
-          "Image": "assets/actions/dislike/dislike-active"
+          "Image": "assets/actions/dislike/dislike-active",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     },
@@ -251,10 +267,14 @@
       ],
       "States": [
         {
-          "Image": "assets/actions/shuffle/shuffle-inactive"
+          "Image": "assets/actions/shuffle/shuffle-inactive",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         },
         {
-          "Image": "assets/actions/shuffle/shuffle-active"
+          "Image": "assets/actions/shuffle/shuffle-active",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     },
@@ -269,13 +289,19 @@
       ],
       "States": [
         {
-          "Image": "assets/actions/repeat/repeat-off"
+          "Image": "assets/actions/repeat/repeat-off",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         },
         {
-          "Image": "assets/actions/repeat/repeat-all"
+          "Image": "assets/actions/repeat/repeat-all",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         },
         {
-          "Image": "assets/actions/repeat/repeat-one"
+          "Image": "assets/actions/repeat/repeat-one",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     },
@@ -290,7 +316,9 @@
       ],
       "States": [
         {
-          "Image": "assets/actions/copyurl/icon"
+          "Image": "assets/actions/copyurl/icon",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     }

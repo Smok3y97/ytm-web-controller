@@ -24,6 +24,7 @@ import {
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { MarqueeService } from '../services/marquee-service.js';
+import { VersionControlService } from '../services/version-control.js';
 import { SeekDialSettings, YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.seekdial' })
@@ -75,12 +76,17 @@ export class SeekDialAction extends SingletonAction<SeekDialSettings> {
     MarqueeService.getInstance().unregisterConsumer();
   }
 
-  override async onDialDown(_ev: DialDownEvent<SeekDialSettings>): Promise<void> {
+  override async onDialDown(ev: DialDownEvent<SeekDialSettings>): Promise<void> {
     this.lastDialPressTime = Date.now();
     this.pendingTicks = 0;
     if (this.rotationTimer) {
       clearTimeout(this.rotationTimer);
       this.rotationTimer = null;
+    }
+
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
     }
 
     WebSocketService.getInstance().sendCommand('playPause');
@@ -91,17 +97,30 @@ export class SeekDialAction extends SingletonAction<SeekDialSettings> {
     this.pendingTicks = 0;
   }
 
-  override async onTouchTap(_ev: TouchTapEvent<SeekDialSettings>): Promise<void> {
+  override async onTouchTap(ev: TouchTapEvent<SeekDialSettings>): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
+    }
     WebSocketService.getInstance().sendCommand('playPause');
   }
 
-  override async onKeyDown(_ev: KeyDownEvent<SeekDialSettings>): Promise<void> {
+  override async onKeyDown(ev: KeyDownEvent<SeekDialSettings>): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
+    }
     WebSocketService.getInstance().sendCommand('playPause');
   }
 
   override async onDialRotate(ev: DialRotateEvent<SeekDialSettings>): Promise<void> {
     // Ignore push jitter within 250ms of a dial press
     if (Date.now() - this.lastDialPressTime < 250) {
+      return;
+    }
+
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
       return;
     }
 
@@ -173,6 +192,10 @@ export class SeekDialAction extends SingletonAction<SeekDialSettings> {
   }
 
   private async updateMarqueeTitles(): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      return;
+    }
+
     for (const dialAction of this.activeDials) {
       try {
         if (dialAction.isDial()) {
@@ -190,9 +213,7 @@ export class SeekDialAction extends SingletonAction<SeekDialSettings> {
       try {
         const settings = await dialAction.getSettings();
         await this.updateDialDisplay(dialAction, state, settings);
-      } catch {
-        this.activeDials.delete(dialAction);
-      }
+      } catch { }
     }
   }
 
@@ -203,6 +224,17 @@ export class SeekDialAction extends SingletonAction<SeekDialSettings> {
   ): Promise<void> {
     try {
       if (dialAction.isDial()) {
+        if (state.isVersionMismatch) {
+          const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
+          await dialAction.setFeedback({
+            title: warningTitle,
+            value: 'Mismatch',
+            icon: 'assets/actions/seekdial/icon.svg',
+            indicator: 0
+          });
+          return;
+        }
+
         const fullTitle = StateManager.getInstance().formatTitleTemplate(settings.titleTemplate || '{artist} - {title}');
         const marqueeTitle = MarqueeService.getInstance().getDisplayText(fullTitle);
 
@@ -227,7 +259,7 @@ export class SeekDialAction extends SingletonAction<SeekDialSettings> {
           indicator: indicatorValue
         });
       } else if (dialAction.isKey()) {
-        if (settings.showCover !== false && state.coverBase64) {
+        if (settings.showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
           await dialAction.setImage(state.coverBase64);
         } else {
           await dialAction.setImage(undefined);

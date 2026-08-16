@@ -22,6 +22,28 @@ export interface YTMPlaybackState {
   isDisliked: boolean;
   shuffleActive: boolean;
   repeatMode: 'OFF' | 'ONE' | 'ALL';
+  isVersionMismatch?: boolean;
+  extensionVersion?: string;
+}
+
+export interface HandshakePayload {
+  type: 'handshake';
+  version: string;
+  platform?: string;
+}
+
+export interface HandshakeAckPayload {
+  type: 'handshake_ack';
+  version: string;
+  compatible: true;
+}
+
+export interface VersionMismatchPayload {
+  type: 'version_mismatch';
+  requiredPluginVersion: string;
+  currentPluginVersion: string;
+  extensionVersion: string;
+  message: string;
 }
 
 export interface WSMessage<T = unknown> {
@@ -32,6 +54,8 @@ export interface WSMessage<T = unknown> {
   payload?: Record<string, unknown>;
   client?: string;
   url?: string;
+  version?: string;
+  platform?: string;
 }
 
 export interface GlobalSettings extends JsonObject {
@@ -42,6 +66,10 @@ export interface GlobalSettings extends JsonObject {
   obsFilePath?: string;
   obsFormatTemplate?: string;
   obsClearOnPause?: boolean;
+  isVersionMismatch?: boolean;
+  extensionVersion?: string;
+  requiredPluginVersion?: string;
+  warningMessage?: string;
 }
 
 export interface PlayPauseSettings extends JsonObject {
@@ -78,4 +106,3 @@ export interface SeekDialSettings extends JsonObject {
   timeTemplate?: string;
   showCover?: boolean;
 }
-

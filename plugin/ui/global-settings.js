@@ -1,7 +1,8 @@
 /**
  * Global Settings Component for Stream Deck Property Inspector
  * 
- * Renders and manages Discord RPC, Streamer Settings (OBS Export), and Connection settings.
+ * Renders and manages Discord RPC, Streamer Settings (OBS Export), Connection settings,
+ * and Version Mismatch notification banners dynamically without hardcoding.
  */
 
 const GlobalSettingsComponent = (function () {
@@ -100,7 +101,22 @@ const GlobalSettingsComponent = (function () {
 
   let isRendered = false;
 
+  function ensureWarningBanner() {
+    let warningBanner = document.getElementById('version-warning-banner');
+    const wrapper = document.querySelector('.sdpi-wrapper') || document.body;
+    if (!warningBanner) {
+      warningBanner = document.createElement('div');
+      warningBanner.id = 'version-warning-banner';
+      warningBanner.className = 'sdpi-warning-box hidden';
+      wrapper.insertBefore(warningBanner, wrapper.firstChild);
+    } else if (wrapper.firstChild !== warningBanner) {
+      wrapper.insertBefore(warningBanner, wrapper.firstChild);
+    }
+    return warningBanner;
+  }
+
   function render() {
+    ensureWarningBanner();
     if (isRendered) return;
     const container = document.getElementById('global-settings-container');
     if (container) {
@@ -150,6 +166,17 @@ const GlobalSettingsComponent = (function () {
 
   function populate(gs) {
     render();
+
+    const warningBanner = ensureWarningBanner();
+    if (warningBanner) {
+      if (gs && gs.isVersionMismatch) {
+        const rawMsg = gs.warningMessage || '⚠️ Browser Extension outdated! Please update to the latest version via GitHub Releases.';
+        warningBanner.innerHTML = `<span>${rawMsg}</span> <a href="https://github.com/Smok3y97/ytm-web-controller/releases" target="_blank">Releases</a>`;
+        warningBanner.classList.remove('hidden');
+      } else {
+        warningBanner.classList.add('hidden');
+      }
+    }
 
     const enableObsCheckbox = document.getElementById('enableObsExport');
     const obsFilePathInput = document.getElementById('obsFilePath');

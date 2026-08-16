@@ -137,6 +137,29 @@ select {
   color: var(--text);
 }
 
+.sdpi-warning-box {
+  background: rgba(241, 179, 38, 0.12);
+  border: 1px solid rgba(241, 179, 38, 0.45);
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #fcd34d;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sdpi-warning-box a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.sdpi-warning-box.hidden {
+  display: none;
+}
+
 /* Collapsible Group Sections (Accordions) */
 .sdpi-accordions-group {
   display: flex;

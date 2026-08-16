@@ -9,6 +9,7 @@ import { WebSocketService } from './services/websocket-server.js';
 import { StateManager } from './services/state-manager.js';
 import { DiscordRpcService } from './services/discord-rpc.js';
 import { ObsExporterService } from './services/obs-exporter.js';
+import { VersionControlService } from './services/version-control.js';
 import { GlobalSettings, YTMPlaybackState } from './types/index.js';
 
 // Action Handlers
@@ -29,12 +30,13 @@ import { SeekDialAction } from './actions/seek-dial.js';
 
 // Enable logging
 streamDeck.logger.setLevel(LogLevel.INFO);
-streamDeck.logger.info('[YTM Controller] Initializing plugin...');
+streamDeck.logger.info('[YTM Controller] Initializing plugin (v1.5.0.0)...');
 
 const wsService = WebSocketService.getInstance();
 const stateManager = StateManager.getInstance();
 const discordService = DiscordRpcService.getInstance();
 const obsService = ObsExporterService.getInstance();
+const versionService = VersionControlService.getInstance();
 
 // 1. Start WebSocket server immediately on default/fallback port
 wsService.start(39865).catch((err) => {
@@ -62,19 +64,54 @@ wsService.on('stateUpdate', (state: YTMPlaybackState) => {
   stateManager.updateState(state);
 });
 
-// 4. Connect StateManager updates to Discord RPC & OBS Exporter
+// 4. Handle Handshake events & sync version status to StateManager & GlobalSettings
+wsService.on('handshake', async ({ isMismatch, version }: { isMismatch: boolean; version: string }) => {
+  stateManager.setVersionMismatch(isMismatch, version);
+  try {
+    const globalSettings = await streamDeck.settings.getGlobalSettings<GlobalSettings>();
+    await streamDeck.settings.setGlobalSettings<GlobalSettings>({
+      ...globalSettings,
+      isVersionMismatch: isMismatch,
+      extensionVersion: version,
+      requiredPluginVersion: versionService.minRequiredExtensionVersion,
+      warningMessage: isMismatch ? versionService.getWarningMessage(version) : undefined
+    });
+  } catch (err) {
+    streamDeck.logger.warn(`[YTM Controller] Could not persist handshake state to global settings: ${err}`);
+  }
+});
+
+// 5. Handle Client Disconnect: Reset version mismatch if all clients disconnect
+wsService.on('clientDisconnected', async () => {
+  if (!wsService.hasConnectedClients()) {
+    stateManager.resetVersionStatus();
+    try {
+      const globalSettings = await streamDeck.settings.getGlobalSettings<GlobalSettings>();
+      if (globalSettings.isVersionMismatch) {
+        await streamDeck.settings.setGlobalSettings<GlobalSettings>({
+          ...globalSettings,
+          isVersionMismatch: false,
+          warningMessage: undefined
+        });
+      }
+    } catch { }
+  }
+});
+
+// 6. Connect StateManager updates to Discord RPC & OBS Exporter
 stateManager.on('stateChanged', (state: YTMPlaybackState) => {
   discordService.updatePresence(state);
   obsService.updateExport(state);
 });
 
-// 5. Handle global settings changes (WebSocket Port, Discord RPC, OBS Exporter)
+// 7. Handle global settings changes (WebSocket Port, Discord RPC, OBS Exporter)
 streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>(async (ev) => {
   const settings = ev.settings;
   const targetPort = settings.wsPort || 39865;
 
   if (wsService.getPort() !== targetPort) {
     streamDeck.logger.info(`[YTM Controller] Global port changed to ${targetPort}. Rebinding WebSocket server...`);
+    stateManager.resetVersionStatus();
     await wsService.start(targetPort);
   }
 
@@ -82,7 +119,7 @@ streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>(async (ev) => {
   await obsService.updateSettings(settings);
 });
 
-// 6. Connect to Stream Deck Application
+// 8. Connect to Stream Deck Application
 streamDeck.connect().then(async () => {
   streamDeck.logger.info('[YTM Controller] Connected to Stream Deck software.');
   try {
@@ -100,4 +137,3 @@ streamDeck.connect().then(async () => {
 }).catch((err) => {
   streamDeck.logger.error(`[YTM Controller] Connection to Stream Deck failed: ${err}`);
 });
-

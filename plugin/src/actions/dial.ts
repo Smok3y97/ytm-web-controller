@@ -24,6 +24,7 @@ import {
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { MarqueeService } from '../services/marquee-service.js';
+import { VersionControlService } from '../services/version-control.js';
 import { DialSettings, YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.dial' })
@@ -76,12 +77,17 @@ export class DialAction extends SingletonAction<DialSettings> {
     MarqueeService.getInstance().unregisterConsumer();
   }
 
-  override async onDialDown(_ev: DialDownEvent<DialSettings>): Promise<void> {
+  override async onDialDown(ev: DialDownEvent<DialSettings>): Promise<void> {
     this.lastDialPressTime = Date.now();
     this.pendingTicks = 0;
     if (this.rotationTimer) {
       clearTimeout(this.rotationTimer);
       this.rotationTimer = null;
+    }
+
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
     }
 
     WebSocketService.getInstance().sendCommand('playPause');
@@ -92,17 +98,30 @@ export class DialAction extends SingletonAction<DialSettings> {
     this.pendingTicks = 0;
   }
 
-  override async onTouchTap(_ev: TouchTapEvent<DialSettings>): Promise<void> {
+  override async onTouchTap(ev: TouchTapEvent<DialSettings>): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
+    }
     WebSocketService.getInstance().sendCommand('playPause');
   }
 
-  override async onKeyDown(_ev: KeyDownEvent<DialSettings>): Promise<void> {
+  override async onKeyDown(ev: KeyDownEvent<DialSettings>): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
+    }
     WebSocketService.getInstance().sendCommand('playPause');
   }
 
   override async onDialRotate(ev: DialRotateEvent<DialSettings>): Promise<void> {
     // Ignore physical push jitter within 250ms of a dial press
     if (Date.now() - this.lastDialPressTime < 250) {
+      return;
+    }
+
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
       return;
     }
 
@@ -153,6 +172,10 @@ export class DialAction extends SingletonAction<DialSettings> {
   }
 
   private async updateMarqueeTitles(): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      return;
+    }
+
     for (const dialAction of this.activeDials) {
       try {
         if (dialAction.isDial()) {
@@ -170,9 +193,7 @@ export class DialAction extends SingletonAction<DialSettings> {
       try {
         const settings = await dialAction.getSettings();
         await this.updateDialDisplay(dialAction, state, settings);
-      } catch {
-        this.activeDials.delete(dialAction);
-      }
+      } catch { }
     }
   }
 
@@ -183,6 +204,17 @@ export class DialAction extends SingletonAction<DialSettings> {
   ): Promise<void> {
     try {
       if (dialAction.isDial()) {
+        if (state.isVersionMismatch) {
+          const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
+          await dialAction.setFeedback({
+            title: warningTitle,
+            value: 'Mismatch',
+            icon: 'assets/actions/dial/icon.svg',
+            indicator: 0
+          });
+          return;
+        }
+
         const progressPercent = (state.duration > 0 && state.currentTime >= 0)
           ? Math.min(100, Math.max(0, Math.round((Math.min(state.currentTime, state.duration) / state.duration) * 100)))
           : 0;
@@ -193,7 +225,7 @@ export class DialAction extends SingletonAction<DialSettings> {
 
         const coverImage = (settings.showCover !== false && state.coverBase64)
           ? state.coverBase64
-          : 'assets/actions/dial/icon.png';
+          : 'assets/actions/dial/icon.svg';
 
         await dialAction.setFeedback({
           title: titleText,
@@ -202,7 +234,7 @@ export class DialAction extends SingletonAction<DialSettings> {
           indicator: progressPercent
         });
       } else if (dialAction.isKey()) {
-        if (settings.showCover !== false && state.coverBase64) {
+        if (settings.showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
           await dialAction.setImage(state.coverBase64);
         } else {
           await dialAction.setImage(undefined);

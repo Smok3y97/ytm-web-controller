@@ -2,18 +2,21 @@
  * WebSocket Server Service
  * 
  * Manages the local WebSocket bridge to the YouTube Music Browser Extension.
+ * Handles client lifecycle, bidirectional command dispatch, and version handshake validation.
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
 import { EventEmitter } from 'events';
 import streamDeck from '@elgato/streamdeck';
 import { YTMPlaybackState, WSMessage } from '../types/index.js';
+import { VersionControlService } from './version-control.js';
 
 export class WebSocketService extends EventEmitter {
   private static instance: WebSocketService;
   private wss: WebSocketServer | null = null;
   private clients: Set<WebSocket> = new Set();
   private currentPort: number = 39865;
+  private isMismatchActive: boolean = false;
 
   private constructor() {
     super();
@@ -21,6 +24,7 @@ export class WebSocketService extends EventEmitter {
 
   public static getInstance(): WebSocketService {
     if (!WebSocketService.instance) {
+      VersionControlService.getInstance();
       WebSocketService.instance = new WebSocketService();
     }
     return WebSocketService.instance;
@@ -36,6 +40,7 @@ export class WebSocketService extends EventEmitter {
 
     await this.stop();
     this.currentPort = port;
+    this.isMismatchActive = false;
 
     return new Promise((resolve) => {
       try {
@@ -61,6 +66,34 @@ export class WebSocketService extends EventEmitter {
               const text = message.toString();
               const payload = JSON.parse(text) as WSMessage<YTMPlaybackState>;
 
+              // Intercept Handshake packet
+              if (payload.type === 'handshake') {
+                const extVersion = payload.version || '0.0.0.0';
+                const versionService = VersionControlService.getInstance();
+                const validation = versionService.validateHandshake(extVersion);
+
+                this.isMismatchActive = !validation.isCompatible;
+
+                if (validation.isCompatible) {
+                  streamDeck.logger.info(
+                    `[WebSocket] Handshake SUCCESS from extension v${extVersion} (min required: ${versionService.minRequiredExtensionVersion})`
+                  );
+                } else {
+                  streamDeck.logger.warn(
+                    `[WebSocket] Handshake MISMATCH from extension v${extVersion} (min required: ${versionService.minRequiredExtensionVersion})`
+                  );
+                }
+
+                this.sendToClient(ws, validation.payload as unknown as Record<string, unknown>);
+                this.emit('handshake', { isMismatch: !validation.isCompatible, version: extVersion });
+                return;
+              }
+
+              // Discard state updates if connected extension is incompatible
+              if (this.isMismatchActive) {
+                return;
+              }
+
               if (payload.type === 'STATE_UPDATE' && payload.data) {
                 this.emit('stateUpdate', payload.data);
               } else if (payload.type === 'REGISTER_CLIENT') {
@@ -73,6 +106,9 @@ export class WebSocketService extends EventEmitter {
 
           ws.on('close', () => {
             this.clients.delete(ws);
+            if (this.clients.size === 0) {
+              this.isMismatchActive = false;
+            }
             streamDeck.logger.info(`[WebSocket] Client disconnected. Remaining clients: ${this.clients.size}`);
             this.emit('clientDisconnected', ws);
           });
@@ -80,6 +116,10 @@ export class WebSocketService extends EventEmitter {
           ws.on('error', (err) => {
             streamDeck.logger.error(`[WebSocket] Client socket error: ${err}`);
             this.clients.delete(ws);
+            if (this.clients.size === 0) {
+              this.isMismatchActive = false;
+            }
+            this.emit('clientDisconnected', ws);
           });
         });
 
@@ -112,6 +152,7 @@ export class WebSocketService extends EventEmitter {
         } catch { }
       }
       this.clients.clear();
+      this.isMismatchActive = false;
 
       this.wss?.close(() => {
         streamDeck.logger.info('[WebSocket] Server stopped.');
@@ -122,9 +163,14 @@ export class WebSocketService extends EventEmitter {
   }
 
   /**
-   * Send a command to all connected YTM tabs
+   * Send a command to all connected YTM tabs (blocked during version mismatch)
    */
   public sendCommand(command: string, payload?: Record<string, unknown>): void {
+    if (this.isMismatchActive) {
+      streamDeck.logger.warn(`[WebSocket] Blocked command '${command}' due to active version mismatch.`);
+      return;
+    }
+
     const message = JSON.stringify({ command, payload: payload || {} });
     streamDeck.logger.info(`[WebSocket] Dispatching '${command}' to ${this.clients.size} client(s)`);
     for (const client of this.clients) {
@@ -157,5 +203,9 @@ export class WebSocketService extends EventEmitter {
 
   public getPort(): number {
     return this.currentPort;
+  }
+
+  public isMismatch(): boolean {
+    return this.isMismatchActive;
   }
 }

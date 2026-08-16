@@ -1,7 +1,7 @@
 /**
  * State Manager Service
  * 
- * Central in-memory state hub for YouTube Music playback data and formatting.
+ * Central in-memory state hub for YouTube Music playback data, version status, and formatting.
  */
 
 import { EventEmitter } from 'events';
@@ -25,7 +25,9 @@ export class StateManager extends EventEmitter {
     isLiked: false,
     isDisliked: false,
     shuffleActive: false,
-    repeatMode: 'OFF'
+    repeatMode: 'OFF',
+    isVersionMismatch: false,
+    extensionVersion: undefined
   };
 
   private constructor() {
@@ -40,9 +42,53 @@ export class StateManager extends EventEmitter {
   }
 
   public updateState(state: YTMPlaybackState): void {
+    if (this.currentState.isVersionMismatch) {
+      return;
+    }
+
     const prevState = { ...this.currentState };
-    this.currentState = { ...state };
+    const isMismatch = state.isVersionMismatch !== undefined ? state.isVersionMismatch : this.currentState.isVersionMismatch;
+    const extVer = state.extensionVersion !== undefined ? state.extensionVersion : this.currentState.extensionVersion;
+
+    this.currentState = {
+      ...state,
+      isVersionMismatch: isMismatch,
+      extensionVersion: extVer
+    };
+
     this.emit('stateChanged', this.currentState, prevState);
+  }
+
+  public setVersionMismatch(isMismatch: boolean, extensionVersion?: string): void {
+    const prevState = { ...this.currentState };
+    this.currentState.isVersionMismatch = isMismatch;
+    this.currentState.extensionVersion = extensionVersion;
+
+    if (isMismatch) {
+      this.currentState.title = '';
+      this.currentState.artist = '';
+      this.currentState.album = '';
+      this.currentState.coverBase64 = undefined;
+      this.currentState.coverUrl = '';
+      this.currentState.paused = true;
+      this.currentState.currentTime = 0;
+      this.currentState.duration = 0;
+    }
+
+    this.emit('stateChanged', this.currentState, prevState);
+  }
+
+  public isVersionMismatch(): boolean {
+    return !!this.currentState.isVersionMismatch;
+  }
+
+  public resetVersionStatus(): void {
+    if (this.currentState.isVersionMismatch || this.currentState.extensionVersion) {
+      const prevState = { ...this.currentState };
+      this.currentState.isVersionMismatch = false;
+      this.currentState.extensionVersion = undefined;
+      this.emit('stateChanged', this.currentState, prevState);
+    }
   }
 
   public getState(): YTMPlaybackState {

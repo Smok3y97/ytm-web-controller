@@ -10,6 +10,7 @@ import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { ImageRenderer } from '../services/image-renderer.js';
 import { PlayPauseSettings, YTMPlaybackState } from '../types/index.js';
+import { getActionWarningSvgDataUrl } from '../services/warning-icons.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.playpause' })
 export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
@@ -40,7 +41,14 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
     }
   }
 
-  override async onKeyDown(_ev: KeyDownEvent<PlayPauseSettings>): Promise<void> {
+  override async onKeyDown(ev: KeyDownEvent<PlayPauseSettings>): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      if (ev.action.isKey()) {
+        await ev.action.setState(0);
+        await ev.action.showAlert();
+      }
+      return;
+    }
     WebSocketService.getInstance().sendCommand('playPause');
   }
 
@@ -54,9 +62,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
       try {
         const settings = await actionInstance.getSettings();
         await this.updateInstance(actionInstance, state, settings);
-      } catch {
-        this.activeActions.delete(actionInstance);
-      }
+      } catch { }
     }
   }
 
@@ -65,23 +71,31 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
     state: YTMPlaybackState,
     settings: PlayPauseSettings
   ): Promise<void> {
+    if (!actionInstance.isKey()) return;
+
     try {
-      if (actionInstance.isKey()) {
-        const targetState = state.paused ? 0 : 1;
-        await actionInstance.setState(targetState);
-
-        // Render live album cover if enabled
-        if (settings.showCoverAsBackground && (state.coverBase64 || state.coverUrl)) {
-          const coverBase64 = state.coverBase64 || await ImageRenderer.getInstance().getCoverAsBase64(state.coverUrl);
-          if (coverBase64) {
-            await actionInstance.setImage(coverBase64);
-            return;
-          }
-        }
-
-        // Reset custom image to use default manifest state icons
-        await actionInstance.setImage(undefined);
+      if (state.isVersionMismatch) {
+        await actionInstance.setTitle('');
+        await actionInstance.setImage(getActionWarningSvgDataUrl('playpause'));
+        await actionInstance.setState(0);
+        return;
       }
+
+      await actionInstance.setTitle('');
+      const targetState = state.paused ? 0 : 1;
+      await actionInstance.setState(targetState);
+
+      // Render live album cover if enabled
+      if (settings.showCoverAsBackground && (state.coverBase64 || state.coverUrl)) {
+        const coverBase64 = state.coverBase64 || await ImageRenderer.getInstance().getCoverAsBase64(state.coverUrl);
+        if (coverBase64) {
+          await actionInstance.setImage(coverBase64);
+          return;
+        }
+      }
+
+      // Reset custom image to use default manifest state icons
+      await actionInstance.setImage(undefined);
     } catch { }
   }
 }

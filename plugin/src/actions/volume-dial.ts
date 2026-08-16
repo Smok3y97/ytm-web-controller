@@ -25,6 +25,7 @@ import {
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { MarqueeService } from '../services/marquee-service.js';
+import { VersionControlService } from '../services/version-control.js';
 import { VolumeDialSettings, YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.volumedial' })
@@ -89,12 +90,17 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
     await this.updateDialDisplay(ev.action, state, ev.payload.settings);
   }
 
-  override async onDialDown(_ev: DialDownEvent<VolumeDialSettings>): Promise<void> {
+  override async onDialDown(ev: DialDownEvent<VolumeDialSettings>): Promise<void> {
     this.lastDialPressTime = Date.now();
     this.pendingTicks = 0;
     if (this.rotationTimer) {
       clearTimeout(this.rotationTimer);
       this.rotationTimer = null;
+    }
+
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
     }
 
     WebSocketService.getInstance().sendCommand('toggleMute');
@@ -105,17 +111,30 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
     this.pendingTicks = 0;
   }
 
-  override async onTouchTap(_ev: TouchTapEvent<VolumeDialSettings>): Promise<void> {
+  override async onTouchTap(ev: TouchTapEvent<VolumeDialSettings>): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
+    }
     WebSocketService.getInstance().sendCommand('toggleMute');
   }
 
-  override async onKeyDown(_ev: KeyDownEvent<VolumeDialSettings>): Promise<void> {
+  override async onKeyDown(ev: KeyDownEvent<VolumeDialSettings>): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
+      return;
+    }
     WebSocketService.getInstance().sendCommand('toggleMute');
   }
 
   override async onDialRotate(ev: DialRotateEvent<VolumeDialSettings>): Promise<void> {
     // Ignore physical push jitter within 250ms of a dial press
     if (Date.now() - this.lastDialPressTime < 250) {
+      return;
+    }
+
+    if (StateManager.getInstance().isVersionMismatch()) {
+      await ev.action.showAlert();
       return;
     }
 
@@ -175,6 +194,10 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
   }
 
   private async updateMarqueeTitles(): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      return;
+    }
+
     for (const dialAction of this.activeDials) {
       try {
         if (dialAction.isDial()) {
@@ -192,9 +215,7 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
       try {
         const settings = await dialAction.getSettings();
         await this.updateDialDisplay(dialAction, state, settings);
-      } catch {
-        this.activeDials.delete(dialAction);
-      }
+      } catch { }
     }
   }
 
@@ -205,6 +226,17 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
   ): Promise<void> {
     try {
       if (dialAction.isDial()) {
+        if (state.isVersionMismatch) {
+          const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
+          await dialAction.setFeedback({
+            title: warningTitle,
+            value: 'Mismatch',
+            icon: 'assets/actions/volumedial/icon.svg',
+            indicator: 0
+          });
+          return;
+        }
+
         const volPercent = Math.min(100, Math.max(0, state.volume ?? 100));
         const valueText = state.muted ? 'MUTED' : `${volPercent}%`;
         const indicatorValue = state.muted ? 0 : volPercent;
@@ -224,7 +256,7 @@ export class VolumeDialAction extends SingletonAction<VolumeDialSettings> {
           indicator: indicatorValue
         });
       } else if (dialAction.isKey()) {
-        if (settings.showCover !== false && state.coverBase64) {
+        if (settings.showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
           await dialAction.setImage(state.coverBase64);
         } else {
           await dialAction.setImage(undefined);

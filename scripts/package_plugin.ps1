@@ -1,8 +1,9 @@
 # Packaging script for YouTube Music Web Controller Stream Deck Plugin
 
+$rootDir = (Get-Item $PSScriptRoot).Parent.FullName
 $uuid = "com.smok3y97.ytmusicweb"
-$pluginDir = Join-Path $PSScriptRoot "plugin"
-$releaseDir = Join-Path $PSScriptRoot "release"
+$pluginDir = Join-Path $rootDir "plugin"
+$releaseDir = Join-Path $rootDir "release"
 $stageDir = Join-Path $releaseDir "$uuid.sdPlugin"
 
 Write-Output "Assembling Stream Deck Plugin: $uuid"
@@ -66,7 +67,7 @@ Rename-Item -Path $archiveZip -NewName "$uuid.streamDeckPlugin" -Force
 Write-Output "Successfully created package: $archivePath"
 
 # 7. Package Extension into release folder as extension.zip
-$extDir = Join-Path $PSScriptRoot "extension"
+$extDir = Join-Path $rootDir "extension"
 if (Test-Path $extDir) {
     $extZip = Join-Path $releaseDir "extension.zip"
     Write-Output "Packaging Chrome Extension to: $extZip"
@@ -103,5 +104,3 @@ if ($appDataPlugins) {
     Copy-Item -Path "$stageDir\*" -Destination $targetSdPlugin -Recurse -Force
     Write-Output "Plugin successfully updated in Stream Deck plugins directory!"
 }
-
-

@@ -12,10 +12,12 @@ import {
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { VolumeSettings, YTMPlaybackState } from '../types/index.js';
+import { getActionWarningSvgDataUrl } from '../services/warning-icons.js';
 
 export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
   protected activeActions: Set<WillAppearEvent<VolumeSettings>['action']> = new Set();
   protected abstract readonly command: 'volumeUp' | 'volumeDown';
+  protected actionKey: string = '';
   protected abstract calculateOptimisticVolume(currentVolume: number, step: number): number;
 
   constructor() {
@@ -48,6 +50,13 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
   }
 
   override async onKeyDown(ev: KeyDownEvent<VolumeSettings>): Promise<void> {
+    if (StateManager.getInstance().isVersionMismatch()) {
+      if (ev.action.isKey()) {
+        await ev.action.showAlert();
+      }
+      return;
+    }
+
     const step = Math.min(25, Math.max(1, ev.payload.settings.step || 5));
     const currentState = StateManager.getInstance().getState();
     const optimisticVolume = this.calculateOptimisticVolume(currentState.volume, step);
@@ -67,9 +76,7 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
       try {
         const settings = await actionInstance.getSettings();
         await this.updateInstance(actionInstance, state, settings);
-      } catch {
-        this.activeActions.delete(actionInstance);
-      }
+      } catch { }
     }
   }
 
@@ -81,6 +88,14 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
     if (!actionInstance.isKey()) return;
 
     try {
+      if (state.isVersionMismatch) {
+        await actionInstance.setTitle('');
+        const key = this.actionKey || (this.command === 'volumeUp' ? 'volumeup' : 'volumedown');
+        await actionInstance.setImage(getActionWarningSvgDataUrl(key));
+        return;
+      }
+
+      await actionInstance.setImage(undefined);
       if (settings.showVolumeTitle !== false) {
         const template = settings.titleTemplate || '{volume}%';
         const text = StateManager.getInstance().formatVolumeTemplate(template, state.volume, state.muted);

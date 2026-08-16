@@ -60,29 +60,62 @@ Whenever bumping versions, **ALL** of the following files MUST be synchronized:
 
 ## 🎨 3. Iconography & Asset Guidelines
 
-Stream Deck UI has distinct requirements for different asset types:
+Refer to [`docs/plugin-guideline.md`](docs/plugin-guideline.md) (and the official [Elgato Stream Deck Plugin Guidelines](https://docs.elgato.com/guidelines/stream-deck/plugins/)) for full asset specifications and marketplace requirements. Stream Deck UI has distinct requirements for different asset types:
 
-1. **Category & Sidebar Icon (`CategoryIcon`)**:
-   - Location: `plugin/assets/category-icon.svg` (and referenced as `"CategoryIcon": "assets/category-icon"` in `manifest.json`).
-   - Format: **SVG** (Vector) or PNG.
-   - Design: **Monochromatic White (`#FFFFFF`)** on a transparent background. Represents YouTube Music concentric rings with play triangle.
-
-2. **Main Plugin Icon (`Icon`)**:
-   - Location: `plugin/assets/plugin-icon.png` (256×256) and `plugin/assets/plugin-icon@2x.png` (512×512).
+1. **Main Plugin Icon (`Icon`)**:
+   - Location: `plugin/assets/plugin-icon.png` (256×256 px) and `plugin/assets/plugin-icon@2x.png` (512×512 px).
    - Format: **PNG** (Strict requirement by Stream Deck preferences detail pane).
    - Design: **Official Full-Color YouTube Music Badge** (`#FF0033` red circular background with white inner ring and play triangle).
 
+2. **Category & Sidebar Icon (`CategoryIcon`)**:
+   - Location: `plugin/assets/category-icon.svg` (and referenced as `"CategoryIcon": "assets/category-icon"` in `manifest.json`).
+   - Dimensions: 28×28 px (Standard DPI) / 56×56 px (`@2x` High DPI).
+   - Format: **SVG** (Vector) or PNG.
+   - Design: **Monochromatic White (`#FFFFFF`)** stroke on transparent background. No solid background fill.
+
 3. **Action Key & Dial Icons (`Actions[].Icon` & `Actions[].States[].Image`)**:
    - Location: `plugin/assets/actions/<action-name>/...`
+   - Dimensions: Action List Icons: 20×20 px (40×40 px `@2x`). Key State Icons: 72×72 px (144×144 px `@2x`).
    - Format: **SVG** (Vector).
    - Design: **Default White (`#FFFFFF`)** on transparent background for consistency across Stream Deck dark UI. Active highlight states (e.g. Liked, Disliked, Repeat-All) use active colors (`#FF0033`).
 
-4. **Asset Generation**:
+4. **Stream Deck + LCD Layouts & Touch Targets**:
+   - Strip Dimensions: `200 × 100 px` per dial slot.
+   - Interactive touch targets must be at least **`35 × 35 px`**. All elements must stay strictly within bounds.
+
+5. **Asset Generation**:
    - Run `powershell -ExecutionPolicy Bypass -File plugin/assets/generate_assets.ps1` to re-generate all SVG and PNG assets.
 
 ---
 
-## 🚀 4. Build, Packaging & Validation Workflow
+## 📋 4. Elgato Marketplace & Plugin Guidelines Compliance
+
+The plugin strictly adheres to [`docs/plugin-guideline.md`](docs/plugin-guideline.md):
+
+1. **Identifiers & UUIDs**:
+   - Root UUID: `com.smok3y97.ytmusicweb` (Reverse DNS).
+   - Action UUID Prefix: Every action UUID **must** start with `com.smok3y97.ytmusicweb.<action>`.
+   - Immutability: **Never** alter existing action UUIDs after release. Use `VisibleInActionsList: false` to deprecate actions.
+
+2. **Naming & Action Limits**:
+   - Plugin Name: Concise (<= 30 chars), descriptive, no author prefix in name.
+   - Action Count: Keep between 2 and 30 actions.
+
+3. **Performance & Programmatic Flooding Limit**:
+   - Programmatic key/canvas/LCD rendering calls must **never exceed 10 updates per second (10 Hz)**.
+
+4. **Visual Feedback (`showAlert` / `showOk`)**:
+   - `showAlert`: Trigger on errors or unreachable WebSocket endpoints.
+   - `showOk`: Trigger **only** when there is no other visual indicator of success (e.g. clipboard copy, file written). Never call `showOk` if the key icon or state updates dynamically.
+
+5. **Property Inspector (PI) UI Rules**:
+   - **Auto-Save**: Settings must save automatically on input change (`setSettings` / `setGlobalSettings`). **Never include a manual "Save" button.**
+   - **No Visual Flickering**: Hide UI components by default and reveal them on DOM ready.
+   - **Prohibited**: Do NOT include donation buttons, sponsor links, or raw copyright text in the Property Inspector.
+
+---
+
+## 🚀 5. Build, Packaging & Validation Workflow
 
 ### Commands:
 ```bash
@@ -95,6 +128,8 @@ npm run package
 powershell -ExecutionPolicy Bypass -File .\package_plugin.ps1
 
 # 3. Validate packaged plugin against official Elgato SDK Schema
+npm run validate
+# or directly:
 npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
 ```
 
@@ -108,12 +143,15 @@ The packaging script automates:
 
 ---
 
-## ⚠️ 5. Critical Guidelines for AI Agents
+## ⚠️ 6. Critical Guidelines for AI Agents
 
 * **Do Not Introduce Polling**: Always rely on WebSocket event messages from `content.js`. Do not add `setInterval` loops for querying music state.
+* **Respect the 10 Hz Rendering Rate Limit**: Never flood Stream Deck hardware with canvas or LCD layout updates faster than 10 Hz.
 * **Keep Memory-Only Buffering**: Do not write temporary album artwork to the local file system. Always use Base64 data URLs.
+* **No Manual Save Buttons in PI**: All Property Inspector settings must auto-save on change.
 * **Preserve Monorepo Path Structure**:
   - `plugin/`: Stream Deck Node.js plugin.
   - `extension/`: Browser companion extension.
+  - `docs/`: Specifications and marketplace guidelines.
   - `release/`: Generated distribution packages.
 * **Always Run Validation**: Before submitting any manifest changes, execute `npx streamdeck validate` on the staged plugin to guarantee `√ Validation successful (0 errors, 0 warnings)`.

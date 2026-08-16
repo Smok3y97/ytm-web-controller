@@ -192,6 +192,8 @@ ytm-web-controller/
 ├── AGENTS.md                    # Developer & AI Agent Guidelines
 ├── LICENSE                      # MIT License
 ├── README.md                    # Project documentation & setup guides
+├── docs/                        # Specifications & developer documentation
+│   └── plugin-guideline.md      # Elgato Stream Deck Marketplace & Plugin Guidelines
 ├── screenshots/                 # Visual documentation & preview screenshots
 │   ├── Banner.png               # GitHub hero banner & social preview
 │   ├── StreamDeck.png           # Stream Deck action configuration preview
@@ -302,6 +304,14 @@ $$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
 - **Minor** (`4`): New features (Volume controllers, Seek dial, Marquee service, Base action classes).
 - **Patch** (`0`): Bug fixes, icon styling, and metadata corrections.
 - **Build** (`0`): Internal marketplace revision counter (incremented on store resubmissions without changing the release version).
+
+---
+
+## 📖 Guidelines & Marketplace Compliance
+
+This project complies strictly with official Elgato Marketplace requirements and modern extension standards:
+- **[Elgato Plugin Guidelines](docs/plugin-guideline.md)** (Source: [Elgato Stream Deck Plugin Guidelines](https://docs.elgato.com/guidelines/stream-deck/plugins/)): Specifications for UUIDs, asset dimensions, naming conventions, 10 Hz programmatic rendering limits, and Property Inspector UI design.
+- **[AI & Developer Guidelines (AGENTS.md)](AGENTS.md)**: Persistent architectural rules, event-driven patterns, memory buffering, and version synchronization guidelines for contributors and AI agents.
 
 ---
 

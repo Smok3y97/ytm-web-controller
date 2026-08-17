@@ -36,7 +36,7 @@ Full transparency and open-source honesty are core principles of the **YouTube M
 
 1. **Stream Deck Plugin Backend (TypeScript / SDK 2)**:
    - Full implementation of decoupled backend services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`).
-   - Action controllers for dual-state keys, step volume adjustments, and rotary dials.
+   - Action controllers for dual-state keys, step volume adjustments, and dials.
 2. **Browser Companion Extension (Manifest V3)**:
    - Zero-polling HTML5 `<video>` event hooks and DOM `MutationObserver` state extractions in `content.js`.
    - Dynamic port storage and live health check popup UI in `popup/`.
@@ -50,14 +50,14 @@ Full transparency and open-source honesty are core principles of the **YouTube M
 
 ## 🧪 3. Hardware Testing & Manual Verification by Maintainer
 
-While the code is AI-generated, **all features, UI layouts, rotary encoders, and integrations undergo extensive physical testing and quality verification by the maintainer (Smok3y97)**.
+While the code is AI-generated, **all features, UI layouts, dials, and integrations undergo extensive physical testing and quality verification by the maintainer (Smok3y97)**.
 
 ### Verified Hardware & Environment Specifications:
 
 - **Operating System**: Windows 11
 - **Hardware Controllers**:
-  - **Elgato Stream Deck +** (Physical Keys, Rotary Encoders & LCD Touchstrip)
-  - **Corsair Galleon 100 SD** (Physical Keys & Rotary Encoders)
+  - **Elgato Stream Deck +** (Physical Keys, Dials & LCD Touchstrip)
+  - **Corsair Galleon 100 SD** (Physical Keys & Dials)
 - **Software Tested**:
   - **Elgato Stream Deck Software**: `v7.5.1 (22901)` (Minimum SDK 2 requirement: `v6.5+`)
   - **Discord Windows Client**: `v1.0.9253 x64 (88414)` (Desktop Rich Presence)

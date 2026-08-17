@@ -49,7 +49,7 @@ Universally unique identifiers (UUIDs) identify your plugin and its individual a
 
 ## 4. Visual Feedback & Logging
 
-* **`showAlert`:** Trigger when an action fails, an endpoint is unreachable, or an error occurs (applicable to both keys and rotary dials).
+* **`showAlert`:** Trigger when an action fails, an endpoint is unreachable, or an error occurs (applicable to both keys and dials).
 * **`showOk`:** Trigger **only** when there is no other visual indicator of success (e.g. clipboard copy, file written). Do **not** use `showOk` if the key icon or state updates visually.
 * **Logging:** Maintain structured logging via the SDK logger for error diagnostics and troubleshooting.
 

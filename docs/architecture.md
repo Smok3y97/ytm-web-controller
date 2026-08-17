@@ -101,6 +101,7 @@ ytm-web-controller/
 │   ├── architecture.md          # Complete system architecture specification & diagrams
 │   ├── configuration.md         # Configuration options & template format guide
 │   ├── development.md           # Developer workflow, build & bump commands
+│   ├── features.md              # Complete feature matrix & action reference
 │   ├── obs-setup.md             # OBS Studio stream overlay guide
 │   └── plugin-guideline.md      # Elgato Marketplace compliance guidelines
 ├── screenshots/                 # Preview assets & documentation screenshots
@@ -254,10 +255,10 @@ Each Stream Deck key and dial is an independent controller registered with the `
   * [`toggle-requests.ts`](../plugin/src/actions/toggle-requests.ts): Live toggle for Chatbot Song Requests (!playnext) with State 0 (`Requests ON` / Green) and State 1 (`Requests OFF` / Red), `lastRenderedState` instance tracking, and bidirectional global settings synchronization.
   * [`volume-up.ts`](../plugin/src/actions/volume-up.ts) & [`volume-down.ts`](../plugin/src/actions/volume-down.ts): Step-based volume adjustment with live `{volume}%` text.
   * [`mute.ts`](../plugin/src/actions/mute.ts), [`next.ts`](../plugin/src/actions/next.ts), [`prev.ts`](../plugin/src/actions/prev.ts), [`like.ts`](../plugin/src/actions/like.ts), [`dislike.ts`](../plugin/src/actions/dislike.ts), [`shuffle.ts`](../plugin/src/actions/shuffle.ts), [`repeat.ts`](../plugin/src/actions/repeat.ts), [`copyurl.ts`](../plugin/src/actions/copyurl.ts).
-* **Stream Deck + Rotary Dials & LCD Touchstrips**:
-  * [`track-dial.ts`](../plugin/src/actions/track-dial.ts) (Track Controller): Rotary track skipping, tap play/pause, animated LCD layout with marquee title scroller, progress bar, and dynamic mismatch warning.
-  * [`volume-dial.ts`](../plugin/src/actions/volume-dial.ts) (Volume Controller): Rotary volume control, tap mute/unmute, live percentage and volume bar LCD feedback.
-  * [`seek-dial.ts`](../plugin/src/actions/seek-dial.ts) (Seek Controller): Rotary scrub controller, tap play/pause, live time and progress LCD indicator.
+* **Stream Deck + Dials & LCD Touchstrips**:
+  * [`track-dial.ts`](../plugin/src/actions/track-dial.ts) (Track Controller): Dial track skipping, tap play/pause, animated LCD layout with marquee title scroller, progress bar, and dynamic mismatch warning.
+  * [`volume-dial.ts`](../plugin/src/actions/volume-dial.ts) (Volume Controller): Dial volume control, tap mute/unmute, live percentage and volume bar LCD feedback.
+  * [`seek-dial.ts`](../plugin/src/actions/seek-dial.ts) (Seek Controller): Dial scrub controller, tap play/pause, live time and progress LCD indicator.
 
 ---
 
@@ -340,9 +341,9 @@ The Property Inspector frontend uses a component-based modular structure:
 
 ---
 
-## ⚡ 9. Stream Deck + Rotary Encoder & LCD Handling
+## ⚡ 9. Stream Deck + Dial & LCD Handling
 
-* **Push-Jitter Suppression**: Ignores accidental rotary clicks within 250ms of a physical dial push.
-* **Rotary Debounce Batching**: Batches rapid encoder turns over an 85ms window for smooth volume and scrubbing controls.
+* **Push-Jitter Suppression**: Ignores accidental dial turns within 250ms of a physical dial push.
+* **Dial Debounce Batching**: Batches rapid dial turns over an 85ms window for smooth volume and scrubbing controls.
 * **Ping-Pong Marquee**: Replaces jarring infinite conveyer loops with smooth back-and-forth bounce scrolling (~3.1 Hz) with 2.9s start and 2.5s end reading pauses.
 * **10 Hz Rate Limit**: Prevents programmatic feedback flooding to protect hardware performance.

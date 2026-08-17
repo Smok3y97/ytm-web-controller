@@ -45,7 +45,7 @@ Global settings are accessible in the Property Inspector of **every single butto
 
 ---
 
-## 🎛️ 2. Stream Deck + Rotary Dials & LCD Customization
+## 🎛️ 2. Stream Deck + Dials & LCD Customization
 
 ### Track Controller (Dial)
 - **Controls & Interactions**:
@@ -63,7 +63,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔄 **Rotate Counter-Clockwise**: Decrease volume (-Step Size).
   - 🔘 **Push Dial**: Toggle Mute / Unmute.
   - 👆 **Touchstrip Tap**: Toggle Mute / Unmute.
-- **Step Size (%)**: Adjust volume step per rotary encoder tick from **1% to 25%** (Default: `5%`).
+- **Step Size (%)**: Adjust volume step per dial tick from **1% to 25%** (Default: `5%`).
 - **Show Cover**: Toggles the album cover thumbnail on the touchstrip.
 - **LCD Feedback**: Displays real-time graphical volume bar, percentage readout (`100%`, `MUTED`), and cover artwork.
 
@@ -73,7 +73,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔄 **Rotate Counter-Clockwise**: Seek / scrub backward (-Seek Step).
   - 🔘 **Push Dial**: Toggle Play / Pause.
   - 👆 **Touchstrip Tap**: Toggle Play / Pause.
-- **Seek Step (s)**: Scrubbing duration per rotary tick from **1s to 60s** (Default: `10s`).
+- **Seek Step (s)**: Scrubbing duration per dial tick from **1s to 60s** (Default: `10s`).
 - **Title & Time Templates**: Configurable text templates for LCD readouts (`{current} / {duration}`, `{remaining}`, `{current}`).
 - **Show Cover**: Toggles album art thumbnail on the LCD strip.
 

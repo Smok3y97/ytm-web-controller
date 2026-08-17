@@ -23,47 +23,22 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 
 - 🚀 **Keep Using the Official Web Player**: Works directly with YouTube Music in your favorite browser (Chrome, Brave, Edge, etc.) with all your playlists, recommendations, and full official audio quality.
 - ⚡ **Ultra-Lightweight with Zero Lag**: Built to be completely invisible to your system. It will never slow down your games, stream bitrate, or background tasks.
-- 🎛️ **Full Stream Deck + Dial Support**: Enjoy smooth rotary dials for volume, scrubbing, and track skipping, complete with live album art and auto-scrolling song titles on the LCD screen.
+- 🎛️ **Full Stream Deck + Dial Support**: Enjoy smooth dials for volume, scrubbing, and track skipping, complete with live album art and auto-scrolling song titles on the LCD screen.
 - 💬 **Discord Rich Presence Included**: Automatically show your friends what you are listening to in your Discord profile (with live progress on Desktop & Mobile, plus clickable song links on the Desktop app).
 - 🎥 **Built for Streamers**: Effortlessly display your currently playing song in your OBS Studio stream overlays with zero complicated setup.
 
 ---
 
-## 📋 Feature Matrix
+## ✨ Key Features
 
-### 🎛️ Stream Deck + Rotary Dials & LCD Touchstrips
+- 🎛️ **Stream Deck + Dial Controls**: Dial controls for Track Skipping, Volume, and Scrubbing/Seeking with real-time LCD progress bars and dynamic album cover thumbnails.
+- 🔘 **12+ Keypad Actions**: Live Album Cover Art backgrounds, Play/Pause, Volume Up/Down, Mute, Next/Prev, Like/Dislike, Shuffle, Repeat (Tri-State), Copy Song URL, and Song Request toggles.
+- 💬 **Discord Rich Presence (RPC)**: Automatic status broadcasting with album art, live progress, and clickable song links on Desktop & Mobile.
+- 🎥 **Streamer Tools & Overlays**: Real-time animated OBS Browser Source overlay (`/overlay`), local text file exporter (`.txt`), and live chatbot song request APIs (`!song`, `!playnext`).
+- ⚡ **Zero-Overhead & Local-First**: Event-driven WebSocket communication with zero DOM polling, and 100% in-memory rendering with zero disk footprint.
 
-| Action | Control Type | Hardware Feedback | Description |
-| :--- | :--- | :--- | :--- |
-| **Track Controller** | Rotary Dial + LCD Tap | Auto-scrolling title/artist, cover thumbnail, live time & track progress bar | Rotate to skip tracks (Next / Previous). Push dial or tap LCD touchstrip to toggle Play/Pause. Includes push-jitter suppression. |
-| **Volume Controller** | Rotary Dial + LCD Tap | Real-time volume bar, percentage readout (`100%`, `MUTED`), cover thumbnail | Rotate to adjust volume (1% – 25% step). Push dial or tap LCD touchstrip to toggle Mute / Unmute. |
-| **Seek Controller** | Rotary Dial + LCD Tap | Real-time track progress bar, `{current} / {duration}` time display, cover thumbnail | Rotate to scrub forward/backward in track (1s – 60s step, default 10s). Push dial or tap LCD touchstrip to toggle Play/Pause. |
-
-### 🔘 Keypad Actions
-
-| Action | Key Type | Dynamic Feedback | Description |
-| :--- | :--- | :--- | :--- |
-| **Play / Pause** | Dual-State | Dynamic Play/Pause vector state or live **Album Cover Art as button background** | Toggles playback state. Cover art is rendered directly in RAM with zero disk I/O. |
-| **Volume Up** | Single Key | Live `{volume}%` text readout | Increases playback volume by configurable step (1% – 25%). Fully stylable via native Title Styler. |
-| **Volume Down** | Single Key | Live `{volume}%` text readout | Decreases playback volume by configurable step (1% – 25%). Fully stylable via native Title Styler. |
-| **Mute / Unmute** | Dual-State | Dynamic Unmuted / Muted speaker icons | Toggles mute status for active playback. |
-| **Next Track** | Single Key | Official vector Next icon | Skips to the next track in current queue. |
-| **Previous Track** | Single Key | Official vector Previous icon | Skips to previous track or restarts current track. |
-| **Like Track** | Dual-State | Dynamic active/inactive thumbs-up highlight (`#FF0033`) | Toggles like rating on current song. |
-| **Dislike Track** | Dual-State | Dynamic active/inactive thumbs-down highlight (`#FF0033`) | Toggles dislike rating on current song. |
-| **Shuffle** | Dual-State | Dynamic active/inactive shuffle highlight (`#FF0033`) | Toggles queue shuffle mode on/off. |
-| **Repeat Mode** | Tri-State | Dynamic cycle icons: **Off** ➔ **All** ➔ **One (1)** | Cycles playlist repeat modes. |
-| **Toggle Song Requests** | Dual-State | Dynamic green (ON) / red (OFF) state badge | Toggles chatbot song requests (!playnext) on or off during live streams. |
-| **Copy Song URL** | Single Key | Visual success indicator (`showOk`) | Copies current track URL directly to clipboard for fast sharing. |
-
-### 📡 Integrations & Background Services
-
-| Feature | Target App | Key Capabilities |
-| :--- | :--- | :--- |
-| **Discord Rich Presence (RPC)** | Discord Desktop & Mobile | Real-time status, album art, and animated timeline progress across Desktop & Mobile (interactive clickable song buttons available on Discord Desktop client). |
-| **OBS Browser Overlay** | OBS Studio / Streamlabs | Real-time interactive browser source widget (`http://localhost:39865/overlay`) with themes (`card`, `compact`, `pill`), visual styling engine, live album art, and smooth animations. |
-| **Chatbot API & Song Requests** | Nightbot / Streamer.bot | Instant HTTP REST endpoints for song info (`/api/current`) and viewer song requests (`/api/playnext`, `/api/queue`), with customizable feedback messages & blacklist filtering. |
-| **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to a local `.txt` file for OBS Text (GDI+) overlay sources. Optional clear-on-pause. |
+> [!TIP]
+> 📋 **Detailed Action Reference**: For full control tables, hardware feedbacks, and action specifications, see the **[Feature Matrix & Action Reference (`docs/features.md`)](docs/features.md)**.
 
 ---
 
@@ -144,6 +119,7 @@ For detailed setup instructions, developer guidelines, and architectural specifi
 
 | Guide | Description |
 | :--- | :--- |
+| 📋 **[Feature Matrix & Action Reference](docs/features.md)** | Detailed breakdown of all Keypad and Dial actions, hardware feedbacks, and background services. |
 | 🎥 **[OBS Studio Overlay Setup Guide](docs/obs-setup.md)** | Step-by-step instructions for setting up live `.txt` overlay sources in OBS Studio. |
 | ⚙️ **[Configuration & Customization Guide](docs/configuration.md)** | Complete breakdown of Property Inspector options, Discord RPC, Volume steps, and templates. |
 | 🏛️ **[System Architecture & Data Flows](docs/architecture.md)** | Full technical specifications, Mermaid architecture diagrams, service breakdowns, and monorepo file tree. |
@@ -164,8 +140,8 @@ The source code, build scripts, vector assets, and UI components in this reposit
 
 - **Operating System**: Windows 11
 - **Hardware Controllers**:
-  - **Elgato Stream Deck +** (Physical Keys, Rotary Encoders & LCD Touchstrip)
-  - **Corsair Galleon 100 SD** (Physical Keys & Rotary Encoders)
+  - **Elgato Stream Deck +** (Physical Keys, Dials & LCD Touchstrip)
+  - **Corsair Galleon 100 SD** (Physical Keys & Dials)
 - **Software Tested**:
   - **Elgato Stream Deck Software**: `v7.5.1 (22901)` (Minimum required: `v6.5+`)
   - **Discord Windows Client**: `v1.0.9253 x64 (88414)` (Desktop Rich Presence)

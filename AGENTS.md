@@ -30,7 +30,7 @@ The project consists of two core components working together over a local WebSoc
 2. **Stream Deck Plugin (`plugin/`)**:
    - Built on `@elgato/streamdeck` SDK (SDK Version 2, Minimum Stream Deck Software: `6.5+`, Node.js `20`).
    - Hosts a local `ws.Server` (Default port: `39865`).
-   - Handles multi-controller setups: standard Keypad actions and Stream Deck + Rotary Encoders (Dials & LCD Touchstrips).
+   - Handles multi-controller setups: standard Keypad actions and Stream Deck + Dials & LCD Touchstrips.
    - **Zero Disk Footprint**: Computes dynamic images, cover thumbnails, and marquee LCD text strictly in memory using Base64 data URLs.
 
 ### 🧩 Modular Architecture & Single Responsibility Principle (SRP)

@@ -983,14 +983,18 @@
       else if (rawRepeat === 1) repeatMode = 'ALL';
       else repeatMode = 'OFF';
     } else if (typeof rawRepeat === 'string') {
-      const rm = rawRepeat.toUpperCase();
-      if (rm === 'ONE' || rm === '2' || rm === 'FEATURED' || rm.includes('ONE') || rm.includes('TRACK') || rm.includes('SINGLE')) {
+      const rm = rawRepeat.toUpperCase().trim();
+      if (rm === 'NONE' || rm === 'OFF' || rm === '0' || rm === 'REPEAT_OFF' || rm === 'REPEAT_NONE') {
+        repeatMode = 'OFF';
+      } else if (rm === 'ONE' || rm === '2' || rm === 'FEATURED' || rm === 'REPEAT_ONE' || rm === 'REPEAT_SINGLE' || rm === 'TRACK') {
         repeatMode = 'ONE';
-      } else if (rm === 'ALL' || rm === '1' || rm.includes('ALL')) {
+      } else if (rm === 'ALL' || rm === '1' || rm === 'REPEAT_ALL') {
         repeatMode = 'ALL';
       } else {
         repeatMode = 'OFF';
       }
+    } else if (typeof rawRepeat === 'boolean') {
+      repeatMode = rawRepeat ? 'ALL' : 'OFF';
     } else {
       const repeatButton = $('tp-yt-paper-icon-button.repeat, .repeat, #repeat-button', playerBar) ||
         $('ytmusic-player-bar tp-yt-paper-icon-button.repeat') ||
@@ -1021,10 +1025,18 @@
         const isSelected = repeatButton.classList.contains('selected') || (innerBtn ? innerBtn.classList.contains('selected') : false);
         const isAriaActive = ariaPressed === 'true' || ariaChecked === 'true' || hasActiveAttr || isSelected;
 
+        const hasDeactivateText = label.includes('deaktivieren') ||
+          label.includes('ausschalten') ||
+          label.includes('turn off') ||
+          label.includes('desactivar') ||
+          label.includes('désactiver') ||
+          label.includes('is on');
+
+        const isCurrentlyActive = isAriaActive || hasDeactivateText;
+
         const isOne = (
-          iconAttr.includes('one') ||
-          iconAttr.includes('_1') ||
-          iconAttr.includes('-1') ||
+          iconAttr.includes('repeat_one') ||
+          iconAttr.includes('repeat-one') ||
           iconAttr.includes('repeat1') ||
           btnHtml.includes('repeat_one') ||
           btnHtml.includes('repeat-one') ||
@@ -1034,26 +1046,25 @@
           label.includes('1 titel') ||
           label.includes('diesen titel') ||
           label.includes('aktuellen titel') ||
-          label.includes('titel wiederholen') ||
+          label.includes('einzelnen titel') ||
+          label.includes('wiederholen (1)') ||
+          label.includes('wiederholung: 1') ||
           label.includes('repeat one') ||
           label.includes('repeat 1') ||
           label.includes('repeat: 1') ||
-          label.includes('repeat track') ||
+          label.includes('repeat: one') ||
           label.includes('repeat single') ||
           label.includes('repetir una') ||
-          label.includes('répéter le titre')
-        ) && !label.includes('alle') && !label.includes('all') && !label.includes('tout') && !label.includes('todo');
+          label.includes('repetir 1') ||
+          label.includes('répéter le titre actuel') ||
+          label.includes('répéter 1 titre') ||
+          label.includes('répéter ce titre')
+        ) && !label.includes('alle') && !label.includes('all') && !label.includes('tout') && !label.includes('todo') && !label.includes('aus') && !label.includes('off');
 
-        if (isOne) {
+        if (isCurrentlyActive) {
+          repeatMode = isOne ? 'ONE' : 'ALL';
+        } else if (isOne && (iconAttr.includes('repeat_one') || iconAttr.includes('repeat-one') || label.includes('aktuellen') || label.includes('diesen') || label.includes('1 titel') || label.includes('repeat one'))) {
           repeatMode = 'ONE';
-        } else if (
-          isAriaActive ||
-          label.includes('alle wiederholen') ||
-          label.includes('repeat all') ||
-          label.includes('deaktivieren') ||
-          label.includes('turn off')
-        ) {
-          repeatMode = 'ALL';
         } else {
           repeatMode = 'OFF';
         }

@@ -52,9 +52,22 @@ export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends
       return;
     }
 
+    if (ev.action.isKey()) {
+      const payloadState = (ev.payload as { state?: number })?.state;
+      const currentCalculatedState = typeof payloadState === 'number'
+        ? payloadState
+        : this.calculateState(StateManager.getInstance().getState());
+      const nextExpectedState = this.calculateNextState(currentCalculatedState);
+      this.lastRenderedState.set(ev.action.id, nextExpectedState);
+    }
+
     if (this.command) {
       WebSocketService.getInstance().sendCommand(this.command);
     }
+  }
+
+  protected calculateNextState(currentState: number): number {
+    return currentState === 0 ? 1 : 0;
   }
 
   protected abstract calculateState(state: YTMPlaybackState): number;

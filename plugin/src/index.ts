@@ -27,12 +27,21 @@ import { VolumeDownAction } from './actions/volume-down.js';
 import { MuteAction } from './actions/mute.js';
 import { VolumeDialAction } from './actions/volume-dial.js';
 import { SeekDialAction } from './actions/seek-dial.js';
+import { ToggleRequestsAction } from './actions/toggle-requests.js';
+
+import { HttpApiService } from './services/http-api.js';
 
 const wsService = WebSocketService.getInstance();
 const stateManager = StateManager.getInstance();
+const httpApiService = HttpApiService.getInstance();
 const discordService = DiscordRpcService.getInstance();
 const obsService = ObsExporterService.getInstance();
 const versionService = VersionControlService.getInstance();
+
+// Connect HTTP API song requests to WebSocket command dispatcher
+httpApiService.on('queueTrack', (data: { videoId: string; mode: string; url: string }) => {
+  wsService.sendCommand('queueTrack', data);
+});
 
 // Enable logging
 streamDeck.logger.setLevel('info');
@@ -58,6 +67,7 @@ streamDeck.actions.registerAction(new VolumeDownAction());
 streamDeck.actions.registerAction(new MuteAction());
 streamDeck.actions.registerAction(new VolumeDialAction());
 streamDeck.actions.registerAction(new SeekDialAction());
+streamDeck.actions.registerAction(new ToggleRequestsAction());
 
 // 3. Connect WebSocket state updates to StateManager
 wsService.on('stateUpdate', (state: YTMPlaybackState) => {
@@ -98,10 +108,11 @@ wsService.on('clientDisconnected', async () => {
   }
 });
 
-// 6. Connect StateManager updates to Discord RPC & OBS Exporter
+// 6. Connect StateManager updates to Discord RPC, OBS Exporter & WebSocket Clients
 stateManager.on('stateChanged', (state: YTMPlaybackState) => {
   discordService.updatePresence(state);
   obsService.updateExport(state);
+  wsService.broadcastState(state);
 });
 
 // 7. Handle global settings changes (WebSocket Port, Discord RPC, OBS Exporter)

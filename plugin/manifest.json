@@ -5,7 +5,7 @@
   "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. GitHub: https://github.com/Smok3y97/ytm-web-controller",
   "Author": "Smok3y97",
   "URL": "https://github.com/Smok3y97/ytm-web-controller",
-  "Version": "1.5.2.0",
+  "Version": "1.6.0.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.5"
@@ -319,6 +319,30 @@
           "Image": "assets/actions/copyurl/icon",
           "TitleAlignment": "bottom",
           "FontSize": 9
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.toggle-requests",
+      "Name": "Toggle Song Requests",
+      "Tooltip": "Toggle Chatbot Song Requests (!playnext) on or off",
+      "Icon": "assets/actions/toggle-requests/action-icon",
+      "PropertyInspectorPath": "ui/common.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/toggle-requests/key-on",
+          "TitleAlignment": "bottom",
+          "FontSize": 9,
+          "Name": "Requests ON"
+        },
+        {
+          "Image": "assets/actions/toggle-requests/key-off",
+          "TitleAlignment": "bottom",
+          "FontSize": 9,
+          "Name": "Requests OFF"
         }
       ]
     }

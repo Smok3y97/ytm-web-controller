@@ -22,4 +22,8 @@ export class RepeatAction extends BaseStateAction {
         return 0;
     }
   }
+
+  protected override calculateNextState(currentState: number): number {
+    return (currentState + 1) % 3;
+  }
 }

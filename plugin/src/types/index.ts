@@ -67,6 +67,13 @@ export interface GlobalSettings extends JsonObject {
   obsFilePath?: string;
   obsFormatTemplate?: string;
   obsClearOnPause?: boolean;
+  enableSongRequests?: boolean;
+  songRequestMode?: 'playNext' | 'addToQueue';
+  songRequestSuccessTemplate?: string;
+  songRequestDisabledTemplate?: string;
+  songRequestErrorTemplate?: string;
+  songRequestBlockedTemplate?: string;
+  songRequestBlacklist?: string;
   isVersionMismatch?: boolean;
   extensionVersion?: string;
   requiredPluginVersion?: string;

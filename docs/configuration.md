@@ -12,15 +12,26 @@ Global settings are accessible in the Property Inspector of **every single butto
 - **Enable Discord Rich Presence (RPC)**: Direct toggle checkbox at the top of the Property Inspector. When checked, the plugin connects to your local Discord desktop client via local IPC socket and broadcasts your currently playing track in real-time.
 - **Features**: Live album artwork thumbnail, animated timeline progress bar, and clickable track/artist profile buttons (interactive action buttons are rendered on the Discord Desktop client; status and timeline display across both Desktop and Mobile apps).
 
-### 🎥 Streamer Settings (OBS Export)
-- **Enable OBS text export (.txt)**: Automatically writes metadata of the currently playing track to a local text file for streaming overlays.
-- **File Path**: Absolute destination path where the `.txt` file is saved (e.g. `C:\Users\username\Documents\ytm_current_track.txt`). Parent directories are created automatically if they do not exist.
-- **Format Template**: Fully customizable string with placeholders:
-  - `{artist}` / `{author}` / `{channel}`: Performing artist(s)
-  - `{title}` / `{song}` / `{track}`: Song title
-  - `{album}`: Album name
-  - *Default:* `Currently Playing: {artist} - {title}`
-- **Clear file on pause/stop**: When enabled (default), empties the text file whenever music is paused or stopped. Disabling OBS export also clears the file cleanly.
+### 🎥 Streamer Settings (OBS Overlay, Chatbots & Song Requests)
+- **OBS Browser Overlay URL** (`http://localhost:39865/overlay`):
+  - Direct one-click copy helper field for adding an animated, responsive music widget to OBS Studio as a **Browser Source**.
+  - Supports comprehensive visual customization: `?theme=card|compact|pill`, `?accent=hex`, `?bg=hex|transparent`, `?bgOpacity=0..1`, `?text=hex`, `?subColor=hex`, `?radius=px`, `?border=hex|none`, `?shadow=none`, `?width=px`, `?timeMode=remaining|current|duration|both|none`, `?hideOnPause=true`.
+- **Chatbot API URL** (`http://localhost:39865/api/current`):
+  - Direct one-click copy helper field for Twitch / YouTube chat commands via Nightbot, Streamer.bot, Streamlabs Cloudbot, or MixItUp (`!song`).
+  - Supports custom format strings via `?format=...` with placeholders `{artist}`, `{title}`, `{album}`, `{url}`, `{duration}`, `{currentTime}`.
+- **Chatbot Song Requests (`!playnext` / `!queue`)**:
+  - **Enable Chatbot Song Requests**: Master toggle checkbox (Default: `false` / disabled for safety). Allows viewers to queue YouTube Music tracks via chat command or Twitch Channel Points.
+  - **Queue Placement**: Dropdown selecting where requested songs are inserted (`Play Next (After current song)` vs `Add to End of Queue`).
+  - **Success Message Template**: Custom feedback response for successful requests (Default: `Added to queue: {url} 🎶`, supports `{url}`, `{videoId}`, `{mode}`).
+  - **Paused Message Template**: Custom response when song requests are paused by the streamer (Default: `Song requests are currently paused by the streamer.`).
+  - **Error Message Template**: Custom response for invalid links or unparseable IDs (Default: `Invalid YouTube link or video ID.`).
+  - **Blocked Message Template**: Custom response when a viewer requests a blacklisted track (Default: `This song is blocked from requests 🚫`).
+  - **Song Blacklist**: Comma-separated or newline-separated list of banned YouTube video IDs or links (e.g. `dQw4w9WgXcQ` for Rick Astley).
+- **OBS Text File Export (.txt)**:
+  - **Enable OBS text export (.txt)**: Automatically writes metadata of the currently playing track to a local text file for streaming overlays using OBS Text (GDI+).
+  - **File Path**: Absolute destination path where the `.txt` file is saved (e.g. `C:\Users\username\Documents\ytm_current_track.txt`). Parent directories are created automatically if they do not exist.
+  - **Format Template**: Fully customizable string with placeholders `{artist}`, `{title}`, `{album}` (Default: `Currently Playing: {artist} - {title}`).
+  - **Clear file on pause/stop**: When enabled (default), empties the text file whenever music is paused or stopped. Disabling OBS export also clears the file cleanly.
 
 ### 🔌 Advanced / Connection Settings
 - **WebSocket Port** (Default: `39865`):
@@ -72,6 +83,13 @@ Global settings are accessible in the Property Inspector of **every single butto
 
 ### Play / Pause
 - **Album cover as button background**: When enabled, renders the high-resolution album cover art directly as the key background in memory (RAM). When disabled, uses official vector Play/Pause states.
+
+### Toggle Song Requests
+- **Controls & Interactions**: Single keypress toggles Chatbot Song Requests (`!playnext`) on or off on-the-fly without opening the Stream Deck software.
+- **Visual Feedback**:
+  - 🟢 **State 0 (Requests ON)**: White playlist queue with Emerald Green note (`#00E676`).
+  - 🔴 **State 1 (Requests OFF)**: Muted gray playlist queue with YouTube Music Red note (`#FF0033`).
+- **Bidirectional Sync**: Instantly synchronizes with the `Enable Chatbot Song Requests` checkbox in the Property Inspector and across all active Stream Deck devices.
 
 ### Volume Up & Volume Down
 - **Step Size (%)**: Percentage volume adjustment per keypress (**1% to 25%**, Default: `5%`).

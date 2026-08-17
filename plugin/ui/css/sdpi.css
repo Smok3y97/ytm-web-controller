@@ -232,3 +232,46 @@ details.sdpi-group[open] .sdpi-group-title::before {
   gap: 10px;
   background: rgba(0, 0, 0, 0.2);
 }
+
+/* Input with action button group */
+.sdpi-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.sdpi-input-group input {
+  flex: 1;
+}
+
+.sdpi-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.sdpi-btn:hover {
+  background: #333333;
+  border-color: #555555;
+  color: #ffffff;
+}
+
+.sdpi-btn:active {
+  transform: translateY(1px);
+}
+
+.sdpi-btn.copied {
+  background: rgba(46, 204, 113, 0.2);
+  border-color: #2ecc71;
+  color: #2ecc71;
+}
+

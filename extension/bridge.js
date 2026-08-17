@@ -8,73 +8,116 @@
 (() => {
   'use strict';
 
-  const extensionApi = typeof chrome !== 'undefined' && chrome.runtime ? chrome : (typeof browser !== 'undefined' ? browser : null);
-  if (!extensionApi) return;
+  function isContextValid() {
+    try {
+      return Boolean(typeof chrome !== 'undefined' && chrome?.runtime?.id);
+    } catch {
+      return false;
+    }
+  }
+
+  function getApi() {
+    if (!isContextValid()) return null;
+    return typeof chrome !== 'undefined' && chrome.runtime ? chrome : (typeof browser !== 'undefined' ? browser : null);
+  }
 
   function getManifestVersion() {
     try {
-      if (extensionApi.runtime?.getManifest) {
-        return extensionApi.runtime.getManifest().version || '1.5.1.0';
+      const api = getApi();
+      if (api?.runtime?.getManifest) {
+        return api.runtime.getManifest().version || '1.6.0.0';
       }
     } catch (e) { }
-    return '1.5.1.0';
+    return '1.6.0.0';
   }
 
   function getStorage() {
-    return extensionApi.storage?.local || null;
+    try {
+      const api = getApi();
+      return api?.storage?.local || null;
+    } catch {
+      return null;
+    }
   }
 
   function sendConfigToPage(port) {
-    window.postMessage({
-      type: 'YTM_BRIDGE_CONFIG',
-      version: getManifestVersion(),
-      wsPort: port || 39865
-    }, '*');
+    try {
+      window.postMessage({
+        type: 'YTM_BRIDGE_CONFIG',
+        version: getManifestVersion(),
+        wsPort: port || 39865
+      }, '*');
+    } catch (e) { }
   }
 
   // 1. Initial config dispatch
-  const storage = getStorage();
-  if (storage) {
-    storage.get({ wsPort: 39865 }, (items) => {
-      sendConfigToPage(items.wsPort || 39865);
-    });
-
-    if (extensionApi.storage?.onChanged) {
-      extensionApi.storage.onChanged.addListener((changes, area) => {
-        if (area === 'local' && changes.wsPort) {
-          const newPort = changes.wsPort.newValue || 39865;
-          window.postMessage({
-            type: 'YTM_BRIDGE_PORT_UPDATE',
-            wsPort: newPort
-          }, '*');
-        }
+  try {
+    const storage = getStorage();
+    if (storage) {
+      storage.get({ wsPort: 39865 }, (items) => {
+        try {
+          if (!isContextValid()) return;
+          sendConfigToPage(items?.wsPort || 39865);
+        } catch (e) { }
       });
+
+      const api = getApi();
+      if (api?.storage?.onChanged) {
+        api.storage.onChanged.addListener((changes, area) => {
+          try {
+            if (!isContextValid()) return;
+            if (area === 'local' && changes.wsPort) {
+              const newPort = changes.wsPort.newValue || 39865;
+              window.postMessage({
+                type: 'YTM_BRIDGE_PORT_UPDATE',
+                wsPort: newPort
+              }, '*');
+            }
+          } catch (e) { }
+        });
+      }
+    } else {
+      sendConfigToPage(39865);
     }
-  } else {
+  } catch (e) {
     sendConfigToPage(39865);
   }
 
   // 2. Listen for messages from content.js (MAIN world)
   window.addEventListener('message', (event) => {
-    if (event.source !== window || !event.data || typeof event.data !== 'object') return;
+    try {
+      if (event.source !== window || !event.data || typeof event.data !== 'object') return;
+      if (!isContextValid()) return;
 
-    if (event.data.type === 'YTM_PAGE_REQUEST_CONFIG') {
-      if (storage) {
-        storage.get({ wsPort: 39865 }, (items) => {
-          sendConfigToPage(items.wsPort || 39865);
-        });
-      } else {
-        sendConfigToPage(39865);
+      const storage = getStorage();
+
+      if (event.data.type === 'YTM_PAGE_REQUEST_CONFIG') {
+        if (storage) {
+          storage.get({ wsPort: 39865 }, (items) => {
+            try {
+              if (!isContextValid()) return;
+              sendConfigToPage(items?.wsPort || 39865);
+            } catch (e) { }
+          });
+        } else {
+          sendConfigToPage(39865);
+        }
+      } else if (event.data.type === 'YTM_MISMATCH_STATUS') {
+        if (storage) {
+          storage.set({
+            isMismatch: !!event.data.isMismatch,
+            requiredPluginVersion: event.data.requiredPluginVersion || '1.6.0.0',
+            currentPluginVersion: event.data.currentPluginVersion || '1.6.0.0',
+            mismatchMessage: event.data.mismatchMessage || ''
+          }, () => {
+            if (chrome?.runtime?.lastError) {
+              // Ignore invalid context or storage errors safely
+            }
+          });
+        }
       }
-    } else if (event.data.type === 'YTM_MISMATCH_STATUS') {
-      if (storage) {
-        storage.set({
-          isMismatch: !!event.data.isMismatch,
-          requiredPluginVersion: event.data.requiredPluginVersion || '1.5.1.0',
-          currentPluginVersion: event.data.currentPluginVersion || '1.5.1.0',
-          mismatchMessage: event.data.mismatchMessage || ''
-        });
-      }
+    } catch (err) {
+      // Suppress any context invalidation errors when extension reloads
     }
   });
 })();

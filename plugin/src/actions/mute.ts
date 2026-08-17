@@ -18,20 +18,4 @@ export class MuteAction extends BaseStateAction {
   protected calculateState(state: YTMPlaybackState): number {
     return state.muted ? 1 : 0;
   }
-
-  override async onKeyDown(ev: KeyDownEvent): Promise<void> {
-    if (StateManager.getInstance().isVersionMismatch()) {
-      if (ev.action.isKey()) {
-        await ev.action.showAlert();
-      }
-      return;
-    }
-
-    const currentState = StateManager.getInstance().getState();
-    const optimisticMuted = !currentState.muted;
-    if (ev.action.isKey()) {
-      await ev.action.setState(optimisticMuted ? 1 : 0);
-    }
-    await super.onKeyDown(ev);
-  }
 }

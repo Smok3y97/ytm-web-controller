@@ -5,14 +5,18 @@
  * Handles client lifecycle, bidirectional command dispatch, and version handshake validation.
  */
 
+import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { EventEmitter } from 'events';
 import streamDeck from '@elgato/streamdeck';
 import { YTMPlaybackState, WSMessage } from '../types/index.js';
 import { VersionControlService } from './version-control.js';
+import { HttpApiService } from './http-api.js';
+import { StateManager } from './state-manager.js';
 
 export class WebSocketService extends EventEmitter {
   private static instance: WebSocketService;
+  private httpServer: http.Server | null = null;
   private wss: WebSocketServer | null = null;
   private clients: Set<WebSocket> = new Set();
   private currentPort: number = 39865;
@@ -31,10 +35,10 @@ export class WebSocketService extends EventEmitter {
   }
 
   /**
-   * Start or restart the WebSocket server on specified port
+   * Start or restart the unified HTTP + WebSocket server on specified port
    */
   public async start(port: number = 39865): Promise<void> {
-    if (this.wss && this.currentPort === port) {
+    if (this.httpServer && this.wss && this.currentPort === port) {
       return;
     }
 
@@ -44,11 +48,23 @@ export class WebSocketService extends EventEmitter {
 
     return new Promise((resolve) => {
       try {
-        this.wss = new WebSocketServer({ port: this.currentPort, host: '127.0.0.1' });
+        const httpApi = HttpApiService.getInstance();
 
-        this.wss.on('listening', () => {
-          streamDeck.logger.info(`[WebSocket] Server listening on ws://127.0.0.1:${this.currentPort}`);
-          this.emit('listening', this.currentPort);
+        // 1. Create underlying native HTTP Server
+        this.httpServer = http.createServer((req, res) => {
+          httpApi.handleRequest(req, res);
+        });
+
+        // 2. Attach WebSocket Server to share the exact same HTTP instance & port
+        this.wss = new WebSocketServer({ server: this.httpServer });
+
+        this.httpServer.on('error', (err: Error & { code?: string }) => {
+          if (err.code === 'EADDRINUSE') {
+            streamDeck.logger.error(`[WebSocket/HTTP] Port ${this.currentPort} is already in use!`);
+          } else {
+            streamDeck.logger.error(`[WebSocket/HTTP] Server error: ${err.message}`);
+          }
+          this.emit('error', err);
           resolve();
         });
 
@@ -58,13 +74,28 @@ export class WebSocketService extends EventEmitter {
           this.clients.add(ws);
           this.emit('clientConnected', ws);
 
-          // Request immediate state from newly connected client
+          // Immediately send current playback state to newly connected client
+          try {
+            const currentState = StateManager.getInstance().getState();
+            if (currentState && (currentState.title || currentState.artist)) {
+              this.sendToClient(ws, { type: 'STATE_UPDATE', data: currentState });
+            }
+          } catch { }
+
+          // Request fresh state from browser extension
           this.sendToClient(ws, { command: 'requestState' });
 
           ws.on('message', (message: Buffer | string) => {
             try {
               const text = message.toString();
-              const payload = JSON.parse(text) as WSMessage<YTMPlaybackState>;
+              const payload = JSON.parse(text) as WSMessage<YTMPlaybackState> & { command?: string };
+
+              // Client state request
+              if (payload.command === 'requestState' || payload.type === 'requestState') {
+                const currentState = StateManager.getInstance().getState();
+                this.sendToClient(ws, { type: 'STATE_UPDATE', data: currentState });
+                return;
+              }
 
               // Intercept Handshake packet
               if (payload.type === 'handshake') {
@@ -96,10 +127,13 @@ export class WebSocketService extends EventEmitter {
                 return;
               }
 
-              if (payload.type === 'STATE_UPDATE' && payload.data) {
-                this.emit('stateUpdate', payload.data);
+              const incomingState = payload.data || (payload as { state?: YTMPlaybackState }).state;
+              if (payload.type === 'STATE_UPDATE' && incomingState) {
+                this.emit('stateUpdate', incomingState);
               } else if (payload.type === 'REGISTER_CLIENT') {
                 streamDeck.logger.info(`[WebSocket] Registered client: ${payload.client} (${payload.url || ''})`);
+                const currentState = StateManager.getInstance().getState();
+                this.sendToClient(ws, { type: 'STATE_UPDATE', data: currentState });
               }
             } catch (err) {
               streamDeck.logger.warn(`[WebSocket] Failed to parse message: ${err}`);
@@ -125,27 +159,24 @@ export class WebSocketService extends EventEmitter {
           });
         });
 
-        this.wss.on('error', (err: Error & { code?: string }) => {
-          if (err.code === 'EADDRINUSE') {
-            streamDeck.logger.error(`[WebSocket] Port ${this.currentPort} is already in use!`);
-          } else {
-            streamDeck.logger.error(`[WebSocket] Server error: ${err.message}`);
-          }
-          this.emit('error', err);
+        // 3. Listen on 127.0.0.1 on specified port
+        this.httpServer.listen(this.currentPort, '127.0.0.1', () => {
+          streamDeck.logger.info(`[WebSocket/HTTP] Server listening on http://127.0.0.1:${this.currentPort}`);
+          this.emit('listening', this.currentPort);
           resolve();
         });
       } catch (err) {
-        streamDeck.logger.error(`[WebSocket] Failed to start server: ${err}`);
+        streamDeck.logger.error(`[WebSocket/HTTP] Failed to start server: ${err}`);
         resolve();
       }
     });
   }
 
   /**
-   * Stop the WebSocket server and disconnect all clients
+   * Stop the unified HTTP and WebSocket server and disconnect all clients
    */
   public async stop(): Promise<void> {
-    if (!this.wss) return;
+    if (!this.httpServer && !this.wss) return;
 
     return new Promise((resolve) => {
       for (const client of this.clients) {
@@ -156,12 +187,39 @@ export class WebSocketService extends EventEmitter {
       this.clients.clear();
       this.isMismatchActive = false;
 
-      this.wss?.close(() => {
-        streamDeck.logger.info('[WebSocket] Server stopped.');
+      if (this.wss) {
+        try {
+          this.wss.close();
+        } catch { }
         this.wss = null;
+      }
+
+      if (this.httpServer) {
+        this.httpServer.close(() => {
+          streamDeck.logger.info('[WebSocket/HTTP] Server stopped.');
+          this.httpServer = null;
+          resolve();
+        });
+      } else {
         resolve();
-      });
+      }
     });
+  }
+
+  /**
+   * Broadcast playback state to connected WebSocket clients (e.g. OBS Overlay)
+   */
+  public broadcastState(state: YTMPlaybackState, excludeWs?: WebSocket): void {
+    const message = JSON.stringify({ type: 'STATE_UPDATE', data: state });
+    for (const client of this.clients) {
+      if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
+        try {
+          client.send(message);
+        } catch (err) {
+          streamDeck.logger.warn(`[WebSocket] Error broadcasting state: ${err}`);
+        }
+      }
+    }
   }
 
   /**

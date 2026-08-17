@@ -53,6 +53,7 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 | **Dislike Track** | Dual-State | Dynamic active/inactive thumbs-down highlight (`#FF0033`) | Toggles dislike rating on current song. |
 | **Shuffle** | Dual-State | Dynamic active/inactive shuffle highlight (`#FF0033`) | Toggles queue shuffle mode on/off. |
 | **Repeat Mode** | Tri-State | Dynamic cycle icons: **Off** ➔ **All** ➔ **One (1)** | Cycles playlist repeat modes. |
+| **Toggle Song Requests** | Dual-State | Dynamic green (ON) / red (OFF) state badge | Toggles chatbot song requests (!playnext) on or off during live streams. |
 | **Copy Song URL** | Single Key | Visual success indicator (`showOk`) | Copies current track URL directly to clipboard for fast sharing. |
 
 ### 📡 Integrations & Background Services
@@ -60,11 +61,40 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 | Feature | Target App | Key Capabilities |
 | :--- | :--- | :--- |
 | **Discord Rich Presence (RPC)** | Discord Desktop & Mobile | Real-time status, album art, and animated timeline progress across Desktop & Mobile (interactive clickable song buttons available on Discord Desktop client). |
-| **Streamer Settings (OBS Export)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to a local `.txt` file for OBS Text (GDI+) overlay sources. Optional clear-on-pause. |
+| **OBS Browser Overlay** | OBS Studio / Streamlabs | Real-time interactive browser source widget (`http://localhost:39865/overlay`) with themes (`card`, `compact`, `pill`), visual styling engine, live album art, and smooth animations. |
+| **Chatbot API & Song Requests** | Nightbot / Streamer.bot | Instant HTTP REST endpoints for song info (`/api/current`) and viewer song requests (`/api/playnext`, `/api/queue`), with customizable feedback messages & blacklist filtering. |
+| **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to a local `.txt` file for OBS Text (GDI+) overlay sources. Optional clear-on-pause. |
 
 ---
 
-## 📸 Screenshots & Live Preview
+## 🎥 Streamer & Content Creator Features
+
+The plugin includes a lightweight local HTTP server layer on port `39865` running alongside the WebSocket server to power overlays, chatbots, and song requests with zero external tools or open firewall ports:
+
+### 1. Interactive OBS Studio Browser Overlay
+Add an animated now-playing music widget directly to OBS Studio as a **Browser Source**:
+- **URL**: `http://localhost:39865/overlay`
+- **Themes**: `card` (default), `compact`, `pill`
+- **Customizable**: Customize accent colors, transparency, borders, and animations simply via URL parameters (e.g. `http://localhost:39865/overlay?accent=00d26a&bg=transparent`).
+
+### 2. Chatbot Integrations & Viewer Song Requests
+Let viewers query the current track or queue songs in your Twitch, YouTube, or Kick chat:
+- **Query Song (`!song`)**:
+  ```text
+  !addcom !song $(urlfetch http://localhost:39865/api/current?format=Now playing: {title} by {artist} 🎶 ({url}))
+  ```
+- **Song Requests (`!playnext`)**:
+  ```text
+  !addcom !playnext $(urlfetch http://localhost:39865/api/playnext?url=$(querystring))
+  ```
+- **Stream Deck Key (`Toggle Song Requests`)**: Instantly pause or resume viewer song requests on-the-fly during your stream.
+- **Troll Protection**: Includes a built-in **Song Blacklist** in the Property Inspector to block unwanted video IDs or meme links automatically.
+
+### 3. Classic OBS Text File Export (`.txt`)
+Automatically exports live track metadata (`{artist}`, `{title}`, `{album}`) to a local `.txt` file for native OBS **Text (GDI+)** sources.
+
+> [!TIP]
+> 📖 **Full Setup Guide**: For comprehensive step-by-step instructions, complete URL parameter tables, and configuration guides for **Nightbot, Streamer.bot, Streamlabs Cloudbot, MixItUp, and Fossabot**, see the **[OBS Studio & Chatbot Setup Guide (`docs/obs-setup.md`)](docs/obs-setup.md)**.
 
 <p align="center">
   <img src="screenshots/StreamDeck.png" alt="Elgato Stream Deck Action Setup" width="800">

@@ -164,12 +164,11 @@
 
   /**
    * Extract accurate track-relative timing & duration
-   * Supports Player API, YouTube Music Player Bar, Video Overlay, and HTML5 video
+   * Supports Player API, YouTube Music Player Bar, Progress Slider, and HTML5 video
    */
   function extractTrackTiming(video) {
     let currentTime = 0;
     let duration = 0;
-    let hasUiTiming = false;
 
     // 1. Try reading directly from Player API (highest precision)
     const playerApi = getPlayerApi();
@@ -182,100 +181,68 @@
           if (typeof pCur === 'number' && !isNaN(pCur) && isFinite(pCur) && pCur >= 0) {
             currentTime = Math.min(duration, Math.floor(pCur));
           }
-          hasUiTiming = true;
+          return { currentTime, duration };
         }
       } catch (e) { }
     }
 
     // 2. Try reading from .time-info text (standard YouTube Music Player Bar)
-    if (!hasUiTiming || duration === 0) {
-      const timeInfoElem = $('ytmusic-player-bar .time-info') ||
-        $('ytmusic-player-bar span.time-info') ||
-        $('#time-info') ||
-        $('.time-info');
+    const timeInfoElem = $('ytmusic-player-bar .time-info, ytmusic-player-bar span.time-info, #time-info, .time-info');
+    if (timeInfoElem && timeInfoElem.textContent) {
+      const text = timeInfoElem.textContent.trim();
+      if (text.includes('/')) {
+        const parts = text.split('/');
+        if (parts.length === 2) {
+          const parsedCurrent = parseTimeString(parts[0]);
+          const parsedDuration = parseTimeString(parts[1]);
 
-      if (timeInfoElem && timeInfoElem.textContent) {
-        const text = timeInfoElem.textContent.trim();
-        if (text.includes('/')) {
-          const parts = text.split('/');
-          if (parts.length === 2) {
-            const parsedCurrent = parseTimeString(parts[0]);
-            const parsedDuration = parseTimeString(parts[1]);
-
-            if (parsedDuration > 0) {
-              duration = parsedDuration;
-              currentTime = parsedCurrent;
-              hasUiTiming = true;
-            }
+          if (parsedDuration > 0) {
+            duration = parsedDuration;
+            currentTime = Math.min(duration, parsedCurrent);
+            return { currentTime, duration };
           }
         }
       }
     }
 
     // 3. Try reading from YouTube Video Player Overlay (.ytp-time-display, .ytp-time-current, .ytp-time-duration)
-    if (!hasUiTiming || duration === 0) {
-      const ytpDuration = $('.ytp-time-duration')?.textContent?.trim();
-      const ytpCurrent = $('.ytp-time-current')?.textContent?.trim();
-      if (ytpDuration) {
-        const parsedDur = parseTimeString(ytpDuration);
-        if (parsedDur > 0) {
-          duration = parsedDur;
-          if (ytpCurrent) {
-            currentTime = parseTimeString(ytpCurrent);
-          }
-          hasUiTiming = true;
+    const ytpDuration = $('.ytp-time-duration')?.textContent?.trim();
+    const ytpCurrent = $('.ytp-time-current')?.textContent?.trim();
+    if (ytpDuration) {
+      const parsedDur = parseTimeString(ytpDuration);
+      if (parsedDur > 0) {
+        duration = parsedDur;
+        if (ytpCurrent) {
+          currentTime = Math.min(duration, parseTimeString(ytpCurrent));
         }
+        return { currentTime, duration };
       }
     }
 
     // 4. Try reading from Progress Bar slider attributes
-    if (!hasUiTiming || duration === 0) {
-      const progressBar = $('ytmusic-player-bar #progress-bar') ||
-        $('#progress-bar') ||
-        $('tp-yt-paper-slider#progress-bar') ||
-        $('tp-yt-paper-progress#progress-bar') ||
-        $('.progress-bar');
+    const progressBar = $('ytmusic-player-bar #progress-bar, tp-yt-paper-slider#progress-bar, #progress-bar');
+    if (progressBar) {
+      const nowAttr = progressBar.getAttribute('aria-valuenow') ?? progressBar.getAttribute('value') ?? progressBar.value;
+      const maxAttr = progressBar.getAttribute('aria-valuemax') ?? progressBar.getAttribute('max') ?? progressBar.max;
 
-      if (progressBar) {
-        const nowAttr = progressBar.getAttribute('aria-valuenow') ?? progressBar.getAttribute('value') ?? progressBar.value;
-        const maxAttr = progressBar.getAttribute('aria-valuemax') ?? progressBar.getAttribute('max') ?? progressBar.max;
+      const valNow = typeof nowAttr === 'number' ? nowAttr : parseInt(nowAttr, 10);
+      const valMax = typeof maxAttr === 'number' ? maxAttr : parseInt(maxAttr, 10);
 
-        const valNow = typeof nowAttr === 'number' ? nowAttr : parseInt(nowAttr, 10);
-        const valMax = typeof maxAttr === 'number' ? maxAttr : parseInt(maxAttr, 10);
-
-        if (!isNaN(valMax) && valMax > 0) {
-          duration = valMax;
-          if (!isNaN(valNow) && valNow >= 0) {
-            currentTime = valNow;
-          }
-          hasUiTiming = true;
+      if (!isNaN(valMax) && valMax > 0) {
+        duration = valMax;
+        if (!isNaN(valNow) && valNow >= 0) {
+          currentTime = Math.min(duration, valNow);
         }
+        return { currentTime, duration };
       }
     }
 
-    // 5. Fallback / Fine-tune with HTML5 video element
+    // 5. Fallback with HTML5 video element
     if (video) {
       const vCur = (!isNaN(video.currentTime) && isFinite(video.currentTime)) ? Math.floor(video.currentTime) : 0;
       const vDur = (!isNaN(video.duration) && isFinite(video.duration) && video.duration > 0) ? Math.floor(video.duration) : 0;
-
-      if (duration === 0 && vDur > 0) {
-        duration = vDur;
-      }
-
-      if (duration > 0) {
-        if (vCur <= duration && (!hasUiTiming || Math.abs(vCur - currentTime) <= 3)) {
-          currentTime = vCur;
-        }
-      } else {
-        if (currentTime === 0 && vCur > 0) {
-          currentTime = vCur;
-        }
-      }
-    }
-
-    // Clamp currentTime to [0, duration] if duration is known
-    if (duration > 0) {
-      currentTime = Math.min(duration, Math.max(0, currentTime));
+      duration = vDur;
+      currentTime = duration > 0 ? Math.min(duration, vCur) : vCur;
     }
 
     return { currentTime, duration };
@@ -509,6 +476,110 @@
     }
 
     scheduleStateUpdates([50, 150]);
+  }
+
+  /**
+   * Queue track into YouTube Music without interrupting active playback
+   */
+  function queueTrack(videoId, mode = 'playNext') {
+    if (!videoId) return false;
+
+    console.log(`[YTM Controller] 🎵 Queueing track ${videoId} (mode: ${mode})`);
+
+    const playerApi = getPlayerApi();
+    const video = findVideoElement();
+    const isCurrentlyPlaying = (video && !video.paused && video.currentTime > 0) ||
+      (playerApi && typeof playerApi.getPlayerState === 'function' && playerApi.getPlayerState() === 1);
+
+    const actionName = mode === 'playNext' ? 'yt-play-next-action' : 'yt-add-to-queue-action';
+    const actionPayload = {
+      actionName: actionName,
+      args: [{
+        videoId: videoId,
+        playlistId: '',
+        action: mode === 'playNext' ? 'PLAY_NEXT' : 'ADD_TO_QUEUE'
+      }],
+      optionalAction: true
+    };
+
+    // 1. Dispatch custom yt-action with Shadow DOM piercing (bubbles: true, composed: true)
+    const targets = [
+      document.querySelector('ytmusic-app'),
+      document.querySelector('ytmusic-player-bar'),
+      document.querySelector('ytmusic-player-page'),
+      document.querySelector('ytmusic-app-layout'),
+      document.body,
+      document,
+      window
+    ];
+
+    targets.forEach((target) => {
+      if (!target) return;
+      try {
+        target.dispatchEvent(new CustomEvent('yt-action', {
+          bubbles: true,
+          composed: true,
+          detail: actionPayload
+        }));
+      } catch (e) { }
+
+      try {
+        if (typeof target.dispatch === 'function') {
+          target.dispatch(actionPayload);
+        }
+        if (typeof target.dispatchAction === 'function') {
+          target.dispatchAction(actionPayload);
+        }
+      } catch (e) { }
+    });
+
+    // 2. Dispatch yt-service-request for queue insertion
+    try {
+      document.dispatchEvent(new CustomEvent('yt-service-request', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          action: mode === 'playNext' ? 'PLAY_NEXT' : 'ADD_TO_QUEUE',
+          queueInsertEndpoint: { videoId: videoId }
+        }
+      }));
+    } catch (e) { }
+
+    // 3. Player Bar Queue object inspection
+    try {
+      const playerBar = document.querySelector('ytmusic-player-bar');
+      if (playerBar) {
+        if (playerBar.queue_ && typeof playerBar.queue_.add === 'function') {
+          playerBar.queue_.add(videoId, mode === 'playNext');
+        } else if (playerBar.queue_ && typeof playerBar.queue_.addToQueue === 'function') {
+          playerBar.queue_.addToQueue(videoId);
+        }
+      }
+    } catch (e) { }
+
+    // 4. If Player API provides dedicated non-interruptive queue methods
+    if (playerApi) {
+      try {
+        if (typeof playerApi.queueVideo === 'function') {
+          playerApi.queueVideo({ videoId });
+        } else if (typeof playerApi.addToQueue === 'function') {
+          playerApi.addToQueue({ videoId });
+        }
+      } catch (e) { }
+    }
+
+    // 5. If player is completely empty and stopped, start playback
+    if (!isCurrentlyPlaying && playerApi) {
+      try {
+        const currentId = playerApi.getVideoData?.()?.video_id;
+        if (!currentId && typeof playerApi.loadVideoById === 'function') {
+          playerApi.loadVideoById({ videoId });
+        }
+      } catch (e) { }
+    }
+
+    scheduleStateUpdates([200, 600]);
+    return true;
   }
 
   /**
@@ -822,24 +893,34 @@
     let isLiked = false;
     let isDisliked = false;
 
-    if (playerBar && typeof playerBar.likeStatus_ === 'string') {
+    const likeRenderer = $('ytmusic-like-button-renderer, #like-button-renderer, ytmusic-player-bar ytmusic-like-button-renderer');
+    const likeStatusAttr = likeRenderer?.getAttribute('like-status');
+
+    if (likeStatusAttr === 'LIKE') {
+      isLiked = true;
+      isDisliked = false;
+    } else if (likeStatusAttr === 'DISLIKE') {
+      isLiked = false;
+      isDisliked = true;
+    } else if (playerBar && typeof playerBar.likeStatus_ === 'string') {
       isLiked = playerBar.likeStatus_ === 'LIKE';
       isDisliked = playerBar.likeStatus_ === 'DISLIKE';
     } else {
       const likeButton = $('#like-button-renderer tp-yt-paper-icon-button#like-button') ||
         $('#like-button-renderer #button-shape-like button') ||
+        $('ytmusic-like-button-renderer #button-shape-like button') ||
         $('ytmusic-like-button-renderer #button-shape-like') ||
         $('[aria-label*="mag ich" i]:not([aria-label*="nicht" i])') ||
         $('[aria-label*="like" i]:not([aria-label*="dislike" i])');
 
       const dislikeButton = $('#like-button-renderer tp-yt-paper-icon-button#dislike-button') ||
         $('#like-button-renderer #button-shape-dislike button') ||
+        $('ytmusic-like-button-renderer #button-shape-dislike button') ||
         $('ytmusic-like-button-renderer #button-shape-dislike') ||
         $('[aria-label*="mag ich nicht" i]') ||
         $('[aria-label*="dislike" i]');
-
-      const likeInner = likeButton?.querySelector('button');
-      const dislikeInner = dislikeButton?.querySelector('button');
+      const likeInner = likeButton?.querySelector('button') || likeButton;
+      const dislikeInner = dislikeButton?.querySelector('button') || dislikeButton;
 
       isLiked = likeButton?.getAttribute('aria-pressed') === 'true' ||
         likeButton?.classList?.contains('selected') ||
@@ -853,131 +934,129 @@
     // 3. Shuffle Status
     let shuffleActive = false;
 
-    const shuffleButton = $('ytmusic-player-bar tp-yt-paper-icon-button.shuffle') ||
-      $('ytmusic-player-bar .shuffle') ||
-      $('tp-yt-paper-icon-button.shuffle') ||
-      $('.shuffle-button');
+    const rawShuffle = playerBar?.shuffleOn_ ?? 
+      playerBar?.shuffleActive_ ?? 
+      playerBar?.__data?.shuffleOn ?? 
+      playerBar?.__data?.shuffleActive;
 
-    if (shuffleButton) {
-      const innerBtn = shuffleButton.querySelector('button');
-      const ironIcon = shuffleButton.querySelector('tp-yt-iron-icon, iron-icon, yt-icon, #icon, [icon]');
-      const label = (shuffleButton.getAttribute('aria-label') || innerBtn?.getAttribute('aria-label') || '').toLowerCase();
-      const title = (shuffleButton.getAttribute('title') || innerBtn?.getAttribute('title') || '').toLowerCase();
-      const ariaPressed = (shuffleButton.getAttribute('aria-pressed') || innerBtn?.getAttribute('aria-pressed') || '').toLowerCase();
-      const ariaChecked = (shuffleButton.getAttribute('aria-checked') || innerBtn?.getAttribute('aria-checked') || '').toLowerCase();
-      const hasActiveAttr = shuffleButton.hasAttribute('active') || innerBtn?.hasAttribute('active') || false;
-      const isSelected = shuffleButton.classList.contains('selected') || (innerBtn ? innerBtn.classList.contains('selected') : false);
+    if (typeof rawShuffle === 'boolean') {
+      shuffleActive = rawShuffle;
+    } else {
+      const shuffleButton = $('tp-yt-paper-icon-button.shuffle, .shuffle, #shuffle-button', playerBar) ||
+        $('ytmusic-player-bar tp-yt-paper-icon-button.shuffle') ||
+        $('ytmusic-player-bar .shuffle');
 
-      const hasDeactivateText = label.includes('deaktivieren') ||
-        label.includes('ausschalten') ||
-        label.includes('turn off') ||
-        label.includes('is on') ||
-        label.includes('zufallswiedergabe: ein') ||
-        label.includes('zufallswiedergabe: an') ||
-        title.includes('deaktivieren') ||
-        title.includes('ausschalten') ||
-        title.includes('turn off') ||
-        title.includes('is on') ||
-        title.includes('zufallswiedergabe: ein') ||
-        title.includes('zufallswiedergabe: an');
+      if (shuffleButton) {
+        const innerBtn = shuffleButton.querySelector('button');
+        const ariaPressed = (shuffleButton.getAttribute('aria-pressed') || innerBtn?.getAttribute('aria-pressed') || '').toLowerCase();
+        const ariaChecked = (shuffleButton.getAttribute('aria-checked') || innerBtn?.getAttribute('aria-checked') || '').toLowerCase();
+        const hasActiveAttr = shuffleButton.hasAttribute('active') || innerBtn?.hasAttribute('active') || false;
+        const isSelected = shuffleButton.classList.contains('selected') || (innerBtn ? innerBtn.classList.contains('selected') : false);
 
-      let isColorActive = false;
-      try {
-        const target = ironIcon || shuffleButton;
-        const color = window.getComputedStyle(target).color || '';
-        if (color.includes('255, 255, 255') || color.includes('rgb(255, 255, 255)')) {
-          isColorActive = true;
-        }
-      } catch (e) { }
+        const label = (
+          shuffleButton.getAttribute('aria-label') ||
+          innerBtn?.getAttribute('aria-label') ||
+          shuffleButton.getAttribute('title') ||
+          innerBtn?.getAttribute('title') ||
+          ''
+        ).toLowerCase();
 
-      if (hasDeactivateText || ariaPressed === 'true' || ariaChecked === 'true' || hasActiveAttr || isSelected || isColorActive) {
-        shuffleActive = true;
-      } else {
-        shuffleActive = false;
+        const hasDeactivateText = label.includes('deaktivieren') ||
+          label.includes('ausschalten') ||
+          label.includes('turn off') ||
+          label.includes('is on');
+
+        shuffleActive = ariaPressed === 'true' || ariaChecked === 'true' || hasActiveAttr || isSelected || hasDeactivateText;
       }
     }
 
     // 4. Repeat Status
     let repeatMode = 'OFF';
 
-    const repeatButton = $('ytmusic-player-bar tp-yt-paper-icon-button.repeat') ||
-      $('ytmusic-player-bar .repeat') ||
-      $('tp-yt-paper-icon-button.repeat') ||
-      $('.repeat-button');
+    const rawRepeat = playerBar?.repeatMode_ ?? 
+      playerBar?.__data?.repeatMode ?? 
+      playerBar?.__data?.repeatMode_ ?? 
+      playerBar?.repeatMode;
 
-    if (repeatButton) {
-      const innerBtn = repeatButton.querySelector('button');
-      const ironIcon = repeatButton.querySelector('tp-yt-iron-icon, iron-icon, yt-icon, #icon, [icon]');
-      const iconAttr = (ironIcon?.getAttribute('icon') || repeatButton.getAttribute('icon') || '').toLowerCase();
-      const label = (repeatButton.getAttribute('aria-label') || innerBtn?.getAttribute('aria-label') || '').toLowerCase();
-      const title = (repeatButton.getAttribute('title') || innerBtn?.getAttribute('title') || '').toLowerCase();
-      const ariaPressed = (repeatButton.getAttribute('aria-pressed') || innerBtn?.getAttribute('aria-pressed') || '').toLowerCase();
-      const ariaChecked = (repeatButton.getAttribute('aria-checked') || innerBtn?.getAttribute('aria-checked') || '').toLowerCase();
-      const hasActiveAttr = repeatButton.hasAttribute('active') || innerBtn?.hasAttribute('active') || false;
-      const isSelected = repeatButton.classList.contains('selected') || (innerBtn ? innerBtn.classList.contains('selected') : false);
-
-      let isColorActive = false;
-      try {
-        const target = ironIcon || repeatButton;
-        const color = window.getComputedStyle(target).color || '';
-        if (color.includes('255, 255, 255') || color.includes('rgb(255, 255, 255)')) {
-          isColorActive = true;
-        }
-      } catch (e) { }
-
-      const isRepeatActive = ariaPressed === 'true' ||
-        ariaChecked === 'true' ||
-        hasActiveAttr ||
-        isSelected ||
-        isColorActive ||
-        label.includes('deaktivieren') ||
-        label.includes('turn off') ||
-        label.includes('alle wiederholen') ||
-        label.includes('wiederholen: ein') ||
-        label.includes('wiederholen: alle') ||
-        title.includes('deaktivieren') ||
-        title.includes('turn off') ||
-        title.includes('alle wiederholen') ||
-        title.includes('wiederholen: ein') ||
-        title.includes('wiederholen: alle');
-
-      const btnHtml = repeatButton.innerHTML.toLowerCase();
-      const pathCount = (ironIcon || repeatButton).querySelectorAll('path').length;
-
-      const isOne = (
-        iconAttr.includes('one') ||
-        iconAttr.includes('1') ||
-        btnHtml.includes('repeat-one') ||
-        btnHtml.includes('repeat_one') ||
-        btnHtml.includes('repeat1') ||
-        btnHtml.includes('-one') ||
-        pathCount > 1 ||
-        label.includes('titel') ||
-        label.includes('song') ||
-        label.includes('diesen') ||
-        label.includes('aktuell') ||
-        label.includes('einzel') ||
-        label.includes('one') ||
-        label.includes(' 1') ||
-        label.includes(': 1') ||
-        label.includes('(1)') ||
-        title.includes('titel') ||
-        title.includes('song') ||
-        title.includes('diesen') ||
-        title.includes('aktuell') ||
-        title.includes('einzel') ||
-        title.includes('one') ||
-        title.includes(' 1') ||
-        title.includes(': 1') ||
-        title.includes('(1)')
-      ) && !label.includes('alle') && !title.includes('alle');
-
-      if (isRepeatActive && isOne) {
+    if (typeof rawRepeat === 'number') {
+      if (rawRepeat === 2) repeatMode = 'ONE';
+      else if (rawRepeat === 1) repeatMode = 'ALL';
+      else repeatMode = 'OFF';
+    } else if (typeof rawRepeat === 'string') {
+      const rm = rawRepeat.toUpperCase();
+      if (rm === 'ONE' || rm === '2' || rm === 'FEATURED' || rm.includes('ONE') || rm.includes('TRACK') || rm.includes('SINGLE')) {
         repeatMode = 'ONE';
-      } else if (isRepeatActive) {
+      } else if (rm === 'ALL' || rm === '1' || rm.includes('ALL')) {
         repeatMode = 'ALL';
       } else {
         repeatMode = 'OFF';
+      }
+    } else {
+      const repeatButton = $('tp-yt-paper-icon-button.repeat, .repeat, #repeat-button', playerBar) ||
+        $('ytmusic-player-bar tp-yt-paper-icon-button.repeat') ||
+        $('ytmusic-player-bar .repeat');
+
+      if (repeatButton) {
+        const innerBtn = repeatButton.querySelector('button');
+        const ironIcon = repeatButton.querySelector('tp-yt-iron-icon, iron-icon, yt-icon, #icon, [icon]');
+        const iconAttr = (
+          ironIcon?.getAttribute('icon') ||
+          repeatButton.getAttribute('icon') ||
+          ironIcon?.getAttribute('src') ||
+          ''
+        ).toLowerCase();
+
+        const btnHtml = repeatButton.innerHTML.toLowerCase();
+        const label = (
+          repeatButton.getAttribute('aria-label') ||
+          innerBtn?.getAttribute('aria-label') ||
+          repeatButton.getAttribute('title') ||
+          innerBtn?.getAttribute('title') ||
+          ''
+        ).toLowerCase();
+
+        const ariaPressed = (repeatButton.getAttribute('aria-pressed') || innerBtn?.getAttribute('aria-pressed') || '').toLowerCase();
+        const ariaChecked = (repeatButton.getAttribute('aria-checked') || innerBtn?.getAttribute('aria-checked') || '').toLowerCase();
+        const hasActiveAttr = repeatButton.hasAttribute('active') || innerBtn?.hasAttribute('active') || false;
+        const isSelected = repeatButton.classList.contains('selected') || (innerBtn ? innerBtn.classList.contains('selected') : false);
+        const isAriaActive = ariaPressed === 'true' || ariaChecked === 'true' || hasActiveAttr || isSelected;
+
+        const isOne = (
+          iconAttr.includes('one') ||
+          iconAttr.includes('_1') ||
+          iconAttr.includes('-1') ||
+          iconAttr.includes('repeat1') ||
+          btnHtml.includes('repeat_one') ||
+          btnHtml.includes('repeat-one') ||
+          btnHtml.includes('repeat1') ||
+          btnHtml.includes('id="repeat-one"') ||
+          btnHtml.includes('id="repeat_one"') ||
+          label.includes('1 titel') ||
+          label.includes('diesen titel') ||
+          label.includes('aktuellen titel') ||
+          label.includes('titel wiederholen') ||
+          label.includes('repeat one') ||
+          label.includes('repeat 1') ||
+          label.includes('repeat: 1') ||
+          label.includes('repeat track') ||
+          label.includes('repeat single') ||
+          label.includes('repetir una') ||
+          label.includes('répéter le titre')
+        ) && !label.includes('alle') && !label.includes('all') && !label.includes('tout') && !label.includes('todo');
+
+        if (isOne) {
+          repeatMode = 'ONE';
+        } else if (
+          isAriaActive ||
+          label.includes('alle wiederholen') ||
+          label.includes('repeat all') ||
+          label.includes('deaktivieren') ||
+          label.includes('turn off')
+        ) {
+          repeatMode = 'ALL';
+        } else {
+          repeatMode = 'OFF';
+        }
       }
     }
 
@@ -1027,12 +1106,11 @@
           state.coverBase64 === lastSentState.coverBase64 &&
           state.trackUrl === lastSentState.trackUrl &&
           state.artistUrl === lastSentState.artistUrl &&
-          state.albumUrl === lastSentState.albumUrl
+          state.albumUrl === lastSentState.albumUrl &&
+          Math.abs(state.currentTime - (lastSentState.currentTime || 0)) < 1
         );
 
-        if (isIdentical && (state.paused || Math.abs(state.currentTime - lastSentState.currentTime) < 1)) {
-          return;
-        }
+        if (isIdentical) return;
       }
 
       lastSentState = { ...state };
@@ -1040,10 +1118,11 @@
       ws.send(JSON.stringify({
         type: 'STATE_UPDATE',
         timestamp: Date.now(),
-        data: state
+        data: state,
+        state: state
       }));
     } catch (err) {
-      console.warn('[YTM Controller] Failed to send state over WebSocket:', err);
+      console.error('[YTM Controller] Error collecting/sending state:', err);
     }
   }
 
@@ -1051,15 +1130,14 @@
    * Execute control commands received from Stream Deck
    */
   function handleCommand(message) {
-    if (!message || !message.command) return;
+    if (!message) return;
 
     try {
-      const command = message.command;
-      const payload = message.payload || {};
-      const video = findVideoElement();
+      const command = typeof message === 'string' ? message : message.command;
+      const payload = (typeof message === 'object' && message ? message.payload : {}) || {};
+      if (!command) return;
 
       console.log(`[YTM Controller] Executing command: ${command}`, payload);
-
       switch (command) {
         case 'playPause': {
           togglePlayPause();
@@ -1069,9 +1147,9 @@
         case 'play': {
           const video = findVideoElement();
           if (video && video.paused) {
-            if (!clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button')) {
-              video.play().catch(() => { });
-            }
+            video.play().catch(() => {
+              clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button');
+            });
           }
           scheduleStateUpdates([100]);
           break;
@@ -1101,25 +1179,57 @@
         }
 
         case 'like': {
-          clickElement('#like-button-renderer #button-shape-like button, #like-button-renderer tp-yt-paper-icon-button#like-button, ytmusic-like-button-renderer #button-shape-like');
+          clickElement(
+            'ytmusic-like-button-renderer #button-shape-like button, ' +
+            '#like-button-renderer #button-shape-like button, ' +
+            '#like-button-renderer tp-yt-paper-icon-button#like-button, ' +
+            'ytmusic-player-bar ytmusic-like-button-renderer #button-shape-like, ' +
+            'ytmusic-like-button-renderer #button-shape-like, ' +
+            'ytmusic-like-button-renderer tp-yt-paper-icon-button.like'
+          );
           scheduleStateUpdates([60, 200, 450]);
           break;
         }
 
         case 'dislike': {
-          clickElement('#like-button-renderer #button-shape-dislike button, #like-button-renderer tp-yt-paper-icon-button#dislike-button, ytmusic-like-button-renderer #button-shape-dislike');
+          clickElement(
+            'ytmusic-like-button-renderer #button-shape-dislike button, ' +
+            '#like-button-renderer #button-shape-dislike button, ' +
+            '#like-button-renderer tp-yt-paper-icon-button#dislike-button, ' +
+            'ytmusic-player-bar ytmusic-like-button-renderer #button-shape-dislike, ' +
+            'ytmusic-like-button-renderer #button-shape-dislike, ' +
+            'ytmusic-like-button-renderer tp-yt-paper-icon-button.dislike'
+          );
           scheduleStateUpdates([60, 200, 450]);
           break;
         }
 
         case 'shuffle': {
-          clickElement('ytmusic-player-bar .shuffle, tp-yt-paper-icon-button.shuffle, .shuffle-button, [aria-label*="shuffle" i], [aria-label*="zufall" i]');
+          const shuffleSelectors = [
+            'ytmusic-player-bar tp-yt-paper-icon-button.shuffle',
+            'ytmusic-player-bar .shuffle',
+            'ytmusic-player-bar #shuffle-button',
+            'ytmusic-player-bar [aria-label*="zufall" i]',
+            'ytmusic-player-bar [aria-label*="shuffle" i]'
+          ];
+          for (const sel of shuffleSelectors) {
+            if (clickElement(sel)) break;
+          }
           scheduleStateUpdates([60, 200, 450]);
           break;
         }
 
         case 'repeat': {
-          clickElement('ytmusic-player-bar .repeat, tp-yt-paper-icon-button.repeat, .repeat-button, [aria-label*="repeat" i], [aria-label*="wiederhol" i]');
+          const repeatSelectors = [
+            'ytmusic-player-bar tp-yt-paper-icon-button.repeat',
+            'ytmusic-player-bar .repeat',
+            'ytmusic-player-bar #repeat-button',
+            'ytmusic-player-bar [aria-label*="wiederhol" i]',
+            'ytmusic-player-bar [aria-label*="repeat" i]'
+          ];
+          for (const sel of repeatSelectors) {
+            if (clickElement(sel)) break;
+          }
           scheduleStateUpdates([60, 200, 450]);
           break;
         }
@@ -1162,6 +1272,16 @@
         case 'seekTo': {
           const time = typeof payload.time === 'number' ? payload.time : (typeof payload.seconds === 'number' ? payload.seconds : 0);
           seekTo(time);
+          break;
+        }
+
+        case 'queueTrack':
+        case 'playNext': {
+          const videoId = payload.videoId || payload.id;
+          const mode = payload.mode || 'playNext';
+          if (videoId) {
+            queueTrack(videoId, mode);
+          }
           break;
         }
 

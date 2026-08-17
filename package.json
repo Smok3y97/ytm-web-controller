@@ -1,6 +1,6 @@
 {
   "name": "ytm-web-controller",
-  "version": "1.5.2.0",
+  "version": "1.6.0.0",
   "description": "High-performance, event-driven Elgato Stream Deck integration for YouTube Music Web with Discord RPC",
   "private": true,
   "scripts": {

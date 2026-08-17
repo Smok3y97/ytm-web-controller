@@ -150,6 +150,22 @@ const icons = {
   'actions/seekdial/icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
   <circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="45 10"/>
   <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" fill="#FFFFFF"/>
+</svg>`,
+
+  // Toggle Song Requests
+  'actions/toggle-requests/action-icon': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
+  <path d="M3 6h10v2H3V6zm0 5h10v2H3v-2zm0 5h7v2H3v-2z" fill="#FFFFFF"/>
+  <path d="M17 5v9.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V7h3V5h-5z" fill="#FFFFFF"/>
+</svg>`,
+
+  'actions/toggle-requests/key-on': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
+  <path d="M3 6h10v2H3V6zm0 5h10v2H3v-2zm0 5h7v2H3v-2z" fill="#FFFFFF"/>
+  <path d="M17 5v9.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V7h3V5h-5z" fill="#00E676"/>
+</svg>`,
+
+  'actions/toggle-requests/key-off': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="144" height="144">
+  <path d="M3 6h10v2H3V6zm0 5h10v2H3v-2zm0 5h7v2H3v-2z" fill="#656565"/>
+  <path d="M17 5v9.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V7h3V5h-5z" fill="#FF0033"/>
 </svg>`
 };
 

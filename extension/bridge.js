@@ -50,38 +50,46 @@
     } catch (e) { }
   }
 
-  // 1. Initial config dispatch
-  try {
-    const storage = getStorage();
-    if (storage) {
-      storage.get({ wsPort: 39865 }, (items) => {
-        try {
-          if (!isContextValid()) return;
-          sendConfigToPage(items?.wsPort || 39865);
-        } catch (e) { }
-      });
+  const DEFAULT_PORT = 39865;
 
-      const api = getApi();
-      if (api?.storage?.onChanged) {
-        api.storage.onChanged.addListener((changes, area) => {
+  function dispatchStoredConfig() {
+    try {
+      const storage = getStorage();
+      if (storage) {
+        storage.get({ wsPort: DEFAULT_PORT }, (items) => {
           try {
             if (!isContextValid()) return;
-            if (area === 'local' && changes.wsPort) {
-              const newPort = changes.wsPort.newValue || 39865;
-              window.postMessage({
-                type: 'YTM_BRIDGE_PORT_UPDATE',
-                wsPort: newPort
-              }, '*');
-            }
+            sendConfigToPage(items?.wsPort || DEFAULT_PORT);
           } catch (e) { }
         });
+      } else {
+        sendConfigToPage(DEFAULT_PORT);
       }
-    } else {
-      sendConfigToPage(39865);
+    } catch (e) {
+      sendConfigToPage(DEFAULT_PORT);
     }
-  } catch (e) {
-    sendConfigToPage(39865);
   }
+
+  // 1. Initial config dispatch & storage watcher
+  dispatchStoredConfig();
+
+  try {
+    const api = getApi();
+    if (api?.storage?.onChanged) {
+      api.storage.onChanged.addListener((changes, area) => {
+        try {
+          if (!isContextValid()) return;
+          if (area === 'local' && changes.wsPort) {
+            const newPort = changes.wsPort.newValue || DEFAULT_PORT;
+            window.postMessage({
+              type: 'YTM_BRIDGE_PORT_UPDATE',
+              wsPort: newPort
+            }, '*');
+          }
+        } catch (e) { }
+      });
+    }
+  } catch (e) { }
 
   // 2. Listen for messages from content.js (MAIN world)
   window.addEventListener('message', (event) => {
@@ -92,16 +100,7 @@
       const storage = getStorage();
 
       if (event.data.type === 'YTM_PAGE_REQUEST_CONFIG') {
-        if (storage) {
-          storage.get({ wsPort: 39865 }, (items) => {
-            try {
-              if (!isContextValid()) return;
-              sendConfigToPage(items?.wsPort || 39865);
-            } catch (e) { }
-          });
-        } else {
-          sendConfigToPage(39865);
-        }
+        dispatchStoredConfig();
       } else if (event.data.type === 'YTM_MISMATCH_STATUS') {
         if (storage) {
           storage.set({

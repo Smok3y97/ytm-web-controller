@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blacklist & Skip Settings</title>
+  <link rel="stylesheet" href="css/sdpi.css">
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <div class="sdpi-heading">Blacklist & Skip Track</div>
+
+    <!-- Blacklist File Path -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Blacklist File (.txt)</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="blacklistFilePath" placeholder="Default (blacklist.txt in plugin folder)">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Persistent text file for banned video IDs (Format: <code>&lt;VIDEO_ID&gt; | &lt;Artist&gt; - &lt;Title&gt;</code>).
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Edit Blacklist</div>
+      <button class="sdpi-item-value" id="openBlacklistBtn" style="cursor: pointer; padding: 4px 8px;">📂 Open Blacklist in Editor</button>
+    </div>
+
+    <!-- Mod Blacklist Command Helper -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Mod Command</div>
+      <div class="sdpi-item-value">
+        <div class="sdpi-input-group">
+          <input type="text" id="blacklistCmdHelper" readonly value="!addcom -ul=mod !blacklist $(urlfetch http://localhost:39865/api/blacklist?url=$(querystring))">
+          <button type="button" id="copyBlacklistCmdBtn" class="sdpi-btn">Copy</button>
+        </div>
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Ready-to-use mod command for Nightbot. Blacklists a passed YouTube link/ID or the currently playing song if no argument is given.
+    </div>
+
+    <!-- Success Message Template -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Success Message</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="songBlacklistSuccessTemplate" placeholder="Blacklisted: {artist} - {title} ⛔" value="Blacklisted: {artist} - {title} ⛔">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{url}</code>, <code>{videoId}</code>
+    </div>
+
+    <!-- Error Message Template -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Error Message</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="songBlacklistErrorTemplate" placeholder="Invalid YouTube link or video ID to blacklist." value="Invalid YouTube link or video ID to blacklist.">
+      </div>
+    </div>
+
+    <!-- Global Settings container dynamically rendered by global-settings.js -->
+    <div id="global-settings-container"></div>
+  </div>
+
+  <script src="streamdeck-client.js"></script>
+  <script src="global-settings.js"></script>
+  <script src="blacklist-and-skip.js"></script>
+</body>
+</html>

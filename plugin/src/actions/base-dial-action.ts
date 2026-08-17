@@ -19,6 +19,8 @@ import type { JsonObject } from '@elgato/utils';
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { MarqueeService } from '../services/marquee-service.js';
+import { ImageRenderer } from '../services/image-renderer.js';
+import { VersionControlService } from '../services/version-control.js';
 import { YTMPlaybackState } from '../types/index.js';
 
 export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> extends SingletonAction<TSettings> {
@@ -58,13 +60,17 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
   }
 
   override async onWillDisappear(ev: WillDisappearEvent<TSettings>): Promise<void> {
+    this.removeActiveDial(ev.action.id);
+    MarqueeService.getInstance().unregisterConsumer();
+  }
+
+  protected removeActiveDial(actionId: string): void {
     for (const dial of this.activeDials) {
-      if (dial.id === ev.action.id) {
+      if (dial.id === actionId) {
         this.activeDials.delete(dial);
         break;
       }
     }
-    MarqueeService.getInstance().unregisterConsumer();
   }
 
   override async onDialDown(ev: DialDownEvent<TSettings>): Promise<void> {
@@ -121,6 +127,53 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
    */
   protected getTitleTemplate(settings: TSettings, _actionId?: string): string {
     return (settings as Record<string, unknown>).titleTemplate as string || '{artist} - {title}';
+  }
+
+  /**
+   * Gets the formatted, marquee-scrolled display title for LCD touchstrips
+   */
+  protected getFormattedMarqueeTitle(settings: TSettings, actionId?: string): string {
+    const rawTitle = this.getTitleTemplate(settings, actionId);
+    const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
+    return MarqueeService.getInstance().getDisplayText(fullTitle);
+  }
+
+  /**
+   * Renders version mismatch feedback if mismatch is active. Returns true if handled.
+   */
+  protected async renderMismatchFeedback(
+    dialAction: WillAppearEvent<TSettings>['action'],
+    state: YTMPlaybackState,
+    iconPath: string
+  ): Promise<boolean> {
+    if (!state.isVersionMismatch) return false;
+    if (dialAction.isDial()) {
+      const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
+      await dialAction.setFeedback({
+        title: warningTitle,
+        value: 'Mismatch',
+        icon: iconPath,
+        indicator: 0
+      });
+    }
+    return true;
+  }
+
+  /**
+   * Renders in-RAM album cover with playback overlay for keypads (used when dial action is placed on standard key)
+   */
+  protected async updateKeyCoverImage(
+    dialAction: WillAppearEvent<TSettings>['action'],
+    state: YTMPlaybackState,
+    showCover: boolean = true
+  ): Promise<void> {
+    if (!dialAction.isKey()) return;
+    if (showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
+      const keyImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused);
+      await dialAction.setImage(keyImage);
+    } else {
+      await dialAction.setImage(undefined);
+    }
   }
 
   /**

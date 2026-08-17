@@ -889,12 +889,15 @@
 
     const volume = volPercent;
 
-    // 2. Like & Dislike Status
+    // 2. Like & Dislike Status (Strictly scoped to bottom player bar to avoid queue/playlist list-item collisions)
     let isLiked = false;
     let isDisliked = false;
 
-    const likeRenderer = $('ytmusic-like-button-renderer, #like-button-renderer, ytmusic-player-bar ytmusic-like-button-renderer');
-    const likeStatusAttr = likeRenderer?.getAttribute('like-status');
+    const playerBarElem = $('ytmusic-player-bar');
+    const likeRenderer = playerBarElem
+      ? $('ytmusic-like-button-renderer, #like-button-renderer, .like-button-renderer', playerBarElem)
+      : null;
+    const likeStatusAttr = likeRenderer?.getAttribute('like-status')?.toUpperCase();
 
     if (likeStatusAttr === 'LIKE') {
       isLiked = true;
@@ -902,23 +905,28 @@
     } else if (likeStatusAttr === 'DISLIKE') {
       isLiked = false;
       isDisliked = true;
-    } else if (playerBar && typeof playerBar.likeStatus_ === 'string') {
-      isLiked = playerBar.likeStatus_ === 'LIKE';
-      isDisliked = playerBar.likeStatus_ === 'DISLIKE';
-    } else {
-      const likeButton = $('#like-button-renderer tp-yt-paper-icon-button#like-button') ||
-        $('#like-button-renderer #button-shape-like button') ||
-        $('ytmusic-like-button-renderer #button-shape-like button') ||
-        $('ytmusic-like-button-renderer #button-shape-like') ||
-        $('[aria-label*="mag ich" i]:not([aria-label*="nicht" i])') ||
-        $('[aria-label*="like" i]:not([aria-label*="dislike" i])');
+    } else if (likeStatusAttr === 'INDIFFERENT') {
+      isLiked = false;
+      isDisliked = false;
+    } else if (playerBarElem && typeof playerBarElem.likeStatus_ === 'string' && playerBarElem.likeStatus_) {
+      const ls = playerBarElem.likeStatus_.toUpperCase();
+      isLiked = ls === 'LIKE';
+      isDisliked = ls === 'DISLIKE';
+    } else if (playerBarElem) {
+      const likeButton = $('#like-button-renderer tp-yt-paper-icon-button#like-button', playerBarElem) ||
+        $('#button-shape-like button', playerBarElem) ||
+        $('ytmusic-like-button-renderer #button-shape-like button', playerBarElem) ||
+        $('ytmusic-like-button-renderer #button-shape-like', playerBarElem) ||
+        $('[aria-label*="mag ich" i]:not([aria-label*="nicht" i])', playerBarElem) ||
+        $('[aria-label*="like" i]:not([aria-label*="dislike" i])', playerBarElem);
 
-      const dislikeButton = $('#like-button-renderer tp-yt-paper-icon-button#dislike-button') ||
-        $('#like-button-renderer #button-shape-dislike button') ||
-        $('ytmusic-like-button-renderer #button-shape-dislike button') ||
-        $('ytmusic-like-button-renderer #button-shape-dislike') ||
-        $('[aria-label*="mag ich nicht" i]') ||
-        $('[aria-label*="dislike" i]');
+      const dislikeButton = $('#like-button-renderer tp-yt-paper-icon-button#dislike-button', playerBarElem) ||
+        $('#button-shape-dislike button', playerBarElem) ||
+        $('ytmusic-like-button-renderer #button-shape-dislike button', playerBarElem) ||
+        $('ytmusic-like-button-renderer #button-shape-dislike', playerBarElem) ||
+        $('[aria-label*="mag ich nicht" i]', playerBarElem) ||
+        $('[aria-label*="dislike" i]', playerBarElem);
+
       const likeInner = likeButton?.querySelector('button') || likeButton;
       const dislikeInner = dislikeButton?.querySelector('button') || dislikeButton;
 
@@ -1178,39 +1186,57 @@
         }
 
         case 'next': {
-          clickElement('.next-button, tp-yt-paper-icon-button.next-button, #next-button');
+          const pb = $('ytmusic-player-bar');
+          if (pb) {
+            clickElement('.next-button, tp-yt-paper-icon-button.next-button, #next-button', pb);
+          } else {
+            clickElement('.next-button, tp-yt-paper-icon-button.next-button, #next-button');
+          }
           scheduleStateUpdates([150]);
           break;
         }
 
         case 'previous': {
-          clickElement('.previous-button, tp-yt-paper-icon-button.previous-button, #previous-button');
+          const pb = $('ytmusic-player-bar');
+          if (pb) {
+            clickElement('.previous-button, tp-yt-paper-icon-button.previous-button, #previous-button', pb);
+          } else {
+            clickElement('.previous-button, tp-yt-paper-icon-button.previous-button, #previous-button');
+          }
           scheduleStateUpdates([150]);
           break;
         }
 
         case 'like': {
-          clickElement(
-            'ytmusic-like-button-renderer #button-shape-like button, ' +
-            '#like-button-renderer #button-shape-like button, ' +
-            '#like-button-renderer tp-yt-paper-icon-button#like-button, ' +
-            'ytmusic-player-bar ytmusic-like-button-renderer #button-shape-like, ' +
-            'ytmusic-like-button-renderer #button-shape-like, ' +
-            'ytmusic-like-button-renderer tp-yt-paper-icon-button.like'
-          );
+          const pb = $('ytmusic-player-bar');
+          if (pb) {
+            const likeRenderer = $('ytmusic-like-button-renderer, #like-button-renderer, .middle-controls ytmusic-like-button-renderer', pb) || pb;
+            const likeBtn = $(
+              '#button-shape-like button, #button-shape-like, tp-yt-paper-icon-button#like-button, tp-yt-paper-icon-button.like, #like-button, [aria-label*="mag ich" i]:not([aria-label*="nicht" i]), [aria-label*="like" i]:not([aria-label*="dislike" i])',
+              likeRenderer
+            );
+            if (likeBtn) {
+              const btn = likeBtn.querySelector('button') || likeBtn;
+              try { btn.click(); } catch (e) { }
+            }
+          }
           scheduleStateUpdates([60, 200, 450]);
           break;
         }
 
         case 'dislike': {
-          clickElement(
-            'ytmusic-like-button-renderer #button-shape-dislike button, ' +
-            '#like-button-renderer #button-shape-dislike button, ' +
-            '#like-button-renderer tp-yt-paper-icon-button#dislike-button, ' +
-            'ytmusic-player-bar ytmusic-like-button-renderer #button-shape-dislike, ' +
-            'ytmusic-like-button-renderer #button-shape-dislike, ' +
-            'ytmusic-like-button-renderer tp-yt-paper-icon-button.dislike'
-          );
+          const pb = $('ytmusic-player-bar');
+          if (pb) {
+            const likeRenderer = $('ytmusic-like-button-renderer, #like-button-renderer, .middle-controls ytmusic-like-button-renderer', pb) || pb;
+            const dislikeBtn = $(
+              '#button-shape-dislike button, #button-shape-dislike, tp-yt-paper-icon-button#dislike-button, tp-yt-paper-icon-button.dislike, #dislike-button, [aria-label*="mag ich nicht" i], [aria-label*="dislike" i]',
+              likeRenderer
+            );
+            if (dislikeBtn) {
+              const btn = dislikeBtn.querySelector('button') || dislikeBtn;
+              try { btn.click(); } catch (e) { }
+            }
+          }
           scheduleStateUpdates([60, 200, 450]);
           break;
         }

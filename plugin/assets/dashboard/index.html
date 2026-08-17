@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Music Controller - Streamer Studio Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23FF0033'/><polygon points='10,8.5 16,12 10,15.5' fill='%23FFFFFF'/></svg>">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Bar -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="26" height="26">
+            <circle cx="12" cy="12" r="11" fill="#FF0033"/>
+            <circle cx="12" cy="12" r="7" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+            <polygon points="10,8.5 16,12 10,15.5" fill="#FFFFFF"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <div class="title-row">
+            <h1 class="brand-title">YTM Controller</h1>
+            <span id="appVersionBadge" class="version-badge">v1.7.0</span>
+          </div>
+          <span class="brand-subtitle">Streamer Studio & Creator Dashboard</span>
+        </div>
+      </div>
+
+      <!-- Header Right: Quick Status & GitHub -->
+      <div class="header-right">
+        <a href="https://github.com/Smok3y97/ytm-web-controller" target="_blank" rel="noopener noreferrer" class="btn btn-github" title="View Repository on GitHub">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+        <div class="port-badge">Port: <span id="portDisplay">39865</span></div>
+        <div id="connectionStatus" class="status-badge connecting">
+          <span class="status-dot"></span>
+          <span class="status-text">Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Viewport: Balanced 3-Column Studio Grid -->
+    <main class="app-viewport">
+      <div class="studio-3col-layout">
+        <!-- ====================================================
+             COLUMN 1: OVERLAY CUSTOMIZER & CHATBOT COMMANDS (300px)
+        ==================================================== -->
+        <div class="studio-col col-customizer">
+          <!-- Overlay Configurator Card -->
+          <div class="content-card config-card">
+            <div class="pane-section-header">
+              <h2 class="pane-title">OBS Overlay Customizer</h2>
+              <span class="pane-subtitle">Live theme & style configurator</span>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="cfgTheme">Widget Theme</label>
+                <select id="cfgTheme" class="form-control">
+                  <option value="card" selected>Card (Standard)</option>
+                  <option value="compact">Compact (Slim Bar)</option>
+                  <option value="pill">Floating Pill</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cfgTimeMode">Time Display</label>
+                <select id="cfgTimeMode" class="form-control">
+                  <option value="remaining" selected>Remaining (-02:45)</option>
+                  <option value="current">Elapsed (01:15)</option>
+                  <option value="duration">Length (04:00)</option>
+                  <option value="both">Both (01:15 / 04:00)</option>
+                  <option value="none">Hidden</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Accent Color</label>
+              <div class="color-picker-row">
+                <input type="color" id="cfgAccentColor" value="#FF0033" class="color-swatch-input">
+                <input type="text" id="cfgAccentText" value="#FF0033" class="form-control hex-input" maxlength="7">
+                <div class="preset-swatches">
+                  <button type="button" class="swatch-btn" style="background:#FF0033;" data-color="#FF0033" title="Red"></button>
+                  <button type="button" class="swatch-btn" style="background:#00E5FF;" data-color="#00E5FF" title="Cyan"></button>
+                  <button type="button" class="swatch-btn" style="background:#9D00FF;" data-color="#9D00FF" title="Purple"></button>
+                  <button type="button" class="swatch-btn" style="background:#00E676;" data-color="#00E676" title="Green"></button>
+                  <button type="button" class="swatch-btn" style="background:#FF9100;" data-color="#FF9100" title="Orange"></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Background & Opacity</label>
+              <div class="color-picker-row">
+                <input type="color" id="cfgBgColor" value="#000000" class="color-swatch-input">
+                <input type="text" id="cfgBgText" value="#000000" class="form-control hex-input" maxlength="7">
+                <div class="slider-with-val">
+                  <input type="range" id="cfgBgOpacity" min="0" max="1" step="0.05" value="0.85">
+                  <span id="cfgBgOpacityVal">85%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="cfgTextColor">Title Color</label>
+                <div class="color-picker-row">
+                  <input type="color" id="cfgTextColor" value="#FFFFFF" class="color-swatch-input">
+                  <input type="text" id="cfgTextHex" value="#FFFFFF" class="form-control hex-input" maxlength="7">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="cfgSubColor">Artist Color</label>
+                <div class="color-picker-row">
+                  <input type="color" id="cfgSubColor" value="#A0A0A0" class="color-swatch-input">
+                  <input type="text" id="cfgSubHex" value="#A0A0A0" class="form-control hex-input" maxlength="7">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="cfgWidth">Width (px)</label>
+                <input type="number" id="cfgWidth" class="form-control" placeholder="Auto (420)" min="200" max="1920">
+              </div>
+              <div class="form-group">
+                <label for="cfgRadius">Radius (px)</label>
+                <input type="number" id="cfgRadius" class="form-control" placeholder="Auto (16)" min="0" max="100">
+              </div>
+            </div>
+
+            <div class="toggles-grid">
+              <label class="checkbox-label">
+                <input type="checkbox" id="cfgShowCover" checked>
+                <span>Cover Art</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cfgShowProgress" checked>
+                <span>Progress Bar</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cfgMarquee" checked>
+                <span>Title Marquee</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cfgHideOnPause">
+                <span>Hide on Pause</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Vertically Stacked Chatbot Commands Card -->
+          <div class="content-card bots-card">
+            <div class="pane-section-header">
+              <h3 class="pane-title" style="font-size: 0.88rem;">Chatbot Commands</h3>
+              <span class="pane-subtitle">Nightbot, Streamer.bot & Cloudbot</span>
+            </div>
+
+            <div class="chatbots-vertical-list">
+              <!-- Command 1: !song -->
+              <div class="chatbot-row">
+                <div class="chatbot-row-label">
+                  <span class="cmd-badge">!song</span>
+                  <span class="cmd-desc">Current Track Info</span>
+                </div>
+                <div class="chatbot-row-input">
+                  <input type="text" id="cmdSong" readonly class="form-control code-input" value="!addcom !song $(urlfetch http://localhost:39865/api/current)">
+                  <button type="button" class="btn btn-secondary btn-sm btn-copy" data-target="cmdSong">Copy</button>
+                </div>
+              </div>
+
+              <!-- Command 2: !playnext -->
+              <div class="chatbot-row">
+                <div class="chatbot-row-label">
+                  <span class="cmd-badge">!playnext</span>
+                  <span class="cmd-desc">Song Requests</span>
+                </div>
+                <div class="chatbot-row-input">
+                  <input type="text" id="cmdPlaynext" readonly class="form-control code-input" value="!addcom !playnext $(urlfetch http://localhost:39865/api/playnext?url=$(querystring))">
+                  <button type="button" class="btn btn-secondary btn-sm btn-copy" data-target="cmdPlaynext">Copy</button>
+                </div>
+              </div>
+
+              <!-- Command 3: !blacklist -->
+              <div class="chatbot-row">
+                <div class="chatbot-row-label">
+                  <span class="cmd-badge">!blacklist</span>
+                  <span class="cmd-desc">Mod Ban & Skip</span>
+                </div>
+                <div class="chatbot-row-input">
+                  <input type="text" id="cmdBlacklist" readonly class="form-control code-input" value="!addcom -ul=mod !blacklist $(urlfetch http://localhost:39865/api/blacklist?url=$(querystring))">
+                  <button type="button" class="btn btn-secondary btn-sm btn-copy" data-target="cmdBlacklist">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====================================================
+             COLUMN 2: OBS LIVE PREVIEW & BLACKLIST MANAGER (440px)
+        ==================================================== -->
+        <div class="studio-col col-preview-blacklist">
+          <!-- Compact Live OBS Preview & Quick Actions -->
+          <div class="content-card preview-card-compact">
+            <div class="preview-header">
+              <div class="preview-header-left">
+                <span class="preview-title">OBS Browser Source Live Preview</span>
+                <span class="preview-badge">Live Sync</span>
+              </div>
+              <div class="preview-quick-actions">
+                <a id="playerTrackLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary" title="Open currently playing track in YouTube Music">
+                  <span>↗ Track</span>
+                </a>
+                <button type="button" id="btnBlacklistCurrent" class="btn btn-sm btn-danger" title="Blacklist current track and skip immediately">
+                  <span>⛔ Skip</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Compact Checkerboard Viewport -->
+            <div class="preview-viewport-compact">
+              <iframe id="overlayPreviewIframe" src="/overlay" title="OBS Overlay Preview"></iframe>
+            </div>
+
+            <div class="export-box">
+              <div class="export-input-row">
+                <input type="text" id="generatedOverlayUrl" readonly class="form-control code-input">
+                <button type="button" id="btnCopyOverlayUrl" class="btn btn-primary btn-copy">
+                  <span class="btn-text">📋 Copy OBS URL</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Blacklist Manager Card -->
+          <div class="content-card blacklist-card">
+            <div class="pane-section-header with-action" style="margin-bottom: 6px;">
+              <div>
+                <h3 class="pane-title" style="font-size: 0.9rem;">Song Blacklist (blacklist.txt)</h3>
+                <span class="pane-subtitle">Rejected from requests</span>
+              </div>
+              <span id="navBlacklistCount" class="tab-counter" style="background: rgba(255,0,51,0.2); color: #FF0033; border: 1px solid rgba(255,0,51,0.4); padding: 1px 7px;">0 blocked</span>
+            </div>
+
+            <form id="formAddBlacklist" class="blacklist-form" style="margin-bottom: 6px;">
+              <div class="form-row-3">
+                <input type="text" id="inputBlacklistUrl" class="form-control" placeholder="URL / Video ID" required>
+                <input type="text" id="inputBlacklistTitle" class="form-control" placeholder="Title (Optional)">
+                <input type="text" id="inputBlacklistArtist" class="form-control" placeholder="Artist (Optional)">
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">➕ Add</button>
+            </form>
+
+            <div class="table-container">
+              <div class="table-search-bar">
+                <input type="text" id="searchBlacklist" class="form-control" placeholder="🔍 Search blocked tracks...">
+              </div>
+
+              <div class="table-scroll-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Video ID</th>
+                      <th>Artist</th>
+                      <th>Title</th>
+                      <th style="width: 65px; text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="blacklistTableBody">
+                    <tr>
+                      <td colspan="4" class="table-empty">Loading blacklist entries...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====================================================
+             COLUMN 3: SETTINGS & DOCUMENTATION (Flexible Wide Space)
+        ==================================================== -->
+        <div class="studio-col col-settings-docs">
+          <div class="settings-docs-split-grid">
+            <!-- Streamer Settings Card (Left Half of Column 3) -->
+            <div class="content-card settings-column-panel">
+              <div class="pane-section-header with-action">
+                <div>
+                  <h2 class="pane-title">Streamer Settings</h2>
+                  <span class="pane-subtitle">Synchronized with Stream Deck</span>
+                </div>
+                <button type="button" id="btnSaveAllSettings" class="btn btn-primary btn-sm">
+                  💾 Save Settings
+                </button>
+              </div>
+
+              <form id="formStreamerSettings" class="settings-scroll-area">
+                <div class="settings-panel-section">
+                  <h3 class="settings-group-title">Song Requests (!playnext)</h3>
+                  
+                  <div class="form-group">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="setEnableSongRequests">
+                      <span><strong>Enable Viewer Requests</strong></span>
+                    </label>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setSongRequestMode">Queue Placement</label>
+                    <select id="setSongRequestMode" class="form-control">
+                      <option value="playNext">Play Next (After current)</option>
+                      <option value="addToQueue">Add to End of Queue</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setSongRequestSuccessTemplate">Success Message</label>
+                    <input type="text" id="setSongRequestSuccessTemplate" class="form-control" placeholder="Added to queue: {url} 🎶">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setSongRequestDisabledTemplate">Requests Paused Message</label>
+                    <input type="text" id="setSongRequestDisabledTemplate" class="form-control" placeholder="Song requests paused.">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setSongRequestErrorTemplate">Invalid Link Message</label>
+                    <input type="text" id="setSongRequestErrorTemplate" class="form-control" placeholder="Invalid YouTube link.">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setSongRequestBlockedTemplate">Blocked Track Message</label>
+                    <input type="text" id="setSongRequestBlockedTemplate" class="form-control" placeholder="This song is blocked 🚫">
+                  </div>
+                </div>
+
+                <div class="settings-panel-section">
+                  <h3 class="settings-group-title">Blacklist & OBS Text Export</h3>
+
+                  <div class="form-group">
+                    <label for="setBlacklistFilePath">Custom Blacklist File Path</label>
+                    <input type="text" id="setBlacklistFilePath" class="form-control" placeholder="Default (blacklist.txt)">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setSongBlacklistSuccessTemplate">Blacklist Success Message</label>
+                    <input type="text" id="setSongBlacklistSuccessTemplate" class="form-control" placeholder="Blacklisted: {artist} - {title} ⛔">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="setEnableObsExport">
+                      <span><strong>Enable OBS Text Export (.txt)</strong></span>
+                    </label>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setObsFilePath">OBS File Path</label>
+                    <input type="text" id="setObsFilePath" class="form-control" placeholder="Default (ytm_current_track.txt)">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setObsFormatTemplate">Now Playing Text Template</label>
+                    <input type="text" id="setObsFormatTemplate" class="form-control" placeholder="Currently Playing: {artist} - {title}">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="setObsClearOnPause">
+                      <span>Clear file when paused</span>
+                    </label>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Documentation & Wiki Spotlight Card (Right Half of Column 3) -->
+            <div class="content-card docs-column-panel">
+              <div class="pane-section-header with-action">
+                <div>
+                  <h2 class="pane-title">Documentation & Setup</h2>
+                  <span class="pane-subtitle">Guides & API reference</span>
+                </div>
+                <a href="https://github.com/Smok3y97/ytm-web-controller#readme" target="_blank" rel="noopener noreferrer" class="btn btn-github btn-sm" title="Full GitHub Docs">
+                  <span>📚 GitHub Docs ↗</span>
+                </a>
+              </div>
+
+              <div class="docs-scroll-area">
+                <div class="docs-card spotlight">
+                  <div class="spotlight-header">
+                    <span class="spotlight-badge">Official Repository Docs</span>
+                    <h3 class="docs-card-title">📖 GitHub Wiki & Architecture</h3>
+                  </div>
+                  <p>In-depth architectural guides, REST schemas and setup tutorials:</p>
+                  <div class="github-links-grid">
+                    <a href="https://github.com/Smok3y97/ytm-web-controller#readme" target="_blank" rel="noopener noreferrer" class="doc-link-button">
+                      <span>📘 README Guide</span>
+                    </a>
+                    <a href="https://github.com/Smok3y97/ytm-web-controller/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="doc-link-button">
+                      <span>🏛️ Architecture & API</span>
+                    </a>
+                    <a href="https://github.com/Smok3y97/ytm-web-controller/blob/main/docs/plugin-guideline.md" target="_blank" rel="noopener noreferrer" class="doc-link-button">
+                      <span>🎨 Plugin Guidelines</span>
+                    </a>
+                    <a href="https://github.com/Smok3y97/ytm-web-controller/issues" target="_blank" rel="noopener noreferrer" class="doc-link-button">
+                      <span>💬 Issues & Support</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div class="docs-card">
+                  <h3 class="docs-card-title">🎨 OBS Browser Source Parameters</h3>
+                  <p>Source URL: <code>http://localhost:39865/overlay</code> (Size: <code>460x180 px</code>, 60 FPS)</p>
+                  <ul>
+                    <li><code>?theme=card|compact|pill</code></li>
+                    <li><code>?accent=HEX&bg=HEX&bgOpacity=0.85</code></li>
+                    <li><code>?timeMode=remaining|current|duration|both|none</code></li>
+                  </ul>
+                </div>
+
+                <div class="docs-card">
+                  <h3 class="docs-card-title">🤖 Chatbot Endpoints & Placeholders</h3>
+                  <ul>
+                    <li><code>GET /api/current?format={artist} - {title}</code></li>
+                    <li><code>GET /api/playnext?url=&lt;url&gt;</code> (Song requests)</li>
+                    <li><code>GET /api/blacklist?url=&lt;url&gt;</code> (Ban & skip)</li>
+                    <li><strong>Placeholders</strong>: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>, <code>{duration}</code>, <code>{url}</code></li>
+                  </ul>
+                </div>
+
+                <div class="docs-card">
+                  <h3 class="docs-card-title">⛔ Song Blacklist & Text Export</h3>
+                  <ul>
+                    <li><code>blacklist.txt</code> auto-reloads on file change.</li>
+                    <li>OBS Text file writes to <code>ytm_current_track.txt</code> in the plugin folder.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

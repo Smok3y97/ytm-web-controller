@@ -167,7 +167,12 @@ The packaging script automates:
 
 ## ⚠️ 6. Critical Guidelines for AI Agents
 
-* **Maintain Architecture Documentation**: Always keep [`docs/architecture.md`](docs/architecture.md) up-to-date whenever new services, actions, UI components, or architectural workflows are added or modified.
+* **Comprehensive Documentation Maintenance (`docs/` & `README.md`)**: Always keep documentation files inside [`docs/`](docs/) (as well as [`README.md`](README.md)) up to date whenever new services, actions, UI components, settings, or architectural workflows are added or modified.
+  - **Highest Priority ([`docs/architecture.md`](docs/architecture.md))**: Must meticulously reflect every backend service, REST route, Mermaid diagram, and monorepo file structure change.
+  - **User & Streamer Guides ([`docs/obs-setup.md`](docs/obs-setup.md), [`docs/features.md`](docs/features.md), [`docs/configuration.md`](docs/configuration.md))**: Must accurately document all user-facing settings, chatbot commands, action tables, and OBS setups.
+  - **Developer & Reference Guides ([`docs/development.md`](docs/development.md), [`docs/ai-disclosure.md`](docs/ai-disclosure.md))**: Must keep build steps and testing environments synchronized without stale or contradictory information.
+  - **Do NOT Edit [`docs/plugin-guideline.md`](docs/plugin-guideline.md)**: Serves as an immutable upstream reference mirroring the official Elgato specifications and must **never** be manually modified by AI agents.
+  - **Focused & Minimal Edits**: Avoid unnecessary sentence restructuring, cosmetic rephrasing, or adding fluff. Focus documentation changes strictly on the essentials and factual updates.
 * **Conditional Build & Validation**:
   - Run packaging and validation (`npm run package` / `npm run validate`) **only** when modifying code, assets, UI, or manifests (`plugin/`, `extension/`, `package.json`).
   - Do **not** trigger unnecessary build/package/validation runs when making changes strictly to markdown documentation (`.md` files).

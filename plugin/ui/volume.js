@@ -31,20 +31,10 @@ function saveSettings() {
   });
 }
 
-if (volumeStepInput) {
-  volumeStepInput.addEventListener('change', saveSettings);
-  volumeStepInput.addEventListener('input', () => {
-    const val = parseInt(volumeStepInput.value, 10);
-    if (val >= 1 && val <= 25) saveSettings();
-  });
-}
+StreamDeckClient.bindAutoSave([volumeStepInput, titleTemplateInput], saveSettings);
 if (showVolumeTitleCheckbox) {
   showVolumeTitleCheckbox.addEventListener('change', () => {
     updateVisibility();
     saveSettings();
   });
-}
-if (titleTemplateInput) {
-  titleTemplateInput.addEventListener('input', saveSettings);
-  titleTemplateInput.addEventListener('change', saveSettings);
 }

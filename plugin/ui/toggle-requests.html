@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Song Requests Settings</title>
+  <link rel="stylesheet" href="css/sdpi.css">
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <div class="sdpi-heading">Song Requests (!playnext)</div>
+
+    <!-- Enable / Pause Song Requests Toggle -->
+    <div class="sdpi-item">
+      <label class="sdpi-checkbox-wrap">
+        <input type="checkbox" id="enableSongRequests">
+        <span>Enable Chatbot Song Requests</span>
+      </label>
+    </div>
+    <div class="sdpi-hint">
+      When checked, viewers can queue songs via chat command. Pressing this Stream Deck key toggles requests on or off instantly.
+    </div>
+
+    <!-- Chatbot Command Helper -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Chatbot Command</div>
+      <div class="sdpi-item-value">
+        <div class="sdpi-input-group">
+          <input type="text" id="playnextCmdHelper" readonly value="!addcom !playnext $(urlfetch http://localhost:39865/api/playnext?url=$(querystring))">
+          <button type="button" id="copyPlaynextBtn" class="sdpi-btn">Copy</button>
+        </div>
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Ready-to-use command for Nightbot (or fetch <code>/api/playnext?url=...</code> in Streamer.bot).
+    </div>
+
+    <!-- Queue Placement -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Queue Placement</div>
+      <div class="sdpi-item-value">
+        <select id="songRequestMode" class="sdpi-item-value">
+          <option value="playNext">Play Next (After current song)</option>
+          <option value="addToQueue">Add to End of Queue</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Message Templates -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Success Message</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="songRequestSuccessTemplate" placeholder="Added to queue: {url} 🎶" value="Added to queue: {url} 🎶">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Placeholders: <code>{url}</code>, <code>{videoId}</code>, <code>{mode}</code>
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Paused Message</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="songRequestDisabledTemplate" placeholder="Song requests are currently paused by the streamer." value="Song requests are currently paused by the streamer.">
+      </div>
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Error Message</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="songRequestErrorTemplate" placeholder="Invalid YouTube link or video ID." value="Invalid YouTube link or video ID.">
+      </div>
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Blocked Message</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="songRequestBlockedTemplate" placeholder="This song is blocked from requests 🚫" value="This song is blocked from requests 🚫">
+      </div>
+    </div>
+
+    <!-- Global Settings container dynamically rendered by global-settings.js -->
+    <div id="global-settings-container"></div>
+  </div>
+
+  <script src="streamdeck-client.js"></script>
+  <script src="global-settings.js"></script>
+  <script src="toggle-requests.js"></script>
+</body>
+</html>

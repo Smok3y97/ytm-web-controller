@@ -61,6 +61,7 @@ export interface WSMessage<T = unknown> {
 export interface GlobalSettings extends JsonObject {
   [key: string]: JsonValue | undefined;
   wsPort?: number;
+  streamerModeEnabled?: boolean;
   enableDiscordRPC?: boolean;
   discordClientId?: string;
   enableObsExport?: boolean;
@@ -74,6 +75,9 @@ export interface GlobalSettings extends JsonObject {
   songRequestErrorTemplate?: string;
   songRequestBlockedTemplate?: string;
   songRequestBlacklist?: string;
+  songBlacklistSuccessTemplate?: string;
+  songBlacklistErrorTemplate?: string;
+  blacklistFilePath?: string;
   isVersionMismatch?: boolean;
   extensionVersion?: string;
   requiredPluginVersion?: string;

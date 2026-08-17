@@ -19,14 +19,4 @@ function saveSettings() {
   });
 }
 
-if (titleTemplateInput) {
-  titleTemplateInput.addEventListener('input', saveSettings);
-  titleTemplateInput.addEventListener('change', saveSettings);
-}
-if (timeTemplateInput) {
-  timeTemplateInput.addEventListener('input', saveSettings);
-  timeTemplateInput.addEventListener('change', saveSettings);
-}
-if (showCoverCheckbox) {
-  showCoverCheckbox.addEventListener('change', saveSettings);
-}
+StreamDeckClient.bindAutoSave([titleTemplateInput, timeTemplateInput, showCoverCheckbox], saveSettings);

@@ -88,22 +88,14 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
   ): Promise<void> {
     try {
       if (dialAction.isDial()) {
-        if (state.isVersionMismatch) {
-          const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
-          await dialAction.setFeedback({
-            title: warningTitle,
-            value: 'Mismatch',
-            icon: 'assets/actions/trackdial/icon.svg',
-            indicator: 0
-          });
+        if (await this.renderMismatchFeedback(dialAction, state, 'assets/actions/trackdial/icon.svg')) {
           return;
         }
 
         const progressPercent = (state.duration > 0 && state.currentTime >= 0)
           ? Math.min(100, Math.max(0, Math.round((Math.min(state.currentTime, state.duration) / state.duration) * 100)))
           : 0;
-        const rawTitle = this.getTitleTemplate(settings, dialAction.id);
-        const titleText = MarqueeService.getInstance().getDisplayText(StateManager.getInstance().formatTitleTemplate(rawTitle));
+        const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
         const timeText = StateManager.getInstance().formatTimeTemplate(settings.timeTemplate || '{remaining}');
 
         const coverImage = (settings.showCover !== false && state.coverBase64)
@@ -117,12 +109,7 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
           indicator: progressPercent
         });
       } else if (dialAction.isKey()) {
-        if (settings.showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
-          const keyImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused);
-          await dialAction.setImage(keyImage);
-        } else {
-          await dialAction.setImage(undefined);
-        }
+        await this.updateKeyCoverImage(dialAction, state, settings.showCover);
       }
     } catch { }
   }

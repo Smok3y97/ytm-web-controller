@@ -107,21 +107,11 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
   ): Promise<void> {
     try {
       if (dialAction.isDial()) {
-        if (state.isVersionMismatch) {
-          const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
-          await dialAction.setFeedback({
-            title: warningTitle,
-            value: 'Mismatch',
-            icon: 'assets/actions/seekdial/icon.svg',
-            indicator: 0
-          });
+        if (await this.renderMismatchFeedback(dialAction, state, 'assets/actions/seekdial/icon.svg')) {
           return;
         }
 
-        const rawTitle = this.getTitleTemplate(settings, dialAction.id);
-        const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
-        const marqueeTitle = MarqueeService.getInstance().getDisplayText(fullTitle);
-
+        const marqueeTitle = this.getFormattedMarqueeTitle(settings, dialAction.id);
         const timeTemplate = settings.timeTemplate || '{current} / {duration}';
         const timeText = StateManager.getInstance().formatTimeTemplate(
           timeTemplate,
@@ -143,12 +133,7 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
           indicator: indicatorValue
         });
       } else if (dialAction.isKey()) {
-        if (settings.showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
-          const keyImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused);
-          await dialAction.setImage(keyImage);
-        } else {
-          await dialAction.setImage(undefined);
-        }
+        await this.updateKeyCoverImage(dialAction, state, settings.showCover);
       }
     } catch { }
   }

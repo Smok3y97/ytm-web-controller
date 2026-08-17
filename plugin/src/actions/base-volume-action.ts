@@ -42,8 +42,12 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
   override async onWillDisappear(ev: WillDisappearEvent<VolumeSettings>): Promise<void> {
     this.lastRenderedTitle.delete(ev.action.id);
     this.lastRenderedMismatch.delete(ev.action.id);
+    this.removeActiveAction(ev.action.id);
+  }
+
+  protected removeActiveAction(actionId: string): void {
     for (const a of this.activeActions) {
-      if (a.id === ev.action.id) {
+      if (a.id === actionId) {
         this.activeActions.delete(a);
         break;
       }

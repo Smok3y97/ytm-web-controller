@@ -1,10 +1,19 @@
+<a id="top"></a>
+
 # Configuration & Customization Guide (`docs/configuration.md`)
 
 This guide provides a comprehensive walkthrough of all user-facing configuration options and hardware interactions available in the Stream Deck Property Inspector.
 
 ---
 
-## 🌐 1. Global Plugin Integrations (Plugin-Wide)
+## 📑 Table of Contents
+- [🌐 1. Global Plugin Integrations (Plugin-Wide)](#-1-global-plugin-integrations-plugin-wide)
+- [🎛️ 2. Stream Deck + Dials & LCD Customization](#-2-stream-deck--dials--lcd-customization)
+- [🔘 3. Keypad Action Customization](#-3-keypad-action-customization)
+
+---
+
+## [🌐 1. Global Plugin Integrations (Plugin-Wide)](#top)
 
 Global settings are accessible in the Property Inspector of **every single button and dial**. Modifying any of these options auto-saves and applies plugin-wide across all actions.
 
@@ -26,10 +35,10 @@ Global settings are accessible in the Property Inspector of **every single butto
   - **Paused Message Template**: Custom response when song requests are paused by the streamer (Default: `Song requests are currently paused by the streamer.`).
   - **Error Message Template**: Custom response for invalid links or unparseable IDs (Default: `Invalid YouTube link or video ID.`).
   - **Blocked Message Template**: Custom response when a viewer requests a blacklisted track (Default: `This song is blocked from requests 🚫`).
-  - **Song Blacklist**: Comma-separated or newline-separated list of banned YouTube video IDs or links (e.g. `dQw4w9WgXcQ` for Rick Astley).
+  - **Song Blacklist (`blacklist.txt`)**: Persistent local blacklist file storing banned YouTube video IDs (`<VIDEO_ID> | <Artist> - <Title>`). Can be edited directly in any text editor via the **Open Blacklist in Editor** button or automatically populated with the **Blacklist & Skip Track** key action.
 - **OBS Text File Export (.txt)**:
   - **Enable OBS text export (.txt)**: Automatically writes metadata of the currently playing track to a local text file for streaming overlays using OBS Text (GDI+).
-  - **File Path**: Absolute destination path where the `.txt` file is saved (e.g. `C:\Users\username\Documents\ytm_current_track.txt`). Parent directories are created automatically if they do not exist.
+  - **File Path**: Absolute destination path where the `.txt` file is saved (defaults to `ytm_current_track.txt` inside plugin folder). Parent directories are created automatically if they do not exist.
   - **Format Template**: Fully customizable string with placeholders `{artist}`, `{title}`, `{album}` (Default: `Currently Playing: {artist} - {title}`).
   - **Clear file on pause/stop**: When enabled (default), empties the text file whenever music is paused or stopped. Disabling OBS export also clears the file cleanly.
 
@@ -45,7 +54,7 @@ Global settings are accessible in the Property Inspector of **every single butto
 
 ---
 
-## 🎛️ 2. Stream Deck + Dials & LCD Customization
+## [🎛️ 2. Stream Deck + Dials & LCD Customization](#top)
 
 ### Track Controller (Dial)
 - **Controls & Interactions**:
@@ -79,7 +88,7 @@ Global settings are accessible in the Property Inspector of **every single butto
 
 ---
 
-## 🔘 3. Keypad Action Customization
+## [🔘 3. Keypad Action Customization](#top)
 
 ### Play / Pause
 - **Controls & Interactions**:
@@ -93,6 +102,10 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🟢 **State 0 (Requests ON)**: White playlist queue with Emerald Green note (`#00E676`).
   - 🔴 **State 1 (Requests OFF)**: Muted gray playlist queue with YouTube Music Red note (`#FF0033`).
 - **Bidirectional Sync**: Instantly synchronizes with the `Enable Chatbot Song Requests` checkbox in the Property Inspector and across all active Stream Deck devices.
+
+### Blacklist & Skip Track
+- **Controls & Interactions**: Single keypress appends the currently playing track to `blacklist.txt` and skips immediately to the next track.
+- **Dedicated Inspector**: Configure `blacklist.txt` destination file path and response notification.
 
 ### Volume Up & Volume Down
 - **Step Size (%)**: Percentage volume adjustment per keypress (**1% to 25%**, Default: `5%`).

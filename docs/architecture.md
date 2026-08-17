@@ -1,10 +1,26 @@
+<a id="top"></a>
+
 # System Architecture & Technical Specifications (`docs/architecture.md`)
 
 This document provides an in-depth technical overview of the **YouTube Music Web Controller** monorepo architecture, design principles, and component interactions.
 
 ---
 
-## 🏛️ 1. High-Level System Overview
+## 📑 Table of Contents
+- [🏛️ 1. High-Level System Overview](#-1-high-level-system-overview)
+- [🧩 2. Core Architectural Principles](#-2-core-architectural-principles)
+- [🏗️ 3. Complete Monorepo Structure](#-3-complete-monorepo-structure)
+- [🌐 4. Browser Companion Extension Layer (`extension/`)](#-4-browser-companion-extension-layer-extension)
+- [🔌 5. Backend Services Layer (`plugin/src/services/`)](#-5-backend-services-layer-pluginsrcservices)
+- [🕹️ 6. Action Controllers Layer (`plugin/src/actions/`)](#-6-action-controllers-layer-pluginsrcactions)
+- [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/ui/`)](#-7-property-inspector-pi-modular-architecture-pluginui)
+- [🔒 8. Version Handshake & Incompatibility Warning Protocol](#-8-version-handshake--incompatibility-warning-protocol)
+- [⚡ 9. Stream Deck + Dial & LCD Handling](#-9-stream-deck--dial--lcd-handling)
+- [🎥 10. Streamer Studio, HTTP API & Overlay Architecture](#-10-streamer-studio-http-api--overlay-architecture)
+
+---
+
+## [🏛️ 1. High-Level System Overview](#top)
 
 The project bridges the official [YouTube Music Web App](https://music.youtube.com) and the [Elgato Stream Deck](https://www.elgato.com/stream-deck) hardware using an event-driven, local WebSocket connection with bidirectional version handshake validation.
 
@@ -60,7 +76,7 @@ graph LR
 
 ---
 
-## 🧩 2. Core Architectural Principles
+## [🧩 2. Core Architectural Principles](#top)
 
 1. **Zero-Polling (`setInterval == 0`)**:
    - The browser extension never polls the DOM on a periodic interval.
@@ -84,7 +100,7 @@ graph LR
 
 ---
 
-## 🏗️ 3. Complete Monorepo Structure
+## [🏗️ 3. Complete Monorepo Structure](#top)
 
 ```
 ytm-web-controller/
@@ -134,7 +150,11 @@ ytm-web-controller/
     │   ├── plugin-icon@2x.png   # High-DPI YouTube Music badge (512x512)
     │   ├── generate_assets.ps1  # Automated asset generator script (PNG & invokes SVG generator)
     │   ├── generate_official_svgs.mjs # Official SVG vector icons generator
-    │   ├── overlay/             # OBS Studio Browser Source overlay assets
+    │   ├── dashboard/           # Streamer Studio Web Dashboard assets (/dashboard)
+    │   │   ├── index.html       # 3-Column Studio Dashboard DOM structure
+    │   │   ├── style.css        # Responsive dark slate stylesheet
+    │   │   └── dashboard.js     # Live WebSocket sync, overlay generator & settings REST client
+    │   ├── overlay/             # OBS Studio Browser Source overlay assets (/overlay)
     │   │   ├── index.html       # Transparent overlay widget DOM structure
     │   │   ├── style.css        # Responsive frosted dark theme & animation styles
     │   │   └── overlay.js       # Live WebSocket client & URL parameter parser
@@ -149,6 +169,8 @@ ytm-web-controller/
     │   ├── volume-dial.html/.js # Volume Controller Dial inspector
     │   ├── seek-dial.html/.js   # Seek Controller Dial inspector
     │   ├── playpause.html/.js   # Play/Pause inspector (Album cover toggle)
+    │   ├── toggle-requests.html/.js # Toggle Song Requests action inspector
+    │   ├── blacklist-and-skip.html/.js # Blacklist & Skip action inspector
     │   ├── volume.html/.js      # Volume Up & Down keys inspector
     │   └── css/sdpi.css         # Stream Deck Property Inspector stylesheet
     └── src/                     # Backend Source Code (TypeScript)
@@ -164,6 +186,7 @@ ytm-web-controller/
         │   ├── warning-icons.ts     # Dynamic SVG warning icon generator for mismatch states
         │   ├── discord-rpc.ts       # Isolated Discord Rich Presence client
         │   ├── obs-exporter.ts      # Live .txt track info exporter for OBS
+        │   ├── blacklist-service.ts # Persistent song blacklist manager (blacklist.txt)
         │   ├── window-focus.ts      # Win32 & OS window focus helper for YouTube Music / PWA
         │   └── clipboard.ts         # Native clipboard bridge for song URL copying
         └── actions/             # Independent Action Controllers
@@ -175,6 +198,7 @@ ytm-web-controller/
             ├── volume-dial.ts   # Volume Controller (Dial & LCD)
             ├── seek-dial.ts     # Seek Controller (Dial & LCD)
             ├── toggle-requests.ts # Toggle Song Requests key action
+            ├── blacklist-and-skip.ts # Blacklist & Skip Track key action
             ├── volume-up.ts     # Volume Up key
             ├── volume-down.ts   # Volume Down key
             ├── mute.ts          # Mute / Unmute toggle key
@@ -189,7 +213,7 @@ ytm-web-controller/
 
 ---
 
-## 🌐 4. Browser Companion Extension Layer (`extension/`)
+## [🌐 4. Browser Companion Extension Layer (`extension/`)](#top)
 
 The browser companion extension runs in the context of `https://music.youtube.com/*` and acts as the bridge between YouTube Music's web player DOM and the local Stream Deck WebSocket server.
 
@@ -223,19 +247,20 @@ The browser companion extension runs in the context of `https://music.youtube.co
 
 ---
 
-## 🔌 5. Backend Services Layer (`plugin/src/services/`)
+## [🔌 5. Backend Services Layer (`plugin/src/services/`)](#top)
 
 | Service | File | Responsibility |
 | :--- | :--- | :--- |
 | **Version Control** | [`version-control.ts`](../plugin/src/services/version-control.ts) | Centralized single-source-of-truth for version comparison, handshake validation, and dynamic warning messaging. |
 | **WebSocket Server** | [`websocket-server.ts`](../plugin/src/services/websocket-server.ts) | Unified listener on port `39865` hosting `ws.Server` alongside native `http.Server` instance. |
-| **HTTP API Router** | [`http-api.ts`](../plugin/src/services/http-api.ts) | Zero-dependency HTTP router for Chatbot metadata (`/api/current`), Song Requests (`/api/playnext`, `/api/queue`), blacklist filtering, and OBS Browser Overlay static file serving (`/overlay`). |
+| **HTTP API Router** | [`http-api.ts`](../plugin/src/services/http-api.ts) | Zero-dependency HTTP router for Web Dashboard (`/dashboard`), OBS Browser Overlay (`/overlay`), Chatbot metadata (`/api/current`), Song Requests (`/api/playnext`, `/api/queue`), and Blacklist REST API (`/api/blacklist`). Guarded by `streamerModeEnabled`. |
 | **State Manager** | [`state-manager.ts`](../plugin/src/services/state-manager.ts) | Centralized, single-source-of-truth playback store emitting `stateChanged` events. |
 | **Marquee Service** | [`marquee-service.ts`](../plugin/src/services/marquee-service.ts) | Centralized Ping-Pong (bounce) scroller with character-width estimation for Stream Deck + LCDs. |
 | **Image Renderer** | [`image-renderer.ts`](../plugin/src/services/image-renderer.ts) | In-memory RAM base64 cover/canvas rendering without disk I/O. |
 | **Warning Icons** | [`warning-icons.ts`](../plugin/src/services/warning-icons.ts) | Generates dynamic pixel-perfect SVG warning badges for keypad actions during version mismatch. |
 | **Discord RPC** | [`discord-rpc.ts`](../plugin/src/services/discord-rpc.ts) | Isolated Discord Rich Presence client with automatic backoff and reconnection (powered by `@xhayper/discord-rpc`). |
 | **OBS Exporter** | [`obs-exporter.ts`](../plugin/src/services/obs-exporter.ts) | Isolated text file exporter for streamers (`.txt` overlay files). |
+| **Blacklist Service** | [`blacklist-service.ts`](../plugin/src/services/blacklist-service.ts) | Persistent song blacklisting manager (`blacklist.txt`) with O(1) in-memory cache, file watching, and editor launching. |
 | **Window Focus** | [`window-focus.ts`](../plugin/src/services/window-focus.ts) | High-performance foreground window activation for YouTube Music / PWA via pre-compiled native Win32 binary ([`ytm-focus.exe`](../scripts/ytm-focus.cs)) and macOS AppleScript bridge. |
 | **Clipboard** | [`clipboard.ts`](../plugin/src/services/clipboard.ts) | Cross-platform clipboard bridge for song URL sharing. |
 
@@ -287,14 +312,14 @@ To guarantee instantaneous, reliable window activation across all desktop enviro
 
 ---
 
-## 🕹️ 6. Action Controllers Layer (`plugin/src/actions/`)
+## [🕹️ 6. Action Controllers Layer (`plugin/src/actions/`)](#top)
 
 Each Stream Deck key and dial is an independent controller registered with the `@elgato/streamdeck` SDK:
 
 * **Base Controllers**:
-  * [`base-state-action.ts`](../plugin/src/actions/base-state-action.ts): Common base class handling connection indicators, dynamic SVG state switching, version mismatch guards, and StateManager lifecycle.
-  * [`base-volume-action.ts`](../plugin/src/actions/base-volume-action.ts): Common base class for volume keys handling percentage formatting and Title Styler integration.
-  * [`base-dial-action.ts`](../plugin/src/actions/base-dial-action.ts): Common base class for Stream Deck + dials handling push-jitter suppression, marquee listeners, feedback layout assignment, and unified LCD rendering.
+  * [`base-state-action.ts`](../plugin/src/actions/base-state-action.ts): Common base class handling connection indicators, dynamic SVG state switching, version mismatch guards, centralized action instance lifecycle/cleanup (`removeActiveAction`), and StateManager store subscriptions.
+  * [`base-volume-action.ts`](../plugin/src/actions/base-volume-action.ts): Common base class for volume keys handling percentage formatting, Title Styler integration, and instance cleanup.
+  * [`base-dial-action.ts`](../plugin/src/actions/base-dial-action.ts): Common base class for Stream Deck + dials handling push-jitter suppression, marquee listeners, feedback layout assignment, unified LCD rendering, shared marquee title formatting (`getFormattedMarqueeTitle`), Mismatch feedback (`renderMismatchFeedback`), in-RAM cover rendering (`updateKeyCoverImage`), and dial instance cleanup (`removeActiveDial`).
 * **Keypad Actions**:
   * [`play-pause.ts`](../plugin/src/actions/play-pause.ts): Dual-state key with live album art canvas background rendering, short-press toggle, and long-press (hold ~450ms) window/tab foreground focus.
   * [`toggle-requests.ts`](../plugin/src/actions/toggle-requests.ts): Live toggle for Chatbot Song Requests (!playnext) with State 0 (`Requests ON` / Green) and State 1 (`Requests OFF` / Red), `lastRenderedState` instance tracking, and bidirectional global settings synchronization.
@@ -307,7 +332,7 @@ Each Stream Deck key and dial is an independent controller registered with the `
 
 ---
 
-## 🎨 7. Property Inspector (PI) Modular Architecture (`plugin/ui/`)
+## [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/ui/`)](#top)
 
 The Property Inspector frontend uses a component-based modular structure:
 
@@ -331,13 +356,14 @@ The Property Inspector frontend uses a component-based modular structure:
 ├────────────────────────────────────────────────────────────┤
 │  3. StreamDeckClient Bridge (streamdeck-client.js)         │
 │     - Low-level WebSocket client to Stream Deck software   │
+│     - Auto-save form binder (StreamDeckClient.bindAutoSave)│
 │     - Auto-save dispatch (setSettings/setGlobalSettings)   │
 └────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔒 8. Version Handshake & Incompatibility Warning Protocol
+## [🔒 8. Version Handshake & Incompatibility Warning Protocol](#top)
 
 1. **Handshake Sequence**:
    - Extension connects to `ws://127.0.0.1:<port>` and immediately transmits:
@@ -386,7 +412,95 @@ The Property Inspector frontend uses a component-based modular structure:
 
 ---
 
-## ⚡ 9. Stream Deck + Dial & LCD Handling
+## [⚡ 9. Stream Deck + Dial & LCD Handling](#top)
+
+The plugin interfaces directly with the hardware capabilities of the **Stream Deck +**:
+
+1. **Push-Jitter Suppression**:
+   - Built-in ~250ms software debouncing prevents accidental dial rotation ticks from registering when physically pushing the dial down.
+2. **Ping-Pong Marquee Animation Engine ([`marquee-service.ts`](../plugin/src/services/marquee-service.ts))**:
+   - Calculates proportional character widths based on standard LCD font metrics.
+   - Smoothly scrolls long titles back and forth with edge padding, 2-second hold at edges, and sub-10Hz rendering limits to comply with Elgato hardware flooding restrictions.
+3. **In-Memory Dynamic Canvas Drawing ([`image-renderer.ts`](../plugin/src/services/image-renderer.ts))**:
+   - Dynamically composites volume progress bars, mute icons, and album art thumbnails into Base64 Data URLs without creating temporary files on disk.
+
+---
+
+## [🎥 10. Streamer Studio, HTTP API & Overlay Architecture](#top)
+
+The plugin provides an integrated, zero-framework HTTP and streaming service layer running directly on top of the native Node.js HTTP server.
+
+```mermaid
+graph TD
+    subgraph ClientLayer ["🖥️ External Clients & Overlays"]
+        DASH["Streamer Studio Dashboard\n(Browser /dashboard)"]
+        OBS_BROWSER["OBS Browser Source\n(Widget /overlay)"]
+        CHATBOT["Chatbot / Mod\n(!song, !playnext, !blacklist)"]
+        OBS_TEXT["OBS Text Source\n(GDI+ / FreeType 2)"]
+    end
+
+    subgraph ServerLayer ["⚙️ Plugin Core (Port 39865)"]
+        HTTP_SRV["Native Node.js http.Server\n(Single-Port Engine)"]
+        GUARD["Streamer Mode Guard\n(streamerModeEnabled)"]
+        API["HttpApiService\n(plugin/src/services/http-api.ts)"]
+        WS["WebSocketServer\n(plugin/src/services/websocket-server.ts)"]
+        BL_SVC["BlacklistService\n(plugin/src/services/blacklist-service.ts)"]
+        OBS_SVC["ObsExporterService\n(plugin/src/services/obs-exporter.ts)"]
+        STATE["StateManager\n(plugin/src/services/state-manager.ts)"]
+    end
+
+    subgraph StorageLayer ["💾 Local Storage"]
+        BL_FILE["blacklist.txt\n(Plugin Directory)"]
+        TXT_FILE["ytm_current_track.txt\n(Plugin Directory)"]
+        SD_SETTINGS["GlobalSettings\n(Stream Deck SDK)"]
+    end
+
+    DASH -- "HTTP GET/POST /api/settings" --> HTTP_SRV
+    DASH -- "HTTP GET/POST/DELETE /api/blacklist" --> HTTP_SRV
+    OBS_BROWSER -- "HTTP GET /overlay & Assets" --> HTTP_SRV
+    CHATBOT -- "HTTP GET /api/current, /api/playnext" --> HTTP_SRV
+    
+    HTTP_SRV --> GUARD
+    GUARD --> API
+    
+    API -- "Two-way Sync" --> SD_SETTINGS
+    API -- "Query / Add / Delete" --> BL_SVC
+    BL_SVC <--> BL_FILE
+    
+    STATE --> OBS_SVC
+    OBS_SVC --> TXT_FILE
+    TXT_FILE --> OBS_TEXT
+    
+    STATE -- "Real-time State Events" --> WS
+    WS -- "WebSocket Frame" --> OBS_BROWSER
+    WS -- "WebSocket Frame" --> DASH
+```
+
+### 1. Single-Port Native HTTP Engine
+- **Zero Port Collisions**: Attaches the HTTP request handler directly to the existing `http.Server` instance running the WebSocket server. Never opens a secondary port.
+- **Streamer Mode Guard**: When `streamerModeEnabled === false`, all HTTP routes (`/dashboard`, `/overlay`, `/api/*`) return `404 Not Found` with zero background processing, ensuring standard media key users experience zero overhead.
+
+### 2. REST API Endpoints Reference
+| Endpoint | Method | Role & Payload |
+| :--- | :--- | :--- |
+| `/dashboard` | `GET` | Serves the 3-column Single-Screen Streamer Studio Dashboard. |
+| `/overlay` | `GET` | Serves the transparent, customizable OBS Browser Source widget. |
+| `/api/current` | `GET` | Returns currently playing song info formatted via `?format=...`. |
+| `/api/playnext` | `GET` | Validates YouTube video ID, checks blacklist, and triggers non-interruptive queuing. |
+| `/api/blacklist` | `GET` | Returns list of blacklisted tracks (JSON or plaintext) or handles mod query blacklisting. |
+| `/api/blacklist` | `POST` | Adds track to `blacklist.txt` (`{ url, title, artist }`). |
+| `/api/blacklist/:id` | `DELETE` | Removes video ID from `blacklist.txt`. |
+| `/api/settings` | `GET` | Returns current `GlobalSettings` JSON object. |
+| `/api/settings` | `POST` | Updates and persists `GlobalSettings` to Stream Deck runtime. |
+
+### 3. Persistent Song Blacklist Engine (`BlacklistService`)
+- **Fast In-Memory O(1) Set**: Loads `blacklist.txt` into an in-memory `Set<string>` of 11-character video IDs on startup for instantaneous request filtering.
+- **Auto-Reloading File Watcher**: Starts a file watcher on `blacklist.txt` using `fs.watch` to detect external modifications from text editors and hot-reloads without plugin restart.
+- **Default Path Resolution**: Defaults to `blacklist.txt` inside the plugin user directory with optional Property Inspector custom path override.
+
+### 4. Live OBS Text File Exporter (`ObsExporterService`)
+- **Debounced Safe Writer**: Writes song metadata formatted via template to `ytm_current_track.txt` (or custom path). Debounces track skips by 300ms to eliminate disk thrashing.
+- **Clear on Pause**: Empties the export file cleanly when playback is paused or stopped (configurable).
 
 * **Push-Jitter Suppression**: Ignores accidental dial turns within 250ms of a physical dial push.
 * **Dial Debounce Batching**: Batches rapid dial turns over an 85ms window for smooth volume and scrubbing controls.

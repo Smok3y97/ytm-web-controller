@@ -52,6 +52,10 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
     this.lastRenderedState.delete(actionId);
     this.lastRenderedImage.delete(actionId);
     this.lastRenderedMismatch.delete(actionId);
+    this.removeActiveAction(actionId);
+  }
+
+  private removeActiveAction(actionId: string): void {
     for (const a of this.activeActions) {
       if (a.id === actionId) {
         this.activeActions.delete(a);

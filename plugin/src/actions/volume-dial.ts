@@ -125,23 +125,14 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
   ): Promise<void> {
     try {
       if (dialAction.isDial()) {
-        if (state.isVersionMismatch) {
-          const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
-          await dialAction.setFeedback({
-            title: warningTitle,
-            value: 'Mismatch',
-            icon: 'assets/actions/volumedial/icon.svg',
-            indicator: 0
-          });
+        if (await this.renderMismatchFeedback(dialAction, state, 'assets/actions/volumedial/icon.svg')) {
           return;
         }
 
         const volPercent = Math.min(100, Math.max(0, state.volume ?? 100));
         const valueText = state.muted ? 'MUTED' : `${volPercent}%`;
         const indicatorValue = state.muted ? 0 : volPercent;
-
-        const rawTitle = this.getTitleTemplate(settings, dialAction.id);
-        const titleText = MarqueeService.getInstance().getDisplayText(StateManager.getInstance().formatTitleTemplate(rawTitle));
+        const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
 
         const coverImage = (settings.showCover !== false && state.coverBase64)
           ? ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
@@ -154,12 +145,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
           indicator: indicatorValue
         });
       } else if (dialAction.isKey()) {
-        if (settings.showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
-          const keyImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused);
-          await dialAction.setImage(keyImage);
-        } else {
-          await dialAction.setImage(undefined);
-        }
+        await this.updateKeyCoverImage(dialAction, state, settings.showCover);
       }
     } catch { }
   }

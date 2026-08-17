@@ -14,6 +14,7 @@ import streamDeck from '@elgato/streamdeck';
 
 export class WindowFocusService {
   private static instance: WindowFocusService;
+  private cachedExePath: string | null = null;
 
   public static getInstance(): WindowFocusService {
     if (!WindowFocusService.instance) {
@@ -32,25 +33,29 @@ export class WindowFocusService {
 
   private bringToFrontWindows(): void {
     try {
-      // 1. Check for native precompiled binary in current bin directory
-      let exePath = '';
-      const candidatePaths = [
-        path.resolve(process.cwd(), 'bin', 'ytm-focus.exe'),
-        path.resolve(process.cwd(), 'ytm-focus.exe'),
-        path.resolve(fileURLToPath(new URL('.', import.meta.url)), 'ytm-focus.exe'),
-        path.resolve(fileURLToPath(new URL('.', import.meta.url)), '..', 'bin', 'ytm-focus.exe')
-      ];
+      // 1. Resolve and cache native precompiled binary path
+      if (this.cachedExePath === null) {
+        const candidatePaths = [
+          path.resolve(process.cwd(), 'bin', 'ytm-focus.exe'),
+          path.resolve(process.cwd(), 'ytm-focus.exe'),
+          path.resolve(fileURLToPath(new URL('.', import.meta.url)), 'ytm-focus.exe'),
+          path.resolve(fileURLToPath(new URL('.', import.meta.url)), '..', 'bin', 'ytm-focus.exe')
+        ];
 
-      for (const p of candidatePaths) {
-        if (fs.existsSync(p)) {
-          exePath = p;
-          break;
+        for (const p of candidatePaths) {
+          if (fs.existsSync(p)) {
+            this.cachedExePath = p;
+            break;
+          }
+        }
+        if (!this.cachedExePath) {
+          this.cachedExePath = '';
         }
       }
 
-      if (exePath) {
+      if (this.cachedExePath) {
         // Ultra-fast 2ms native execution
-        execFile(exePath, (err) => {
+        execFile(this.cachedExePath, (err) => {
           if (err && err.code !== 0) {
             streamDeck.logger.debug(`[WindowFocus] ytm-focus.exe exited with code ${err.code}`);
           }

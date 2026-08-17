@@ -5,12 +5,15 @@
  */
 
 import { promises as fs } from 'fs';
+import fsSync from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import streamDeck from '@elgato/streamdeck';
 import { GlobalSettings, YTMPlaybackState } from '../types/index.js';
 import { StateManager } from './state-manager.js';
 
 export const DEFAULT_OBS_TEMPLATE = 'Currently Playing: {artist} - {title}';
+export const DEFAULT_OBS_FILENAME = 'ytm_current_track.txt';
 
 export class ObsExporterService {
   private static instance: ObsExporterService;
@@ -26,13 +29,47 @@ export class ObsExporterService {
   private isWriting: boolean = false;
   private pendingWriteContent: string | null = null;
 
-  private constructor() {}
+  private constructor() {
+    this.filePath = this.resolveDefaultPath();
+  }
 
   public static getInstance(): ObsExporterService {
     if (!ObsExporterService.instance) {
       ObsExporterService.instance = new ObsExporterService();
     }
     return ObsExporterService.instance;
+  }
+
+  /**
+   * Resolve default ytm_current_track.txt storage path in plugin folder
+   */
+  public resolveDefaultPath(): string {
+    try {
+      const currentDir = path.dirname(fileURLToPath(import.meta.url));
+      const candidateFromBin = path.resolve(currentDir, '..', DEFAULT_OBS_FILENAME);
+      if (fsSync.existsSync(candidateFromBin)) {
+        return candidateFromBin;
+      }
+    } catch { }
+
+    const fromCwd = path.resolve(process.cwd(), DEFAULT_OBS_FILENAME);
+    if (fsSync.existsSync(fromCwd)) {
+      return fromCwd;
+    }
+
+    const fromPluginDir = path.resolve(process.cwd(), 'plugin', DEFAULT_OBS_FILENAME);
+    if (fsSync.existsSync(fromPluginDir)) {
+      return fromPluginDir;
+    }
+
+    return path.resolve(process.cwd(), DEFAULT_OBS_FILENAME);
+  }
+
+  /**
+   * Returns current active export file path
+   */
+  public getFilePath(): string {
+    return this.filePath || this.resolveDefaultPath();
   }
 
   /**
@@ -45,7 +82,8 @@ export class ObsExporterService {
     const prevClear = this.clearOnPause;
 
     this.isEnabled = !!settings.enableObsExport;
-    this.filePath = (settings.obsFilePath || '').trim();
+    const configuredPath = (settings.obsFilePath || '').trim();
+    this.filePath = configuredPath ? path.resolve(configuredPath) : this.resolveDefaultPath();
     this.formatTemplate = (settings.obsFormatTemplate && settings.obsFormatTemplate.trim())
       ? settings.obsFormatTemplate.trim()
       : DEFAULT_OBS_TEMPLATE;

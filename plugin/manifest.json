@@ -5,7 +5,7 @@
   "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. GitHub: https://github.com/Smok3y97/ytm-web-controller",
   "Author": "Smok3y97",
   "URL": "https://github.com/Smok3y97/ytm-web-controller",
-  "Version": "1.6.1.0",
+  "Version": "1.7.0.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.5"
@@ -327,7 +327,7 @@
       "Name": "Toggle Song Requests",
       "Tooltip": "Toggle Chatbot Song Requests (!playnext) on or off",
       "Icon": "assets/actions/toggle-requests/action-icon",
-      "PropertyInspectorPath": "ui/common.html",
+      "PropertyInspectorPath": "ui/toggle-requests.html",
       "Controllers": [
         "Keypad"
       ],
@@ -343,6 +343,23 @@
           "TitleAlignment": "bottom",
           "FontSize": 9,
           "Name": "Requests OFF"
+        }
+      ]
+    },
+    {
+      "UUID": "com.smok3y97.ytmusicweb.blacklist-and-skip",
+      "Name": "Blacklist & Skip Track",
+      "Tooltip": "Adds the currently playing song to blacklist.txt and immediately skips to next track",
+      "Icon": "assets/actions/blacklist-and-skip/icon",
+      "PropertyInspectorPath": "ui/blacklist-and-skip.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "assets/actions/blacklist-and-skip/icon",
+          "TitleAlignment": "bottom",
+          "FontSize": 9
         }
       ]
     }

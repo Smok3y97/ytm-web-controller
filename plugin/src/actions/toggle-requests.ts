@@ -43,8 +43,12 @@ export class ToggleRequestsAction extends SingletonAction<JsonObject> {
 
   override async onWillDisappear(ev: WillDisappearEvent<JsonObject>): Promise<void> {
     this.lastRenderedState.delete(ev.action.id);
+    this.removeActiveAction(ev.action.id);
+  }
+
+  private removeActiveAction(actionId: string): void {
     for (const a of this.activeActions) {
-      if (a.id === ev.action.id) {
+      if (a.id === actionId) {
         this.activeActions.delete(a);
         break;
       }

@@ -1,10 +1,20 @@
+<a id="top"></a>
+
 # Development & Contribution Guide (`docs/development.md`)
 
 This document outlines the local development setup, build scripts, testing procedures, packaging workflow, and versioning standards.
 
 ---
 
-## 🛠️ Prerequisites
+## 📑 Table of Contents
+- [🛠️ Prerequisites](#-prerequisites)
+- [🚀 Build & Packaging Commands](#-build--packaging-commands)
+- [📦 Packaging Pipeline (`scripts/package_plugin.ps1`)](#-packaging-pipeline-scriptspackage_pluginps1)
+- [🏷️ Versioning Scheme](#-versioning-scheme)
+
+---
+
+## [🛠️ Prerequisites](#top)
 
 - **Node.js**: `v20.0.0` or newer recommended.
 - **npm**: `v10.0.0` or newer.
@@ -13,7 +23,7 @@ This document outlines the local development setup, build scripts, testing proce
 
 ---
 
-## 🚀 Build & Packaging Commands
+## [🚀 Build & Packaging Commands](#top)
 
 All commands can be executed directly from the monorepo root:
 
@@ -27,7 +37,7 @@ npm run package
 powershell -ExecutionPolicy Bypass -File .\scripts\package_plugin.ps1
 
 # 3. Synchronize versions centrally across all manifests & packages
-npm run bump 1.5.1.0
+npm run bump 1.7.0.0
 
 # 4. Validate packaged plugin against official Elgato SDK Schema
 npm run validate
@@ -40,7 +50,7 @@ npm run watch
 
 ---
 
-## 📦 Packaging Pipeline (`scripts/package_plugin.ps1`)
+## [📦 Packaging Pipeline (`scripts/package_plugin.ps1`)](#top)
 
 The automated packaging script performs the following tasks:
 1. Compiles the plugin bundle with Rollup to `plugin/bin/plugin.js`.
@@ -52,10 +62,10 @@ The automated packaging script performs the following tasks:
 
 ---
 
-## 🏷️ Versioning Scheme
+## [🏷️ Versioning Scheme](#top)
 
 > [!NOTE]
-> All version numbers shown in this guide (e.g. `1.5.0.0`, `1.5.1.0`) serve strictly as **illustrative examples** explaining formatting rules and command syntax. Version numbers in this document do **not** need to be updated with each release. The live active version is defined centrally in [`version.json`](../version.json) and synchronized automatically across all manifests via `npm run bump`.
+> All version numbers shown in this guide (e.g. `1.7.0.0`) serve strictly as **illustrative examples** explaining formatting rules and command syntax. The live active version is defined centrally in [`version.json`](../version.json) and synchronized automatically across all manifests via `npm run bump`.
 
 The project follows the official **4-digit Elgato Stream Deck Manifest Specification**:
 
@@ -63,9 +73,9 @@ $$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
 
 | Component | Format | Example | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Stream Deck Plugin** (`plugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.5.0.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
-| **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.5.0.0"`<br>`"1.5.0"` | `version` handles browser update comparisons; `version_name` defines user-facing store display. |
-| **Node.js Packages** (`package.json`, `plugin/package.json`) | 4-part / SemVer | `1.5.0.0` | Synchronized monorepo package versions. |
+| **Stream Deck Plugin** (`plugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.7.0.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
+| **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.7.0.0"`<br>`"1.7.0"` | `version` handles browser update comparisons; `version_name` defines user-facing store display. |
+| **Node.js Packages** (`package.json`, `plugin/package.json`) | 4-part / SemVer | `1.7.0.0` | Synchronized monorepo package versions. |
 
 ### Version Semantics:
 - **Major** (`{Major}`): Fundamental architectural overhauls, breaking changes, or SDK major upgrades.

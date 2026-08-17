@@ -121,12 +121,38 @@ const StreamDeckClient = (function () {
     }));
   }
 
+  function sendToPlugin(payload) {
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
+    websocket.send(JSON.stringify({
+      event: 'sendToPlugin',
+      context: uuid,
+      action: actionInfo.action,
+      payload: payload
+    }));
+  }
+
+  function bindAutoSave(elements, saveCallback) {
+    if (!elements || typeof saveCallback !== 'function') return;
+    const list = Array.isArray(elements) ? elements : [elements];
+    list.forEach((elem) => {
+      if (!elem) return;
+      if (elem.type === 'checkbox' || elem.type === 'radio' || elem.tagName === 'SELECT') {
+        elem.addEventListener('change', saveCallback);
+      } else {
+        elem.addEventListener('input', saveCallback);
+        elem.addEventListener('change', saveCallback);
+      }
+    });
+  }
+
   return {
     connect,
     onLocalSettings,
     onGlobalSettings,
     saveLocalSettings,
     saveGlobalSettings,
+    sendToPlugin,
+    bindAutoSave,
     getLocalSettings: () => localSettings,
     getGlobalSettings: () => globalSettings,
     getUUID: () => uuid,

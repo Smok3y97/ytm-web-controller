@@ -26,21 +26,4 @@ function saveSettings() {
   });
 }
 
-if (seekStepInput) {
-  seekStepInput.addEventListener('change', saveSettings);
-  seekStepInput.addEventListener('input', () => {
-    const val = parseInt(seekStepInput.value, 10);
-    if (val >= 1 && val <= 60) saveSettings();
-  });
-}
-if (titleTemplateInput) {
-  titleTemplateInput.addEventListener('input', saveSettings);
-  titleTemplateInput.addEventListener('change', saveSettings);
-}
-if (timeTemplateInput) {
-  timeTemplateInput.addEventListener('input', saveSettings);
-  timeTemplateInput.addEventListener('change', saveSettings);
-}
-if (showCoverCheckbox) {
-  showCoverCheckbox.addEventListener('change', saveSettings);
-}
+StreamDeckClient.bindAutoSave([seekStepInput, titleTemplateInput, timeTemplateInput, showCoverCheckbox], saveSettings);

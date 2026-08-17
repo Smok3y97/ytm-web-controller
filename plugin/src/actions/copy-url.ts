@@ -4,7 +4,7 @@
  * UUID: com.smok3y97.ytmusicweb.copyurl
  */
 
-import { action, KeyDownEvent } from '@elgato/streamdeck';
+import { action, KeyDownEvent, WillDisappearEvent } from '@elgato/streamdeck';
 import streamDeck from '@elgato/streamdeck';
 import { BaseStateAction } from './base-state-action.js';
 import { StateManager } from '../services/state-manager.js';
@@ -16,6 +16,15 @@ export class CopyUrlAction extends BaseStateAction {
   protected readonly command = '';
   protected override actionKey = 'copyurl';
   private feedbackTimers: Map<string, NodeJS.Timeout> = new Map();
+
+  override async onWillDisappear(ev: WillDisappearEvent): Promise<void> {
+    const timer = this.feedbackTimers.get(ev.action.id);
+    if (timer) {
+      clearTimeout(timer);
+      this.feedbackTimers.delete(ev.action.id);
+    }
+    await super.onWillDisappear(ev);
+  }
 
   protected calculateState(_state: YTMPlaybackState): number {
     return 0;

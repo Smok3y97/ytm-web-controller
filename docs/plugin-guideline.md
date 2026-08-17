@@ -1,10 +1,21 @@
-# Elgato Stream Deck Plugin Guidelines
+<a id="top"></a>
+
+# Elgato Stream Deck Plugin Guidelines (`docs/plugin-guideline.md`)
 
 Official style guide and technical metadata requirements for publishing plugins on the **Elgato Marketplace**, based on the official [Elgato Stream Deck Plugin Guidelines](https://docs.elgato.com/guidelines/stream-deck/plugins/).
 
 ---
 
-## 1. Identifiers & UUIDs
+## 📑 Table of Contents
+- [1. Identifiers & UUIDs](#1-identifiers--uuids)
+- [2. Naming & Metadata](#2-naming--metadata)
+- [3. Asset Specifications & Icon Dimensions](#3-asset-specifications--icon-dimensions)
+- [4. Visual Feedback & Logging](#4-visual-feedback--logging)
+- [5. Property Inspector (UI Guidelines)](#5-property-inspector-ui-guidelines)
+
+---
+
+## [1. Identifiers & UUIDs](#top)
 
 Universally unique identifiers (UUIDs) identify your plugin and its individual actions across Stream Deck and Marketplace.
 
@@ -14,7 +25,7 @@ Universally unique identifiers (UUIDs) identify your plugin and its individual a
 
 ---
 
-## 2. Naming & Metadata
+## [2. Naming & Metadata](#top)
 
 ### Plugin Name
 * Unique, concise, and descriptive (approx. 30 characters or less).
@@ -33,7 +44,7 @@ Universally unique identifiers (UUIDs) identify your plugin and its individual a
 
 ---
 
-## 3. Asset Specifications & Icon Dimensions
+## [3. Asset Specifications & Icon Dimensions](#top)
 
 | Asset Type | Standard DPI | High DPI (`@2x`) | Supported Formats | Color & Style Requirements |
 | :--- | :--- | :--- | :--- | :--- |
@@ -47,7 +58,7 @@ Universally unique identifiers (UUIDs) identify your plugin and its individual a
 
 ---
 
-## 4. Visual Feedback & Logging
+## [4. Visual Feedback & Logging](#top)
 
 * **`showAlert`:** Trigger when an action fails, an endpoint is unreachable, or an error occurs (applicable to both keys and dials).
 * **`showOk`:** Trigger **only** when there is no other visual indicator of success (e.g. clipboard copy, file written). Do **not** use `showOk` if the key icon or state updates visually.
@@ -55,7 +66,7 @@ Universally unique identifiers (UUIDs) identify your plugin and its individual a
 
 ---
 
-## 5. Property Inspector (UI Guidelines)
+## [5. Property Inspector (UI Guidelines)](#top)
 
 * **Auto-Save:** Settings must save automatically on input change (`setSettings` / `setGlobalSettings`). **Never include a manual "Save" button.**
 * **Input Elements:**

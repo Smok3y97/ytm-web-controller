@@ -340,7 +340,14 @@
                 </div>
 
                 <div class="settings-panel-section">
-                  <h3 class="settings-group-title">Blacklist & OBS Text Export</h3>
+                  <h3 class="settings-group-title">Song Blacklist (blacklist.txt)</h3>
+
+                  <div class="form-group">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="setEnableSongBlacklist">
+                      <span><strong>Enable Song Blacklist</strong></span>
+                    </label>
+                  </div>
 
                   <div class="form-group">
                     <label for="setBlacklistFilePath">Custom Blacklist File Path</label>
@@ -351,6 +358,10 @@
                     <label for="setSongBlacklistSuccessTemplate">Blacklist Success Message</label>
                     <input type="text" id="setSongBlacklistSuccessTemplate" class="form-control" placeholder="Blacklisted: {artist} - {title} ⛔">
                   </div>
+                </div>
+
+                <div class="settings-panel-section">
+                  <h3 class="settings-group-title">OBS Text Export (.txt)</h3>
 
                   <div class="form-group">
                     <label class="checkbox-label">

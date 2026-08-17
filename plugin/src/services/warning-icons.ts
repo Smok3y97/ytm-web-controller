@@ -18,7 +18,11 @@ const RAW_PATHS: Record<string, string> = {
   dislike: '<path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z" fill="#FFFFFF"/>',
   shuffle: '<path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" fill="#FFFFFF"/>',
   repeat: '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" fill="#FFFFFF"/>',
-  copyurl: '<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" fill="#FFFFFF"/>'
+  copyurl: '<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" fill="#FFFFFF"/>',
+  togglerequests: '<path d="M3 6h10v2H3V6zm0 5h10v2H3v-2zm0 5h7v2H3v-2z" fill="#FFFFFF"/><path d="M17 5v9.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V7h3V5h-5z" fill="#FFFFFF"/>',
+  requests: '<path d="M3 6h10v2H3V6zm0 5h10v2H3v-2zm0 5h7v2H3v-2z" fill="#FFFFFF"/><path d="M17 5v9.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V7h3V5h-5z" fill="#FFFFFF"/>',
+  blacklist: '<circle cx="12" cy="12" r="9.5" stroke="#FFFFFF" stroke-width="1.75" fill="none"/><line x1="5.3" y1="5.3" x2="18.7" y2="18.7" stroke="#FFFFFF" stroke-width="1.75"/><polygon points="9,8.5 14,12 9,15.5" fill="#FFFFFF"/><rect x="14.5" y="8.5" width="1.5" height="7" fill="#FFFFFF"/>',
+  'blacklist-and-skip': '<circle cx="12" cy="12" r="9.5" stroke="#FFFFFF" stroke-width="1.75" fill="none"/><line x1="5.3" y1="5.3" x2="18.7" y2="18.7" stroke="#FFFFFF" stroke-width="1.75"/><polygon points="9,8.5 14,12 9,15.5" fill="#FFFFFF"/><rect x="14.5" y="8.5" width="1.5" height="7" fill="#FFFFFF"/>'
 };
 
 /**

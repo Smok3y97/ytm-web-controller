@@ -33,9 +33,12 @@ Global settings are accessible in the Property Inspector of **every single butto
   - **Queue Placement**: Dropdown selecting where requested songs are inserted (`Play Next (After current song)` vs `Add to End of Queue`).
   - **Success Message Template**: Custom feedback response for successful requests (Default: `Added to queue: {url} 🎶`, supports `{url}`, `{videoId}`, `{mode}`).
   - **Paused Message Template**: Custom response when song requests are paused by the streamer (Default: `Song requests are currently paused by the streamer.`).
-  - **Error Message Template**: Custom response for invalid links or unparseable IDs (Default: `Invalid YouTube link or video ID.`).
   - **Blocked Message Template**: Custom response when a viewer requests a blacklisted track (Default: `This song is blocked from requests 🚫`).
-  - **Song Blacklist (`blacklist.txt`)**: Persistent local blacklist file storing banned YouTube video IDs (`<VIDEO_ID> | <Artist> - <Title>`). Can be edited directly in any text editor via the **Open Blacklist in Editor** button or automatically populated with the **Blacklist & Skip Track** key action.
+- **Song Blacklist (`blacklist.txt`)**:
+  - **Enable Song Blacklist**: Master toggle checkbox (Default: `false` / disabled). When enabled, blocks banned songs from chat requests and starts local file watching.
+  - **File Path**: Destination path for `blacklist.txt` (defaults to plugin directory).
+  - **Success & Error Templates**: Configurable response messages for blacklist operations.
+  - **Open Blacklist in Editor**: Button to open and edit `blacklist.txt` directly.
 - **OBS Text File Export (.txt)**:
   - **Enable OBS text export (.txt)**: Automatically writes metadata of the currently playing track to a local text file for streaming overlays using OBS Text (GDI+).
   - **File Path**: Absolute destination path where the `.txt` file is saved (defaults to `ytm_current_track.txt` inside plugin folder). Parent directories are created automatically if they do not exist.

@@ -23,6 +23,7 @@ export class BlacklistService {
 
   private filePath: string = '';
   private blacklistedIds: Set<string> = new Set();
+  private isEnabled: boolean = false;
   private fileWatcher: fs.FSWatcher | null = null;
   private watchDebounceTimer: NodeJS.Timeout | null = null;
   private isInitialized: boolean = false;
@@ -65,7 +66,7 @@ export class BlacklistService {
   }
 
   /**
-   * Initialize service: load blacklist and start file watcher
+   * Initialize service: configure path and load blacklist only if enabled
    */
   public async init(customPath?: string): Promise<void> {
     if (customPath && customPath.trim()) {
@@ -74,8 +75,10 @@ export class BlacklistService {
       this.filePath = this.resolveDefaultPath();
     }
 
-    await this.loadBlacklist();
-    this.startWatcher();
+    if (this.isEnabled) {
+      await this.loadBlacklist();
+      this.startWatcher();
+    }
     this.isInitialized = true;
   }
 
@@ -83,16 +86,32 @@ export class BlacklistService {
    * Update configuration from GlobalSettings
    */
   public async updateSettings(settings: Partial<GlobalSettings>): Promise<void> {
+    const wasEnabled = this.isEnabled;
+    this.isEnabled = !!settings.enableSongBlacklist;
+
     const configuredPath = (settings.blacklistFilePath || '').trim();
     const targetPath = configuredPath ? path.resolve(configuredPath) : this.resolveDefaultPath();
 
-    if (targetPath !== this.filePath || !this.isInitialized) {
-      streamDeck.logger.info(`[BlacklistService] Updating blacklist path: ${targetPath}`);
+    if (targetPath !== this.filePath || wasEnabled !== this.isEnabled || !this.isInitialized) {
       this.stopWatcher();
       this.filePath = targetPath;
-      await this.loadBlacklist();
-      this.startWatcher();
+
+      if (this.isEnabled) {
+        streamDeck.logger.info(`[BlacklistService] Blacklist enabled (path: "${targetPath}")`);
+        await this.loadBlacklist();
+        this.startWatcher();
+      } else {
+        streamDeck.logger.info(`[BlacklistService] Blacklist disabled`);
+        this.blacklistedIds.clear();
+      }
     }
+  }
+
+  /**
+   * Check whether the blacklist feature is enabled
+   */
+  public isBlacklistEnabled(): boolean {
+    return this.isEnabled;
   }
 
   /**
@@ -263,7 +282,7 @@ export class BlacklistService {
    * Check if a given video ID or YouTube URL is in the blacklist
    */
   public isBlacklisted(videoIdOrUrl: string): boolean {
-    if (!videoIdOrUrl) return false;
+    if (!this.isEnabled || !videoIdOrUrl) return false;
     const cleanId = this.extractVideoId(videoIdOrUrl) || videoIdOrUrl.trim();
     return this.blacklistedIds.has(cleanId);
   }

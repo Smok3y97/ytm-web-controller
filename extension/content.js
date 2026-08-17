@@ -1386,7 +1386,7 @@
     }, 500);
   }
 
-  let bridgeVersion = '1.5.1.0';
+  let bridgeVersion = '1.7.1.0';
 
   function detectBrowserPlatform() {
     const ua = (navigator.userAgent || '').toLowerCase();

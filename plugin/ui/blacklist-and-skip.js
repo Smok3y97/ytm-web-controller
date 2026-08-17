@@ -7,6 +7,7 @@
 (() => {
   'use strict';
 
+  const enableSongBlacklistInput = document.getElementById('enableSongBlacklist');
   const blacklistFilePathInput = document.getElementById('blacklistFilePath');
   const openBlacklistBtn = document.getElementById('openBlacklistBtn');
   const blacklistCmdHelper = document.getElementById('blacklistCmdHelper');
@@ -34,6 +35,10 @@
   }
 
   function bindEvents() {
+    if (enableSongBlacklistInput) {
+      enableSongBlacklistInput.addEventListener('change', save);
+    }
+
     if (openBlacklistBtn) {
       openBlacklistBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -65,6 +70,7 @@
 
   function populate(gs) {
     if (!gs) return;
+    if (enableSongBlacklistInput) enableSongBlacklistInput.checked = !!gs.enableSongBlacklist;
     if (blacklistFilePathInput) blacklistFilePathInput.value = gs.blacklistFilePath || '';
     if (songBlacklistSuccessInput) songBlacklistSuccessInput.value = gs.songBlacklistSuccessTemplate || 'Blacklisted: {artist} - {title} ⛔';
     if (songBlacklistErrorInput) songBlacklistErrorInput.value = gs.songBlacklistErrorTemplate || 'Invalid YouTube link or video ID to blacklist.';
@@ -75,6 +81,7 @@
 
   function save() {
     StreamDeckClient.saveGlobalSettings({
+      enableSongBlacklist: enableSongBlacklistInput ? enableSongBlacklistInput.checked : false,
       blacklistFilePath: blacklistFilePathInput ? blacklistFilePathInput.value.trim() : '',
       songBlacklistSuccessTemplate: songBlacklistSuccessInput ? (songBlacklistSuccessInput.value || 'Blacklisted: {artist} - {title} ⛔') : 'Blacklisted: {artist} - {title} ⛔',
       songBlacklistErrorTemplate: songBlacklistErrorInput ? (songBlacklistErrorInput.value || 'Invalid YouTube link or video ID to blacklist.') : 'Invalid YouTube link or video ID to blacklist.'

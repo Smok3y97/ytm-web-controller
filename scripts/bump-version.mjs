@@ -110,6 +110,24 @@ if (fs.existsSync(popupHtmlPath)) {
   console.log(`  ✓ Updated: ${path.relative(rootDir, popupHtmlPath)}`);
 }
 
+// 7. extension/content.js & bridge.js fallback strings
+const contentJsPath = path.join(rootDir, 'extension', 'content.js');
+if (fs.existsSync(contentJsPath)) {
+  let code = fs.readFileSync(contentJsPath, 'utf8');
+  code = code.replace(/let bridgeVersion = '[0-9.]+';/, `let bridgeVersion = '${targetVersion}';`);
+  fs.writeFileSync(contentJsPath, code, 'utf8');
+  console.log(`  ✓ Updated: ${path.relative(rootDir, contentJsPath)}`);
+}
+
+const bridgeJsPath = path.join(rootDir, 'extension', 'bridge.js');
+if (fs.existsSync(bridgeJsPath)) {
+  let code = fs.readFileSync(bridgeJsPath, 'utf8');
+  code = code.replace(/return api\.runtime\.getManifest\(\)\.version \|\| '[0-9.]+';/g, `return api.runtime.getManifest().version || '${targetVersion}';`);
+  code = code.replace(/return '[0-9.]+';/g, `return '${targetVersion}';`);
+  fs.writeFileSync(bridgeJsPath, code, 'utf8');
+  console.log(`  ✓ Updated: ${path.relative(rootDir, bridgeJsPath)}`);
+}
+
 // 7. Let npm natively update package-lock.json files without manual JSON manipulation
 try {
   if (fs.existsSync(path.join(pluginDir, 'package-lock.json'))) {

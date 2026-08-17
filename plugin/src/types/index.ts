@@ -75,6 +75,7 @@ export interface GlobalSettings extends JsonObject {
   songRequestErrorTemplate?: string;
   songRequestBlockedTemplate?: string;
   songRequestBlacklist?: string;
+  enableSongBlacklist?: boolean;
   songBlacklistSuccessTemplate?: string;
   songBlacklistErrorTemplate?: string;
   blacklistFilePath?: string;

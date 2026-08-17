@@ -577,6 +577,7 @@
     const setSongRequestErrorTemplate = document.getElementById('setSongRequestErrorTemplate');
     const setSongRequestBlockedTemplate = document.getElementById('setSongRequestBlockedTemplate');
 
+    const setEnableSongBlacklist = document.getElementById('setEnableSongBlacklist');
     const setBlacklistFilePath = document.getElementById('setBlacklistFilePath');
     const setSongBlacklistSuccessTemplate = document.getElementById('setSongBlacklistSuccessTemplate');
     const setSongBlacklistErrorTemplate = document.getElementById('setSongBlacklistErrorTemplate');
@@ -602,6 +603,7 @@
           if (setSongRequestErrorTemplate) setSongRequestErrorTemplate.value = s.songRequestErrorTemplate || 'Invalid YouTube link or video ID.';
           if (setSongRequestBlockedTemplate) setSongRequestBlockedTemplate.value = s.songRequestBlockedTemplate || 'This song is blocked from requests 🚫';
 
+          if (setEnableSongBlacklist) setEnableSongBlacklist.checked = s.enableSongBlacklist === true;
           if (setBlacklistFilePath) setBlacklistFilePath.value = s.blacklistFilePath || '';
           if (setSongBlacklistSuccessTemplate) setSongBlacklistSuccessTemplate.value = s.songBlacklistSuccessTemplate || 'Blacklisted: {artist} - {title} ⛔';
           if (setSongBlacklistErrorTemplate) setSongBlacklistErrorTemplate.value = s.songBlacklistErrorTemplate || 'Invalid YouTube link or video ID to blacklist.';
@@ -624,6 +626,7 @@
         songRequestDisabledTemplate: setSongRequestDisabledTemplate ? setSongRequestDisabledTemplate.value : 'Song requests are currently paused by the streamer.',
         songRequestErrorTemplate: setSongRequestErrorTemplate ? setSongRequestErrorTemplate.value : 'Invalid YouTube link or video ID.',
         songRequestBlockedTemplate: setSongRequestBlockedTemplate ? setSongRequestBlockedTemplate.value : 'This song is blocked from requests 🚫',
+        enableSongBlacklist: setEnableSongBlacklist ? setEnableSongBlacklist.checked : false,
         blacklistFilePath: setBlacklistFilePath ? setBlacklistFilePath.value.trim() : '',
         songBlacklistSuccessTemplate: setSongBlacklistSuccessTemplate ? setSongBlacklistSuccessTemplate.value : 'Blacklisted: {artist} - {title} ⛔',
         songBlacklistErrorTemplate: setSongBlacklistErrorTemplate ? setSongBlacklistErrorTemplate.value : 'Invalid YouTube link or video ID to blacklist.',

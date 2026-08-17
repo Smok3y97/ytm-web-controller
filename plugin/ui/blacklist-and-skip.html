@@ -7,7 +7,19 @@
 </head>
 <body>
   <div class="sdpi-wrapper">
-    <div class="sdpi-heading">Blacklist & Skip Track</div>
+    <!-- Enable Song Blacklist Toggle -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Enable Blacklist</div>
+      <div class="sdpi-item-value">
+        <div class="sdpi-item-child">
+          <input type="checkbox" id="enableSongBlacklist">
+          <label for="enableSongBlacklist" class="sdpi-item-label"><span></span>Enable Blacklist Filtering</label>
+        </div>
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      When disabled, no blacklist file is created and chat requests are not filtered against banned songs.
+    </div>
 
     <!-- Blacklist File Path -->
     <div class="sdpi-item">

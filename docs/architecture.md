@@ -83,9 +83,9 @@ graph LR
    - All state extractions are reactive, triggered strictly by native HTML5 `<video>` events (`play`, `pause`, `timeupdate`, `seeking`, `seeked`, `ratechange`, `volumechange`) and scoped `MutationObserver` callbacks on music metadata nodes.
    - When music is stopped or paused, CPU and network overhead drop to zero.
 
-2. **Zero Disk Footprint**:
+2. **Zero Disk Footprint (Standard Mode)**:
    - Dynamic LCD touchstrip layouts, animated dials, and album cover thumbnails are computed entirely in memory (RAM) and encoded as Base64 Data URLs.
-   - No temporary image files are ever written to disk.
+   - No temporary cache or image files are ever written to disk (file writes for OBS text export and song blacklist are strictly opt-in).
 
 3. **Single Responsibility Principle (SRP) & Decoupling**:
    - Every system responsibility is encapsulated in an isolated service or component.

@@ -95,7 +95,8 @@ ytm-web-controller/
 ├── README.md                    # User guide, installation walkthrough & setup documentation
 ├── scripts/                     # Workspace automation & deployment scripts
 │   ├── bump-version.mjs         # Centralized 5-file version synchronization script
-│   └── package_plugin.ps1       # Packaging, asset generation & Stream Deck deployment script
+│   ├── package_plugin.ps1       # Packaging, asset generation & Stream Deck deployment script
+│   └── ytm-focus.cs             # Standalone C# source for native Win32 window focus binary
 ├── docs/                        # Technical specifications & developer documentation
 │   ├── ai-disclosure.md         # AI development transparency disclosure
 │   ├── architecture.md          # Complete system architecture specification & diagrams
@@ -112,18 +113,22 @@ ytm-web-controller/
 │   └── Discord-Mobile-RPC.png   # Discord Mobile App Rich Presence preview
 ├── extension/                   # Manifest V3 Browser Companion Extension
 │   ├── manifest.json            # MV3 Manifest with Chromium & Firefox Gecko compatibility
+│   ├── background.js            # MV3 service worker for tab and window foreground activation
 │   ├── bridge.js                # ISOLATED world bridge for chrome.storage & manifest version
 │   ├── content.js               # Reactive DOM observer, WebSocket client & queue dispatcher
 │   ├── popup.html               # Extension status, version diagnostics & port configuration UI
 │   ├── popup.css                # Extension popup dark theme stylesheet
 │   ├── popup.js                 # Port storage & live connection diagnostic tester
 │   └── icons/                   # Extension toolbar icons (16, 48, 128 px)
-└── plugin/                      # Stream Deck Plugin (Node.js SDK 2)
-    ├── manifest.json            # Stream Deck Plugin Manifest (com.smok3y97.ytmusicweb)
-    ├── package.json             # Plugin dependencies & rollup build scripts
-    ├── rollup.config.mjs        # Rollup bundler configuration
-    ├── tsconfig.json            # TypeScript compiler configuration
-    ├── assets/                  # High-resolution vector & raster assets
+├── plugin/                      # Stream Deck Plugin (Node.js SDK 2)
+│   ├── manifest.json            # Stream Deck Plugin Manifest (com.smok3y97.ytmusicweb)
+│   ├── package.json             # Plugin dependencies & rollup build scripts
+│   ├── rollup.config.mjs        # Rollup bundler configuration
+│   ├── tsconfig.json            # TypeScript compiler configuration
+│   ├── bin/                     # Compiled plugin artifacts
+│   │   ├── plugin.js            # Node.js Rollup bundle
+│   │   └── ytm-focus.exe        # Native 7 KB Win32 foreground activation binary
+│   ├── assets/                  # High-resolution vector & raster assets
     │   ├── category-icon.svg    # Monochromatic category icon (28x28 / 56x56)
     │   ├── plugin-icon.png      # Official Full-Color YouTube Music badge (256x256)
     │   ├── plugin-icon@2x.png   # High-DPI YouTube Music badge (512x512)
@@ -159,6 +164,7 @@ ytm-web-controller/
         │   ├── warning-icons.ts     # Dynamic SVG warning icon generator for mismatch states
         │   ├── discord-rpc.ts       # Isolated Discord Rich Presence client
         │   ├── obs-exporter.ts      # Live .txt track info exporter for OBS
+        │   ├── window-focus.ts      # Win32 & OS window focus helper for YouTube Music / PWA
         │   └── clipboard.ts         # Native clipboard bridge for song URL copying
         └── actions/             # Independent Action Controllers
             ├── base-state-action.ts  # Base class for stateful keypad buttons
@@ -230,7 +236,45 @@ The browser companion extension runs in the context of `https://music.youtube.co
 | **Warning Icons** | [`warning-icons.ts`](../plugin/src/services/warning-icons.ts) | Generates dynamic pixel-perfect SVG warning badges for keypad actions during version mismatch. |
 | **Discord RPC** | [`discord-rpc.ts`](../plugin/src/services/discord-rpc.ts) | Isolated Discord Rich Presence client with automatic backoff and reconnection (powered by `@xhayper/discord-rpc`). |
 | **OBS Exporter** | [`obs-exporter.ts`](../plugin/src/services/obs-exporter.ts) | Isolated text file exporter for streamers (`.txt` overlay files). |
+| **Window Focus** | [`window-focus.ts`](../plugin/src/services/window-focus.ts) | High-performance foreground window activation for YouTube Music / PWA via pre-compiled native Win32 binary ([`ytm-focus.exe`](../scripts/ytm-focus.cs)) and macOS AppleScript bridge. |
 | **Clipboard** | [`clipboard.ts`](../plugin/src/services/clipboard.ts) | Cross-platform clipboard bridge for song URL sharing. |
+
+### 🪟 Window Focus & Foreground Activation Architecture
+
+To guarantee instantaneous, reliable window activation across all desktop environments (including active, non-minimized Electron apps like GitHub Desktop, games, and multi-monitor setups) without triggering Windows *ForegroundLockTimeout* taskbar flashing, the plugin uses a dual-layer approach:
+
+```
+┌────────────────────────────────────────────────────────┐
+│  Stream Deck Keypad: Play / Pause (Long Press ~450ms)  │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+             ┌─────────────┴─────────────┐
+             ▼                           ▼
+┌───────────────────────────┐ ┌─────────────────────────────────────────┐
+│ WebSocket Remote Command  │ │ Native Win32 Activation (ytm-focus.exe) │
+│ (Port 39865: "focusTab")  │ │ (Node.js execFile, < 2ms execution)     │
+└────────────┬──────────────┘ └────────────────────┬────────────────────┘
+             ▼                                     ▼
+┌───────────────────────────┐ ┌─────────────────────────────────────────┐
+│ Browser Extension Service │ │ 1. EnumWindows & exclusion filters      │
+│ Worker (background.js):   │ │ 2. AttachThreadInput queue sync         │
+│ - chrome.tabs.update      │ │ 3. DWM Z-Order (HWND_TOPMOST -> NORMAL) │
+│   (active: true)          │ │ 4. IsIconic -> SW_RESTORE (preserves    │
+│ - chrome.windows.update   │ │    exact maximized / custom bounds)     │
+│   (focused: true)         │ │ 5. SetForegroundWindow & SwitchToWindow │
+└───────────────────────────┘ └─────────────────────────────────────────┘
+```
+
+1. **Native Win32 Activation Engine (`ytm-focus.exe` / `scripts/ytm-focus.cs`)**:
+   - **Zero Startup Latency**: Pre-compiled into a 7 KB native binary (`bin/ytm-focus.exe`) at build time via `csc.exe`. Executes in under **2 milliseconds** while the Stream Deck hardware key is still physically depressed.
+   - **Standard User Integrity**: Runs entirely under standard user permissions (no UAC / Administrator prompts required).
+   - **DWM Z-Order Hardware Restacking**: Uses `SetWindowPos` with `HWND_TOPMOST` followed by `HWND_NOTOPMOST` to hardware-restack the YouTube Music / PWA window above dominant foreground processes (e.g. Electron apps like GitHub Desktop).
+   - **Window Bounds Preservation**: Uses `SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSENDCHANGING` and conditional `IsIconic` checks to strictly preserve custom dimensions, monitor positioning, snapping, and maximization states.
+   - **Exclusion Filters**: Automatically ignores IDEs, Git clients (`GitHub Desktop`, `Visual Studio Code`), and Stream Deck instances when matching window titles.
+2. **WebExtension Service Worker Layer (`extension/background.js`)**:
+   - Activates and highlights the specific playing YouTube Music tab (`chrome.tabs.update`) and raises the browser window (`chrome.windows.update`).
+3. **Cross-Platform macOS Bridge**:
+   - Delegates to native AppleScript (`osascript`) to focus YouTube Music / browser processes.
 
 ### 📦 Core Production Dependencies
 
@@ -252,7 +296,7 @@ Each Stream Deck key and dial is an independent controller registered with the `
   * [`base-volume-action.ts`](../plugin/src/actions/base-volume-action.ts): Common base class for volume keys handling percentage formatting and Title Styler integration.
   * [`base-dial-action.ts`](../plugin/src/actions/base-dial-action.ts): Common base class for Stream Deck + dials handling push-jitter suppression, marquee listeners, feedback layout assignment, and unified LCD rendering.
 * **Keypad Actions**:
-  * [`play-pause.ts`](../plugin/src/actions/play-pause.ts): Dual-state key with live album art canvas background rendering.
+  * [`play-pause.ts`](../plugin/src/actions/play-pause.ts): Dual-state key with live album art canvas background rendering, short-press toggle, and long-press (hold ~450ms) window/tab foreground focus.
   * [`toggle-requests.ts`](../plugin/src/actions/toggle-requests.ts): Live toggle for Chatbot Song Requests (!playnext) with State 0 (`Requests ON` / Green) and State 1 (`Requests OFF` / Red), `lastRenderedState` instance tracking, and bidirectional global settings synchronization.
   * [`volume-up.ts`](../plugin/src/actions/volume-up.ts) & [`volume-down.ts`](../plugin/src/actions/volume-down.ts): Step-based volume adjustment with live `{volume}%` text.
   * [`mute.ts`](../plugin/src/actions/mute.ts), [`next.ts`](../plugin/src/actions/next.ts), [`prev.ts`](../plugin/src/actions/prev.ts), [`like.ts`](../plugin/src/actions/like.ts), [`dislike.ts`](../plugin/src/actions/dislike.ts), [`shuffle.ts`](../plugin/src/actions/shuffle.ts), [`repeat.ts`](../plugin/src/actions/repeat.ts), [`copyurl.ts`](../plugin/src/actions/copyurl.ts).

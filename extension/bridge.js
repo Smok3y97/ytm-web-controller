@@ -115,6 +115,17 @@
             }
           });
         }
+      } else if (event.data.type === 'YTM_FOCUS_TAB') {
+        const api = getApi();
+        if (api?.runtime?.sendMessage) {
+          try {
+            api.runtime.sendMessage({ type: 'YTM_FOCUS_TAB' }, () => {
+              if (chrome?.runtime?.lastError) {
+                // Ignore runtime errors
+              }
+            });
+          } catch { }
+        }
       }
     } catch (err) {
       // Suppress any context invalidation errors when extension reloads

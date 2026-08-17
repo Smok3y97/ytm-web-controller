@@ -5,10 +5,11 @@
  * Supports dual-state playback toggling and in-RAM album artwork button backgrounds.
  */
 
-import { action, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent, DidReceiveSettingsEvent } from '@elgato/streamdeck';
+import { action, KeyDownEvent, KeyUpEvent, SingletonAction, WillAppearEvent, WillDisappearEvent, DidReceiveSettingsEvent } from '@elgato/streamdeck';
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
 import { ImageRenderer } from '../services/image-renderer.js';
+import { WindowFocusService } from '../services/window-focus.js';
 import { PlayPauseSettings, YTMPlaybackState } from '../types/index.js';
 import { getActionWarningSvgDataUrl } from '../services/warning-icons.js';
 
@@ -18,6 +19,9 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
   private lastRenderedState: Map<string, number> = new Map();
   private lastRenderedImage: Map<string, string | undefined> = new Map();
   private lastRenderedMismatch: Map<string, boolean> = new Map();
+  private keyPressTimers: Map<string, NodeJS.Timeout> = new Map();
+  private isLongPressTriggered: Map<string, boolean> = new Map();
+  private readonly LONG_PRESS_THRESHOLD_MS = 450;
 
   constructor() {
     super();
@@ -39,11 +43,17 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
   }
 
   override async onWillDisappear(ev: WillDisappearEvent<PlayPauseSettings>): Promise<void> {
-    this.lastRenderedState.delete(ev.action.id);
-    this.lastRenderedImage.delete(ev.action.id);
-    this.lastRenderedMismatch.delete(ev.action.id);
+    const actionId = ev.action.id;
+    if (this.keyPressTimers.has(actionId)) {
+      clearTimeout(this.keyPressTimers.get(actionId)!);
+      this.keyPressTimers.delete(actionId);
+    }
+    this.isLongPressTriggered.delete(actionId);
+    this.lastRenderedState.delete(actionId);
+    this.lastRenderedImage.delete(actionId);
+    this.lastRenderedMismatch.delete(actionId);
     for (const a of this.activeActions) {
-      if (a.id === ev.action.id) {
+      if (a.id === actionId) {
         this.activeActions.delete(a);
         break;
       }
@@ -58,6 +68,54 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
       }
       return;
     }
+
+    const actionId = ev.action.id;
+    this.isLongPressTriggered.set(actionId, false);
+
+    if (this.keyPressTimers.has(actionId)) {
+      clearTimeout(this.keyPressTimers.get(actionId)!);
+      this.keyPressTimers.delete(actionId);
+    }
+
+    const timer = setTimeout(async () => {
+      this.isLongPressTriggered.set(actionId, true);
+      this.keyPressTimers.delete(actionId);
+
+      // 1. Send WebSocket focus command to browser extension
+      WebSocketService.getInstance().sendCommand('focusTab');
+
+      // 2. Bring window to front at OS level via Win32 bypass
+      WindowFocusService.getInstance().bringToFront();
+
+      if (ev.action.isKey()) {
+        await ev.action.showOk();
+      }
+    }, this.LONG_PRESS_THRESHOLD_MS);
+
+    this.keyPressTimers.set(actionId, timer);
+  }
+
+  override async onKeyUp(ev: KeyUpEvent<PlayPauseSettings>): Promise<void> {
+    const actionId = ev.action.id;
+
+    if (this.keyPressTimers.has(actionId)) {
+      clearTimeout(this.keyPressTimers.get(actionId)!);
+      this.keyPressTimers.delete(actionId);
+    }
+
+    const wasLongPress = this.isLongPressTriggered.get(actionId);
+    this.isLongPressTriggered.delete(actionId);
+
+    if (wasLongPress) {
+      // Handled in long press timer; ignore release
+      return;
+    }
+
+    if (StateManager.getInstance().isVersionMismatch()) {
+      return;
+    }
+
+    // Normal short press: toggle play / pause
     WebSocketService.getInstance().sendCommand('playPause');
   }
 

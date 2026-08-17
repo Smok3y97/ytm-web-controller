@@ -1,13 +1,17 @@
 {
   "manifest_version": 3,
   "name": "YouTube Music Web Controller",
-  "version": "1.6.0.0",
-  "version_name": "1.6.0",
+  "version": "1.6.1.0",
+  "version_name": "1.6.1",
   "description": "Ultra-lightweight bridge connecting music.youtube.com directly to Elgato Stream Deck and Discord RPC.",
   "author": "Smok3y97",
   "permissions": [
-    "storage"
+    "storage",
+    "tabs"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "host_permissions": [
     "https://music.youtube.com/*",
     "https://*.googleusercontent.com/*",

@@ -28,12 +28,22 @@ if (!(Test-Path (Join-Path $pluginDir "node_modules"))) {
 npm run build
 Pop-Location
 
-$binSource = Join-Path $pluginDir "bin\plugin.js"
+# Compile native Windows window focus helper
+$csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+$focusCs = Join-Path $rootDir "scripts\ytm-focus.cs"
+$focusExe = Join-Path $pluginDir "bin\ytm-focus.exe"
+if ((Test-Path $csc) -and (Test-Path $focusCs)) {
+    Write-Output "Compiling native Windows focus helper..."
+    & $csc /target:winexe /optimize+ /nologo /out:$focusExe $focusCs
+}
 
 $binTarget = Join-Path $stageDir "bin"
 New-Item -ItemType Directory -Path $binTarget -Force | Out-Null
-if (Test-Path $binSource) {
-    Copy-Item $binSource $binTarget
+if (Test-Path (Join-Path $pluginDir "bin\plugin.js")) {
+    Copy-Item (Join-Path $pluginDir "bin\plugin.js") $binTarget
+}
+if (Test-Path $focusExe) {
+    Copy-Item $focusExe $binTarget
 }
 
 # 3. Generate & Copy Assets (excluding script files)

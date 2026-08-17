@@ -22,7 +22,7 @@ Standard 72×72 px Stream Deck keys supporting dual-state, tri-state, single-act
 
 | Action | Key Type | Dynamic Feedback | Description |
 | :--- | :--- | :--- | :--- |
-| **Play / Pause** | Dual-State | Dynamic Play/Pause vector state or live **Album Cover Art as button background** | Toggles playback state. Cover art is rendered directly in RAM with zero disk I/O. |
+| **Play / Pause** | Dual-State | Dynamic Play/Pause vector state or live **Album Cover Art as button background** | Toggles playback state on short press. Long press (hold) brings the YouTube Music browser tab or PWA window to the foreground. Cover art is rendered directly in RAM with zero disk I/O. |
 | **Volume Up** | Single Key | Live `{volume}%` text readout | Increases playback volume by configurable step (1% – 25%). Fully stylable via native Title Styler. |
 | **Volume Down** | Single Key | Live `{volume}%` text readout | Decreases playback volume by configurable step (1% – 25%). Fully stylable via native Title Styler. |
 | **Mute / Unmute** | Dual-State | Dynamic Unmuted / Muted speaker icons | Toggles mute status for active playback. |

@@ -1303,6 +1303,15 @@
           break;
         }
 
+        case 'focusTab':
+        case 'bringToFront': {
+          try {
+            window.focus();
+            window.postMessage({ type: 'YTM_FOCUS_TAB' }, '*');
+          } catch { }
+          break;
+        }
+
         default:
           console.log('[YTM Controller] Unknown command:', command);
       }

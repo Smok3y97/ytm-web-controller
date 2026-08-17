@@ -82,6 +82,9 @@ Global settings are accessible in the Property Inspector of **every single butto
 ## 🔘 3. Keypad Action Customization
 
 ### Play / Pause
+- **Controls & Interactions**:
+  - 🔘 **Short Press**: Toggle Play / Pause state.
+  - ⏳ **Long Press (Hold ~450ms)**: Bring the YouTube Music browser tab or PWA window directly to the foreground and focus it.
 - **Album cover as button background**: When enabled, renders the high-resolution album cover art directly as the key background in memory (RAM). When disabled, uses official vector Play/Pause states.
 
 ### Toggle Song Requests

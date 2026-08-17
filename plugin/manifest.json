@@ -5,7 +5,7 @@
   "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. GitHub: https://github.com/Smok3y97/ytm-web-controller",
   "Author": "Smok3y97",
   "URL": "https://github.com/Smok3y97/ytm-web-controller",
-  "Version": "1.6.0.0",
+  "Version": "1.6.1.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.5"
@@ -31,7 +31,7 @@
     {
       "UUID": "com.smok3y97.ytmusicweb.playpause",
       "Name": "Play / Pause",
-      "Tooltip": "Toggle Play / Pause and display album cover art",
+      "Tooltip": "Toggle Play / Pause (Hold to bring YouTube Music to foreground)",
       "Icon": "assets/actions/playpause/icon",
       "PropertyInspectorPath": "ui/playpause.html",
       "Controllers": [

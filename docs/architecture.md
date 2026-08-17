@@ -107,6 +107,7 @@ ytm-web-controller/
 ├── screenshots/                 # Preview assets & documentation screenshots
 │   ├── Banner.png               # GitHub repository hero banner
 │   ├── StreamDeck.png           # Stream Deck action configuration preview
+│   ├── OBS-Browser-Overlay.png  # OBS Studio Browser Source overlay preview
 │   ├── Discord-Desktop-RPC.png  # Discord Desktop Rich Presence preview
 │   └── Discord-Mobile-RPC.png   # Discord Mobile App Rich Presence preview
 ├── extension/                   # Manifest V3 Browser Companion Extension

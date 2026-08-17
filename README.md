@@ -22,10 +22,8 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 **YouTube Music Web Controller** lets you keep using the official YouTube Music web player or PWA you already love — seamlessly connected to your **Elgato Stream Deck**:
 
 - 🚀 **Keep Using the Official Web Player**: Works directly with YouTube Music in your favorite browser (Chrome, Brave, Edge, etc.) with all your playlists, recommendations, and full official audio quality.
-- ⚡ **Ultra-Lightweight with Zero Lag**: Built to be completely invisible to your system. It will never slow down your games, stream bitrate, or background tasks.
-- 🎛️ **Full Stream Deck + Dial Support**: Enjoy smooth dials for volume, scrubbing, and track skipping, complete with live album art and auto-scrolling song titles on the LCD screen.
-- 💬 **Discord Rich Presence Included**: Automatically show your friends what you are listening to in your Discord profile (with live progress on Desktop & Mobile, plus clickable song links on the Desktop app).
-- 🎥 **Built for Streamers**: Effortlessly display your currently playing song in your OBS Studio stream overlays with zero complicated setup.
+- ⚡ **Zero-Overhead & Local-First**: Event-driven WebSocket communication with zero DOM polling, and 100% in-memory rendering with zero disk footprint.
+- 🛡️ **Ultra-Lightweight & Private**: Completely invisible to your system — running locally with zero external telemetry, zero open firewall ports, and no impact on game performance or stream bitrates.
 
 ---
 
@@ -33,9 +31,7 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 
 - 🎛️ **Stream Deck + Dial Controls**: Dial controls for Track Skipping, Volume, and Scrubbing/Seeking with real-time LCD progress bars and dynamic album cover thumbnails.
 - 🔘 **12+ Keypad Actions**: Live Album Cover Art backgrounds, Play/Pause, Volume Up/Down, Mute, Next/Prev, Like/Dislike, Shuffle, Repeat (Tri-State), Copy Song URL, and Song Request toggles.
-- 💬 **Discord Rich Presence (RPC)**: Automatic status broadcasting with album art, live progress, and clickable song links on Desktop & Mobile.
-- 🎥 **Streamer Tools & Overlays**: Real-time animated OBS Browser Source overlay (`/overlay`), local text file exporter (`.txt`), and live chatbot song request APIs (`!song`, `!playnext`).
-- ⚡ **Zero-Overhead & Local-First**: Event-driven WebSocket communication with zero DOM polling, and 100% in-memory rendering with zero disk footprint.
+- 💬 **Discord Rich Presence (RPC)**: Automatic status broadcasting with album art and animated progress across Desktop & Mobile *(clickable song links are supported on the Discord Desktop client)*.
 
 > [!TIP]
 > 📋 **Detailed Action Reference**: For full control tables, hardware feedbacks, and action specifications, see the **[Feature Matrix & Action Reference (`docs/features.md`)](docs/features.md)**.
@@ -50,9 +46,19 @@ The plugin includes a lightweight local HTTP server layer on port `39865` runnin
 Add an animated now-playing music widget directly to OBS Studio as a **Browser Source**:
 - **URL**: `http://localhost:39865/overlay`
 - **Themes**: `card` (default), `compact`, `pill`
-- **Customizable**: Customize accent colors, transparency, borders, and animations simply via URL parameters (e.g. `http://localhost:39865/overlay?accent=00d26a&bg=transparent`).
+- **Customizable**: Customize accent colors, transparency, borders, and animations simply via URL parameters (e.g. `http://localhost:39865/overlay?theme=card&accent=ff0033`).
 
-### 2. Chatbot Integrations & Viewer Song Requests
+<p align="center">
+  <img src="screenshots/OBS-Browser-Overlay.png" alt="OBS Browser Source Music Overlay" width="480">
+  <br>
+  <em>Interactive OBS Studio Browser Source Overlay (<code>card</code> theme)</em>
+</p>
+
+### 2. Chatbot Integrations & Viewer Song Requests *(WIP)*
+
+> [!NOTE]
+> 🚧 **Work in Progress (WIP)**: The viewer song request endpoint (`/api/playnext`) and queue integration are currently in active development.
+
 Let viewers query the current track or queue songs in your Twitch, YouTube, or Kick chat:
 - **Query Song (`!song`)**:
   ```text
@@ -70,12 +76,6 @@ Automatically exports live track metadata (`{artist}`, `{title}`, `{album}`) to 
 
 > [!TIP]
 > 📖 **Full Setup Guide**: For comprehensive step-by-step instructions, complete URL parameter tables, and configuration guides for **Nightbot, Streamer.bot, Streamlabs Cloudbot, MixItUp, and Fossabot**, see the **[OBS Studio & Chatbot Setup Guide (`docs/obs-setup.md`)](docs/obs-setup.md)**.
-
-<p align="center">
-  <img src="screenshots/StreamDeck.png" alt="Elgato Stream Deck Action Setup" width="800">
-  <br>
-  <em>Stream Deck Plugin Action Setup & Dynamic Key / Dial Configuration</em>
-</p>
 
 <table align="center">
   <tr>
@@ -146,7 +146,7 @@ The source code, build scripts, vector assets, and UI components in this reposit
   - **Elgato Stream Deck Software**: `v7.5.1 (22901)` (Minimum required: `v6.5+`)
   - **Discord Windows Client**: `v1.0.9253 x64 (88414)` (Desktop Rich Presence)
   - **OBS Studio**: `v28+` (Text GDI+ stream overlays)
-  - **Browsers**: Google Chrome (Official Web Player & PWA), Brave, Microsoft Edge *(Mozilla Firefox is supported via Manifest V3 Gecko compatibility, but currently untested)*.
+  - **Browser**: Google Chrome (Official Web Player & PWA) *(Other Chromium browsers and Firefox are built on standard web extension APIs, but have not been personally tested)*.
 
 ---
 

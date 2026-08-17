@@ -37,6 +37,12 @@ The plugin hosts a lightweight, zero-dependency HTML5/CSS3 widget served directl
 6. Check **Shutdown source when not visible** (optional, saves GPU cycles when hidden).
 7. Click **OK**.
 
+<p align="center">
+  <img src="../screenshots/OBS-Browser-Overlay.png" alt="OBS Browser Source Music Overlay" width="480">
+  <br>
+  <em>Interactive OBS Studio Browser Source Overlay (<code>card</code> theme)</em>
+</p>
+
 ---
 
 ### 📜 Complete URL Parameters Reference

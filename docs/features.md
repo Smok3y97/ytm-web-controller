@@ -32,7 +32,7 @@ Standard 72×72 px Stream Deck keys supporting dual-state, tri-state, single-act
 | **Dislike Track** | Dual-State | Dynamic active/inactive thumbs-down highlight (`#FF0033`) | Toggles dislike rating on current song. |
 | **Shuffle** | Dual-State | Dynamic active/inactive shuffle highlight (`#FF0033`) | Toggles queue shuffle mode on/off. |
 | **Repeat Mode** | Tri-State | Dynamic cycle icons: **Off** ➔ **All** ➔ **One (1)** | Cycles playlist repeat modes. |
-| **Toggle Song Requests** | Dual-State | Dynamic green (ON) / red (OFF) state badge | Toggles chatbot song requests (`!playnext`) on or off during live streams. |
+| **Toggle Song Requests** | Dual-State | Dynamic green (ON) / red (OFF) state badge | Toggles chatbot song requests (`!playnext`) on or off during live streams. *(WIP)* |
 | **Copy Song URL** | Single Key | Visual success indicator (`showOk`) | Copies current track URL directly to clipboard for fast sharing. |
 
 ---
@@ -45,5 +45,15 @@ Background services run locally inside the Stream Deck plugin process on port `3
 | :--- | :--- | :--- |
 | **Discord Rich Presence (RPC)** | Discord Desktop & Mobile | Real-time status, album art, and animated timeline progress across Desktop & Mobile (interactive clickable song buttons available on Discord Desktop client). |
 | **OBS Browser Overlay** | OBS Studio / Streamlabs | Real-time interactive browser source widget (`http://localhost:39865/overlay`) with themes (`card`, `compact`, `pill`), visual styling engine, live album art, and smooth animations. |
-| **Chatbot API & Song Requests** | Nightbot / Streamer.bot | Instant HTTP REST endpoints for song info (`/api/current`) and viewer song requests (`/api/playnext`, `/api/queue`), with customizable feedback messages & blacklist filtering. |
+| **Chatbot API & Song Requests** *(WIP)* | Nightbot / Streamer.bot | Instant HTTP REST endpoints for song info (`/api/current`) and viewer song requests (`/api/playnext`, `/api/queue`), with customizable feedback messages & blacklist filtering. |
 | **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to a local `.txt` file for OBS Text (GDI+) overlay sources. Optional clear-on-pause. |
+
+---
+
+## 🖼️ Stream Deck Configuration Preview
+
+<p align="center">
+  <img src="../screenshots/StreamDeck.png" alt="Elgato Stream Deck Action Setup" width="800">
+  <br>
+  <em>Stream Deck Plugin Action Setup & Dynamic Key / Dial Configuration</em>
+</p>

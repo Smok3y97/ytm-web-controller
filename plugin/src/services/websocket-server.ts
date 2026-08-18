@@ -28,7 +28,6 @@ export class WebSocketService extends EventEmitter {
 
   public static getInstance(): WebSocketService {
     if (!WebSocketService.instance) {
-      VersionControlService.getInstance();
       WebSocketService.instance = new WebSocketService();
     }
     return WebSocketService.instance;

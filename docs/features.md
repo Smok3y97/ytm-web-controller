@@ -42,9 +42,7 @@ Standard 72×72 px Stream Deck keys supporting dual-state, tri-state, single-act
 | **Dislike Track** | Dual-State | Dynamic active/inactive thumbs-down highlight (`#FF0033`) | Toggles dislike rating on current song. |
 | **Shuffle** | Dual-State | Dynamic active/inactive shuffle highlight (`#FF0033`) | Toggles queue shuffle mode on/off. |
 | **Repeat Mode** | Tri-State | Dynamic cycle icons: **Off** ➔ **All** ➔ **One (1)** | Cycles playlist repeat modes. |
-| **Toggle Song Requests** | Dual-State | Dynamic green (ON) / red (OFF) state badge | Toggles chatbot song requests (`!playnext`) on or off during live streams. Dedicated action PI with custom response templates. |
-| **Blacklist & Skip Track** | Single Key | Visual confirmation (`showOk`) / Alert (`showAlert`) | Appends the current track to `blacklist.txt` and immediately skips to the next track. Dedicated action PI with file path and template settings. |
-| **Copy Song URL** | Single Key | Visual success indicator (`showOk`) | Copies current track URL directly to clipboard for fast sharing. |
+| **Copy Song URL** | Single Key | Visual checkmark confirmation on key | Copies current track URL or custom formatted track info (`{url}`, `{title}`, `{artist}`, `{album}`) directly to clipboard. |
 
 ---
 
@@ -54,11 +52,9 @@ Background services run locally inside the Stream Deck plugin process on port `3
 
 | Feature | Target App | Key Capabilities |
 | :--- | :--- | :--- |
-| **Streamer Studio Web Dashboard** | Web Browser (`/dashboard`) | All-in-one 3-column studio interface on `http://localhost:39865/dashboard`: Live OBS customizer, real-time widget preview, vertically stacked chatbot commands (`!song`, `!playnext`, `!blacklist`), searchable `blacklist.txt` manager, two-way settings synchronization, and interactive documentation. |
 | **Discord Rich Presence (RPC)** | Discord Desktop & Mobile | Real-time status, album art, and animated timeline progress across Desktop & Mobile (interactive clickable song buttons available on Discord Desktop client). |
 | **OBS Browser Overlay** | OBS Studio / Streamlabs | Real-time interactive browser source widget (`http://localhost:39865/overlay`) with themes (`card`, `compact`, `pill`), visual styling engine, live album art, and smooth animations. |
-| **Chatbot API & Song Requests** | Nightbot / Streamer.bot / Cloudbot | Instant HTTP REST endpoints for song info (`/api/current`), viewer song requests (`/api/playnext`), and moderator blacklisting (`/api/blacklist`), with customizable feedback messages & blacklist filtering. |
-| **Persistent Song Blacklist** | Stream Deck / Chatbot / Disk | Local `blacklist.txt` storage with O(1) in-memory lookup and real-time disk file watcher. Prevents blacklisted tracks from ever being queued. |
+| **Chatbot API (`!song`)** | Streamer.bot / MixItUp / Local Bots | Instant read-only HTTP endpoint for current song info (`http://localhost:39865/api/current`) with customizable placeholders (`{artist}`, `{title}`, `{album}`, `{url}`). |
 | **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to `ytm_current_track.txt` (or custom path) for OBS Text (GDI+) overlay sources. Optional clear-on-pause. |
 
 ---

@@ -45,11 +45,12 @@ Full transparency and open-source honesty are core principles of the **YouTube M
 ## [🛠️ 2. What the AI Created](#top)
 
 1. **Stream Deck Plugin Backend (TypeScript / SDK 2)**:
-   - Full implementation of decoupled backend services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`, `blacklist-service.ts`, `http-api.ts`).
-   - Action controllers for dual-state keys, step volume adjustments, dials, song requests, and blacklist actions.
+   - Full implementation of decoupled backend services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`, `http-api.ts`).
+   - Action controllers for dual-state keys, step volume adjustments, dials, and track controls.
 2. **Browser Companion Extension (Manifest V3)**:
-   - Zero-polling HTML5 `<video>` event hooks and DOM `MutationObserver` state extractions in `content.js`.
-   - Dynamic port storage and live health check popup UI in `popup/`.
+   - Modular MAIN-world architecture (`utils.js`, `ytm-actions.js`, `ytm-state.js`, `content.js`) and isolated bridge (`bridge.js`).
+   - Zero-polling HTML5 `<video>` event hooks and DOM `MutationObserver` state extractions.
+   - Dynamic port storage and live health check popup UI in `popup.html` / `popup.js`.
 3. **Property Inspector (PI) Frontend**:
    - Decoupled WebSocket SDK client bridge (`streamdeck-client.js`) and modular Global Settings UI component (`global-settings.js`).
    - Pure Vanilla CSS (`sdpi.css`) dark theme design system.

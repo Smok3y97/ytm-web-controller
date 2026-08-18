@@ -61,24 +61,12 @@ export interface WSMessage<T = unknown> {
 export interface GlobalSettings extends JsonObject {
   [key: string]: JsonValue | undefined;
   wsPort?: number;
-  streamerModeEnabled?: boolean;
   enableDiscordRPC?: boolean;
   discordClientId?: string;
   enableObsExport?: boolean;
   obsFilePath?: string;
   obsFormatTemplate?: string;
   obsClearOnPause?: boolean;
-  enableSongRequests?: boolean;
-  songRequestMode?: 'playNext' | 'addToQueue';
-  songRequestSuccessTemplate?: string;
-  songRequestDisabledTemplate?: string;
-  songRequestErrorTemplate?: string;
-  songRequestBlockedTemplate?: string;
-  songRequestBlacklist?: string;
-  enableSongBlacklist?: boolean;
-  songBlacklistSuccessTemplate?: string;
-  songBlacklistErrorTemplate?: string;
-  blacklistFilePath?: string;
   isVersionMismatch?: boolean;
   extensionVersion?: string;
   requiredPluginVersion?: string;
@@ -88,10 +76,6 @@ export interface GlobalSettings extends JsonObject {
 export interface PlayPauseSettings extends JsonObject {
   [key: string]: JsonValue | undefined;
   showCoverAsBackground?: boolean;
-  enableObsExport?: boolean;
-  obsFilePath?: string;
-  obsFormatTemplate?: string;
-  obsClearOnPause?: boolean;
 }
 
 export interface TrackDialSettings extends JsonObject {
@@ -125,4 +109,9 @@ export interface SeekDialSettings extends JsonObject {
   titleTemplate?: string;
   timeTemplate?: string;
   showCover?: boolean;
+}
+
+export interface CopyUrlSettings extends JsonObject {
+  [key: string]: JsonValue | undefined;
+  copyFormatTemplate?: string;
 }

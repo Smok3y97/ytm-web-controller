@@ -1,15 +1,14 @@
 /**
- * Copy Song URL Action
+ * Copy Song URL & Track Info Action
  * 
  * UUID: com.smok3y97.ytmusicweb.copyurl
  */
 
-import { action, KeyDownEvent, WillDisappearEvent } from '@elgato/streamdeck';
-import streamDeck from '@elgato/streamdeck';
+import streamDeck, { action, KeyDownEvent, WillDisappearEvent } from '@elgato/streamdeck';
 import { BaseStateAction } from './base-state-action.js';
 import { StateManager } from '../services/state-manager.js';
 import { copyToClipboard } from '../services/clipboard.js';
-import { YTMPlaybackState } from '../types/index.js';
+import { YTMPlaybackState, CopyUrlSettings } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.copyurl' })
 export class CopyUrlAction extends BaseStateAction {
@@ -30,7 +29,7 @@ export class CopyUrlAction extends BaseStateAction {
     return 0;
   }
 
-  override async onKeyDown(ev: KeyDownEvent): Promise<void> {
+  override async onKeyDown(ev: KeyDownEvent<CopyUrlSettings>): Promise<void> {
     if (StateManager.getInstance().isVersionMismatch()) {
       if (ev.action.isKey()) {
         await ev.action.showAlert();
@@ -38,11 +37,14 @@ export class CopyUrlAction extends BaseStateAction {
       return;
     }
 
-    const state = StateManager.getInstance().getState();
-    const trackUrl = (state.trackUrl && state.trackUrl.startsWith('http')) ? state.trackUrl : '';
+    const stateManager = StateManager.getInstance();
+    const state = stateManager.getState();
 
-    if (!trackUrl) {
-      streamDeck.logger.warn('[CopyUrlAction] No active track URL available to copy');
+    const template = ev.payload.settings?.copyFormatTemplate || '{url}';
+    const textToCopy = stateManager.formatTrackText(template, state);
+
+    if (!textToCopy) {
+      streamDeck.logger.warn('[CopyUrlAction] No active track metadata/URL available to copy');
       if (ev.action.isKey()) {
         await ev.action.showAlert();
       }
@@ -50,8 +52,8 @@ export class CopyUrlAction extends BaseStateAction {
     }
 
     try {
-      await copyToClipboard(trackUrl);
-      streamDeck.logger.info(`[CopyUrlAction] Successfully copied track URL to clipboard: ${trackUrl}`);
+      await copyToClipboard(textToCopy);
+      streamDeck.logger.info(`[CopyUrlAction] Successfully copied text to clipboard: ${textToCopy}`);
 
       if (ev.action.isKey()) {
         const actionId = ev.action.id;
@@ -77,7 +79,7 @@ export class CopyUrlAction extends BaseStateAction {
         this.feedbackTimers.set(actionId, timer);
       }
     } catch (err) {
-      streamDeck.logger.error(`[CopyUrlAction] Failed to copy track URL to clipboard: ${err}`);
+      streamDeck.logger.error(`[CopyUrlAction] Failed to copy text to clipboard: ${err}`);
       if (ev.action.isKey()) {
         await ev.action.showAlert();
       }

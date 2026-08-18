@@ -38,20 +38,20 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       if (extensionApi?.runtime?.getManifest) {
         const manifest = extensionApi.runtime.getManifest();
-        return manifest.version || '1.5.1.0';
+        return manifest.version || '1.8.0.0';
       }
     } catch (e) { }
-    return '1.5.1.0';
+    return '1.8.0.0';
   }
 
   function getDisplayVersion() {
     try {
       if (extensionApi?.runtime?.getManifest) {
         const manifest = extensionApi.runtime.getManifest();
-        return manifest.version_name || manifest.version || '1.5.1';
+        return manifest.version_name || manifest.version || '1.8.0';
       }
     } catch (e) { }
-    return '1.5.1';
+    return '1.8.0';
   }
 
   function detectBrowserPlatform() {
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateMismatchUI(isMismatch, requiredVersion, isPluginOutdated = false) {
     if (!mismatchBanner) return;
     if (isMismatch) {
-      const reqVer = requiredVersion || '1.5.1.0';
+      const reqVer = requiredVersion || '1.8.0.0';
       if (mismatchText) {
         mismatchText.textContent = isPluginOutdated
           ? `Requires Stream Deck Plugin v${reqVer}+`
@@ -118,8 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         {
           wsPort: DEFAULT_PORT,
           isMismatch: false,
-          requiredPluginVersion: '1.5.1.0',
-          currentPluginVersion: '1.5.1.0'
+          requiredPluginVersion: '1.8.0.0',
+          currentPluginVersion: '1.8.0.0'
         },
         (items) => {
           const port = items.wsPort || DEFAULT_PORT;
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           if (data.type === 'version_mismatch') {
-            const reqVer = data.requiredPluginVersion || '1.5.1.0';
+            const reqVer = data.requiredPluginVersion || '1.8.0.0';
             const isPluginOutdated = compareVersions(extVersion, data.currentPluginVersion) > 0;
             updateMismatchUI(true, reqVer, isPluginOutdated);
             if (storageApi) {

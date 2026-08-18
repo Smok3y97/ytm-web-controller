@@ -26,14 +26,14 @@ body {
   font-family: var(--font);
   font-size: 11px;
   user-select: none;
-  padding: 12px;
+  padding: 10px 12px;
   -webkit-font-smoothing: antialiased;
 }
 
 .sdpi-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .sdpi-heading {
@@ -42,9 +42,14 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
-  padding-bottom: 4px;
+  padding-bottom: 3px;
   border-bottom: 1px solid var(--border);
   margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.sdpi-wrapper > .sdpi-heading:first-child {
+  margin-top: 0;
 }
 
 .sdpi-item {
@@ -64,7 +69,7 @@ body {
 .sdpi-item-label {
   color: var(--text);
   font-size: 11px;
-  min-width: 100px;
+  min-width: 95px;
 }
 
 .sdpi-item-value {
@@ -108,6 +113,7 @@ select {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  padding: 1px 0;
 }
 
 .sdpi-checkbox-wrap input[type="checkbox"] {
@@ -120,7 +126,9 @@ select {
 .sdpi-hint {
   font-size: 9.5px;
   color: var(--text-muted);
-  line-height: 1.3;
+  line-height: 1.35;
+  margin-top: 1px;
+  margin-bottom: 4px;
 }
 
 .sdpi-info-box {
@@ -140,7 +148,7 @@ select {
 .sdpi-warning-box {
   background: rgba(241, 179, 38, 0.12);
   border: 1px solid rgba(241, 179, 38, 0.45);
-  border-radius: 5px;
+  border-radius: 4px;
   padding: 8px 10px;
   font-size: 11px;
   color: #fcd34d;
@@ -164,14 +172,14 @@ select {
 .sdpi-accordions-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 details.sdpi-group {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: 4px;
   overflow: hidden;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
@@ -185,7 +193,7 @@ summary.sdpi-group-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 9px 12px;
+  padding: 7px 10px;
   font-size: 11px;
   font-weight: 600;
   color: var(--text);
@@ -208,13 +216,13 @@ summary.sdpi-group-summary:hover {
 .sdpi-group-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .sdpi-group-title::before {
   content: '▸';
   display: inline-block;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
   transition: transform 0.2s ease, color 0.2s ease;
 }
@@ -225,53 +233,15 @@ details.sdpi-group[open] .sdpi-group-title::before {
 }
 
 .sdpi-group-content {
-  padding: 12px;
+  padding: 10px;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Input with action button group */
-.sdpi-input-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
+/* Hidden Utility */
+.hidden {
+  display: none !important;
 }
-
-.sdpi-input-group input {
-  flex: 1;
-}
-
-.sdpi-btn {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 5px 8px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.sdpi-btn:hover {
-  background: #333333;
-  border-color: #555555;
-  color: #ffffff;
-}
-
-.sdpi-btn:active {
-  transform: translateY(1px);
-}
-
-.sdpi-btn.copied {
-  background: rgba(46, 204, 113, 0.2);
-  border-color: #2ecc71;
-  color: #2ecc71;
-}
-

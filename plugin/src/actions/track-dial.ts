@@ -1,7 +1,7 @@
 /**
  * Track Controller Dial Action for Stream Deck +
  * 
- * UUID: com.smok3y97.ytmusicweb.dial
+ * UUID: com.smok3y97.ytmusicweb.trackdial
  * Features:
  * - Encoder rotation: Skip Next Track (clockwise) / Previous Track (counter-clockwise)
  * - Dial push & touch tap: Play / Pause toggle
@@ -20,9 +20,7 @@ import {
 import { BaseDialAction } from './base-dial-action.js';
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
-import { MarqueeService } from '../services/marquee-service.js';
 import { ImageRenderer } from '../services/image-renderer.js';
-import { VersionControlService } from '../services/version-control.js';
 import { TrackDialSettings, YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.trackdial' })
@@ -114,6 +112,3 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
     } catch { }
   }
 }
-
-// Backwards compatibility alias
-export { TrackDialAction as DialAction };

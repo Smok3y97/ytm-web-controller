@@ -22,9 +22,7 @@ import {
 import { BaseDialAction } from './base-dial-action.js';
 import { WebSocketService } from '../services/websocket-server.js';
 import { StateManager } from '../services/state-manager.js';
-import { MarqueeService } from '../services/marquee-service.js';
 import { ImageRenderer } from '../services/image-renderer.js';
-import { VersionControlService } from '../services/version-control.js';
 import { VolumeDialSettings, YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.volumedial' })

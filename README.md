@@ -36,7 +36,7 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 **YouTube Music Web Controller** lets you keep using the official YouTube Music web player or PWA you already love — seamlessly connected to your **Elgato Stream Deck**:
 
 - 🚀 **Keep Using the Official Web Player**: Works directly with YouTube Music in your favorite browser (Chrome, Brave, Edge, etc.) with all your playlists, recommendations, and full official audio quality.
-- ⚡ **Zero-Overhead & Local-First**: Event-driven WebSocket communication with zero DOM polling, and 100% in-memory RAM rendering without temporary cache files on disk (file exports for OBS `.txt` and song blacklist are strictly opt-in).
+- ⚡ **Zero-Overhead & Local-First**: Event-driven WebSocket communication with zero DOM polling, and 100% in-memory RAM rendering without temporary cache files on disk (file export for OBS `.txt` is strictly opt-in).
 - 🛡️ **Ultra-Lightweight & Private**: Completely invisible to your system — running locally with zero external telemetry, zero open firewall ports, and no impact on game performance or stream bitrates.
 
 ---
@@ -44,7 +44,7 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 ## [✨ Key Features](#top)
 
 - 🎛️ **Stream Deck + Dial Controls**: Dial controls for Track Skipping, Volume, and Scrubbing/Seeking with real-time LCD progress bars and dynamic album cover thumbnails.
-- 🔘 **13+ Keypad Actions**: Live Album Cover Art backgrounds, Play/Pause, Volume Up/Down, Mute, Next/Prev, Like/Dislike, Shuffle, Repeat (Tri-State), Copy Song URL, Toggle Song Requests, and Blacklist & Skip Track.
+- 🔘 **11 Keypad Actions**: Live Album Cover Art backgrounds, Play/Pause, Volume Up/Down, Mute, Next/Prev, Like/Dislike, Shuffle, Repeat (Tri-State), and Copy Song URL.
 - 💬 **Discord Rich Presence (RPC)**: Automatic status broadcasting with album art and animated progress across Desktop & Mobile *(clickable song links are supported on the Discord Desktop client)*.
 
 > [!TIP]
@@ -54,14 +54,12 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 
 ## [🎥 Streamer & Creator Features](#top)
 
-- 🌐 **Streamer Studio Web Dashboard**: Built-in 3-column control center on `http://localhost:39865/dashboard` for live overlay styling, chatbot commands, blacklist management, and settings synchronization.
 - 🎨 **OBS Studio Browser Overlay**: Dynamic animated now-playing stream overlay (`/overlay`) with live album art, marquee scrolling, progress bar, themes (`card`, `compact`, `pill`), and HEX color customization.
-- 🤖 **Chatbot Integrations & Song Requests**: Native REST endpoints for track queries (`!song`), viewer song requests (`!playnext`), and moderator blacklisting (`!blacklist`) with customizable responses.
-- ⛔ **Persistent Song Blacklist**: Prevents troll or copyright tracks from being requested via local `blacklist.txt` file and dedicated **Blacklist & Skip Track** key.
+- 🤖 **Chatbot Integration (`!song`)**: Lightweight read-only REST endpoint (`/api/current`) for Streamer.bot, MixItUp, and local bots with customizable response formats.
 - 📄 **OBS Text File Export (.txt)**: Automatically writes live metadata (`{artist}`, `{title}`, `{album}`) to a local `.txt` file for classic OBS Text (GDI+) sources.
 
 > [!TIP]
-> 📖 **Full Streamer & Chatbot Guide**: For step-by-step setup, theme parameters, and bot commands (Nightbot, Streamer.bot, Cloudbot, MixItUp), see the **[OBS Studio & Chatbot Setup Guide (`docs/obs-setup.md`)](docs/obs-setup.md)**.
+> 📖 **Full Streamer & Chatbot Guide**: For step-by-step setup, theme parameters, and bot commands (Streamer.bot, MixItUp), see the **[OBS Studio & Chatbot Setup Guide (`docs/obs-setup.md`)](docs/obs-setup.md)**.
 
 ---
 

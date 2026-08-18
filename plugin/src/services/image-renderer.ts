@@ -6,7 +6,6 @@
  */
 
 import streamDeck from '@elgato/streamdeck';
-import { YTMPlaybackState } from '../types/index.js';
 
 export class ImageRenderer {
   private static instance: ImageRenderer;

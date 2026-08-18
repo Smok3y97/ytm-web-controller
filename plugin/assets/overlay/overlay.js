@@ -9,29 +9,52 @@
 (() => {
   'use strict';
 
-  // 1. Parse URL Configuration Parameters
+  // 1. Case-Insensitive URL Configuration Parameter Parsing
   const params = new URLSearchParams(window.location.search);
+
+  function getParam(name) {
+    const lower = name.toLowerCase();
+    for (const [k, v] of params.entries()) {
+      if (k.toLowerCase() === lower) return v;
+    }
+    return null;
+  }
+
+  function isTrue(val) {
+    if (!val) return false;
+    const s = String(val).trim().toLowerCase();
+    return s === 'true' || s === '1' || s === 'yes' || s === 'on';
+  }
+
+  function isFalse(val) {
+    if (!val) return false;
+    const s = String(val).trim().toLowerCase();
+    return s === 'false' || s === '0' || s === 'no' || s === 'off';
+  }
+
   const config = {
-    template: params.get('template') || '{artist} - {title}',
-    theme: (params.get('theme') || 'card').toLowerCase(),
-    showCover: params.get('showCover') !== 'false' && params.get('showCover') !== '0',
-    showProgress: params.get('showProgress') !== 'false' && params.get('showProgress') !== '0',
-    timeMode: (params.get('timeMode') || 'remaining').toLowerCase(),
-    hideOnPause: params.get('hideOnPause') === 'true' || params.get('hideOnPause') === '1',
-    port: parseInt(params.get('port') || window.location.port || '39865', 10),
-    marquee: params.get('marquee') !== 'false' && params.get('scroll') !== 'false' && params.get('marquee') !== '0',
+    template: getParam('template') || '{artist} - {title}',
+    theme: (getParam('theme') || 'card').toLowerCase(),
+    showCover: !isFalse(getParam('showCover') || getParam('cover') || getParam('artwork')),
+    showProgress: !isFalse(getParam('showProgress') || getParam('progress') || getParam('progressbar')),
+    showAlbum: isTrue(getParam('showAlbum') || getParam('album') || getParam('showalbum') || getParam('show_album')),
+    timeMode: (getParam('timeMode') || getParam('timemode') || getParam('time') || 'remaining').toLowerCase(),
+    hideOnPause: isTrue(getParam('hideOnPause') || getParam('hideonpause')),
+    port: parseInt(getParam('port') || window.location.port || '39865', 10),
+    marquee: !isFalse(getParam('marquee') || getParam('scroll')),
 
     // Visual Customization Parameters
-    accent: params.get('accent') || params.get('accentColor') || '',
-    bg: params.get('bg') || params.get('bgColor') || params.get('background') || '',
-    bgOpacity: params.get('bgOpacity') || params.get('opacity') || '',
-    textColor: params.get('text') || params.get('textColor') || params.get('color') || '',
-    subColor: params.get('subColor') || params.get('subTextColor') || '',
-    radius: params.get('radius') || params.get('borderRadius') || '',
-    width: params.get('width') || '',
-    border: params.get('border') || params.get('borderColor') || '',
-    shadow: params.get('shadow') || params.get('boxShadow') || '',
-    blur: params.get('blur') || params.get('backdropBlur') || ''
+    accent: getParam('accent') || getParam('accentColor') || '',
+    bg: getParam('bg') || getParam('bgColor') || getParam('background') || '',
+    bgOpacity: getParam('bgOpacity') || getParam('opacity') || '',
+    textColor: getParam('text') || getParam('textColor') || getParam('color') || '',
+    subColor: getParam('subColor') || getParam('subTextColor') || '',
+    radius: getParam('radius') || getParam('borderRadius') || '',
+    width: getParam('width') || '',
+    height: getParam('height') || '',
+    border: getParam('border') || getParam('borderColor') || '',
+    shadow: getParam('shadow') || getParam('boxShadow') || '',
+    blur: getParam('blur') || getParam('backdropBlur') || ''
   };
 
   // 2. DOM Elements
@@ -74,18 +97,33 @@
     if (val.toLowerCase() === 'transparent' || val.toLowerCase() === 'none') {
       return 'transparent';
     }
-    // Prepend '#' for 3, 4, 6, 8 digit hex values without leading hash
     if (/^[0-9a-fA-F]{3,8}$/.test(val)) {
       return `#${val}`;
     }
     return val;
   }
 
-  function hexToRgba(hex, alpha = 1) {
-    if (!hex || hex === 'transparent') return 'transparent';
-    let c = hex.replace(/^#/, '');
-    if (c.length === 3) c = c.split('').map(x => x + x).join('');
-    if (c.length === 6) {
+  function hexToRgba(hex, alpha) {
+    let c = normalizeHex(hex);
+    if (c.startsWith('#') && (c.length === 7 || c.length === 4)) {
+      if (c.length === 4) {
+        c = '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+      }
+      const r = parseInt(c.substring(1, 3), 16);
+      const g = parseInt(c.substring(3, 5), 16);
+      const b = parseInt(c.substring(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    if (c.startsWith('rgba') || c.startsWith('rgb')) {
+      return c;
+    }
+    if (c.startsWith('#') && c.length === 9) {
+      const r = parseInt(c.substring(1, 3), 16);
+      const g = parseInt(c.substring(3, 5), 16);
+      const b = parseInt(c.substring(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    if (/^[0-9a-fA-F]{6}$/.test(c)) {
       const r = parseInt(c.substring(0, 2), 16);
       const g = parseInt(c.substring(2, 4), 16);
       const b = parseInt(c.substring(4, 6), 16);
@@ -103,10 +141,34 @@
       coverContainer.style.display = 'none';
     }
 
+    if (config.showAlbum) {
+      albumTrack.style.display = 'block';
+      if (config.theme === 'card') {
+        root.style.setProperty('--card-height', '114px');
+        coverContainer.style.width = '90px';
+        coverContainer.style.height = '90px';
+      } else if (config.theme === 'compact') {
+        root.style.setProperty('--compact-height', '84px');
+        coverContainer.style.width = '64px';
+        coverContainer.style.height = '64px';
+      } else if (config.theme === 'pill') {
+        root.style.setProperty('--pill-height', '72px');
+        coverContainer.style.width = '56px';
+        coverContainer.style.height = '56px';
+      }
+    } else {
+      albumTrack.style.display = 'none';
+    }
+
     if (!config.showProgress) {
       progressContainer.style.display = 'none';
-    } else if (config.timeMode === 'none') {
-      timeDisplay.style.display = 'none';
+    } else {
+      progressContainer.style.display = 'flex';
+      if (config.timeMode === 'none') {
+        timeDisplay.style.display = 'none';
+      } else {
+        timeDisplay.style.display = '';
+      }
     }
 
     // 4.2 Accent Color (HEX / CSS color)
@@ -165,15 +227,21 @@
       root.style.setProperty('--pill-radius', r);
     }
 
-    // 4.6 Custom Width
+    // 4.6 Custom Width & Height
     if (config.width) {
       const w = isNaN(Number(config.width)) ? config.width : `${config.width}px`;
       root.style.setProperty('--card-width', w);
       root.style.setProperty('--compact-width', w);
       root.style.setProperty('--pill-width', w);
     }
+    if (config.height) {
+      const h = isNaN(Number(config.height)) ? config.height : `${config.height}px`;
+      root.style.setProperty('--card-height', h);
+      root.style.setProperty('--compact-height', h);
+      root.style.setProperty('--pill-height', h);
+    }
 
-    // 4.6 Border
+    // 4.7 Border
     if (config.border) {
       const b = config.border.toLowerCase();
       if (b === 'none' || b === 'false' || b === '0') {
@@ -184,15 +252,12 @@
       }
     }
 
-    // 4.7 Shadow
-    if (config.shadow) {
-      const s = config.shadow.toLowerCase();
-      if (s === 'none' || s === 'false' || s === '0') {
-        root.style.setProperty('--box-shadow', 'none');
-      }
+    // 4.8 Shadow
+    if (config.shadow === 'false' || config.shadow === 'none' || config.shadow === '0') {
+      root.style.setProperty('--box-shadow', 'none');
     }
 
-    // 4.8 Backdrop Blur
+    // 4.9 Backdrop Blur
     if (config.blur) {
       const bl = config.blur.toLowerCase();
       if (bl === 'none' || bl === 'false' || bl === '0') {
@@ -288,7 +353,6 @@
       if (overflow > 2) {
         const extraPad = 10;
         const scrollDistance = overflow + extraPad;
-        // Comfortable reading speed: ~22px per second + 2.5s pause allowances
         const duration = Math.max(5, (scrollDistance / 22) + 2.5);
 
         elem.style.setProperty('--scroll-dist', `${scrollDistance}px`);
@@ -331,7 +395,10 @@
       newTitleText = state.title || 'Unknown Title';
       newArtistText = state.artist || 'YouTube Music';
     }
-    newAlbumText = (state.album && state.album.trim()) ? state.album.trim() : '';
+
+    if (config.showAlbum) {
+      newAlbumText = (state.album && state.album.trim()) ? state.album.trim() : (state.title ? 'Single / No Album' : '');
+    }
 
     // Update Title if changed
     if (newTitleText !== lastTitleText) {
@@ -347,15 +414,12 @@
       updateMarquee(trackArtist, artistTrack);
     }
 
-    // Update Album if changed
-    if (newAlbumText !== lastAlbumText) {
-      lastAlbumText = newAlbumText;
-      trackAlbum.textContent = newAlbumText;
-      if (newAlbumText) {
-        albumTrack.style.display = '';
+    // Update Album if showAlbum is true
+    if (config.showAlbum) {
+      if (newAlbumText !== lastAlbumText) {
+        lastAlbumText = newAlbumText;
+        trackAlbum.textContent = newAlbumText;
         updateMarquee(trackAlbum, albumTrack);
-      } else {
-        albumTrack.style.display = 'none';
       }
     }
 
@@ -407,43 +471,47 @@
 
       ws.onopen = () => {
         console.log(`[Overlay] Connected to Stream Deck server at ${wsUrl}`);
-        // Register client & request immediate state
         ws.send(JSON.stringify({ type: 'REGISTER_CLIENT', client: 'obs-overlay' }));
         ws.send(JSON.stringify({ command: 'requestState' }));
       };
 
       ws.onmessage = (event) => {
         try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'STATE_UPDATE' && payload.data) {
-            updateOverlay(payload.data);
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'STATE_UPDATE' && msg.data) {
+            updateOverlay(msg.data);
           }
         } catch (e) {
           console.warn('[Overlay] Message parse error:', e);
         }
       };
 
-      ws.onclose = () => {
-        console.log('[Overlay] Disconnected from server. Reconnecting in 2.5s...');
-        scheduleReconnect();
+      ws.onerror = (err) => {
+        console.warn('[Overlay] WebSocket connection error:', err);
       };
 
-      ws.onerror = (err) => {
-        console.warn('[Overlay] Socket error:', err);
-        ws.close();
+      ws.onclose = () => {
+        console.log('[Overlay] WebSocket connection closed. Reconnecting in 3s...');
+        scheduleReconnect();
       };
     } catch (e) {
+      console.warn('[Overlay] WebSocket instantiation error:', e);
       scheduleReconnect();
     }
   }
 
   function scheduleReconnect() {
     if (!reconnectTimer) {
-      reconnectTimer = setTimeout(connect, 2500);
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        connect();
+      }, 3000);
     }
   }
 
-  // 9. Start
-  applyCustomization();
-  connect();
+  // 9. Startup Lifecycle
+  document.addEventListener('DOMContentLoaded', () => {
+    applyCustomization();
+    connect();
+  });
 })();

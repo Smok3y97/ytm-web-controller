@@ -5,9 +5,8 @@
  * Dual-state: 0 = Unmuted, 1 = Muted
  */
 
-import { action, KeyDownEvent } from '@elgato/streamdeck';
+import { action } from '@elgato/streamdeck';
 import { BaseStateAction } from './base-state-action.js';
-import { StateManager } from '../services/state-manager.js';
 import { YTMPlaybackState } from '../types/index.js';
 
 @action({ UUID: 'com.smok3y97.ytmusicweb.mute' })

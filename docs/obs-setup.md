@@ -2,57 +2,26 @@
 
 # OBS Studio & Chatbot Setup Guide (`docs/obs-setup.md`)
 
-This guide explains how to integrate live YouTube Music track metadata into your OBS Studio stream setup and connect Twitch/YouTube/Kick chat bots.
+This guide explains how to display live YouTube Music track metadata in OBS Studio and connect Twitch/YouTube/Kick chat bots.
 
 ---
 
 ## 📑 Table of Contents
-- [🚀 Overview of Available Methods](#-overview-of-available-methods)
-- [🌐 Streamer Studio Web Dashboard (`/dashboard`)](#-streamer-studio-web-dashboard-dashboard)
-- [🎨 Method 1: Interactive OBS Browser Source Overlay](#-method-1-interactive-obs-browser-source-overlay)
-- [🤖 Method 2: Chatbot Current Song Command (`!song`)](#-method-2-chatbot-current-song-command-song)
-- [🎶 Method 3: Viewer Song Requests (`!playnext`)](#-method-3-viewer-song-requests-playnext)
-- [📄 Method 4: Classic OBS Text File Export (.txt)](#-method-4-classic-obs-text-file-export-txt)
+- [🎨 1. OBS Browser Source Overlay (`/overlay`)](#-1-obs-browser-source-overlay-overlay)
+- [🤖 2. Chatbot Current Song Command (`!song`)](#-2-chatbot-current-song-command-song)
+- [📄 3. Classic OBS Text File Export (.txt)](#-3-classic-obs-text-file-export-txt)
 - [❓ Troubleshooting & Tips](#-troubleshooting--tips)
 
 ---
 
-## [🚀 Overview of Available Methods](#top)
+## [🎨 1. OBS Browser Source Overlay (`/overlay`)](#top)
 
-| Method | Best For | Features |
-| :--- | :--- | :--- |
-| **Streamer Studio Dashboard** *(Recommended)* | Complete visual control & live preview | Real-time OBS overlay configurator with live preview, song blacklist manager, chatbot commands, and settings synchronization. Accessible at `http://localhost:39865/dashboard`. |
-| **Method 1: Browser Source Overlay** | Modern, dynamic animated stream widgets | Live album art, ping-pong title scroll, animated progress bar, themes, HEX colors, and transparency. |
-| **Method 2: Chatbot Metadata API (`!song`)** | Twitch/YouTube chat commands | Instant plaintext HTTP endpoint, customizable placeholders, zero bot latency. |
-| **Method 3: Chatbot Song Requests (`!playnext`)** | Viewer song requests & Twitch Channel Points | Non-interruptive queueing, blacklist protection, custom feedback templates, and Stream Deck toggle. |
-| **Method 4: Text File Export (`.txt`)** | Classic GDI+ text sources & marquee filters | File-based output for native OBS Text sources (`ytm_current_track.txt`). |
-
-> [!NOTE]
-> All HTTP features (Dashboard, Overlay, API routes) are enabled when **Enable Streamer Tools & Web Server** is checked in the Stream Deck Property Inspector.
-
----
-
-## [🌐 Streamer Studio Web Dashboard (`/dashboard`)](#top)
-
-The built-in Web Dashboard provides an all-in-one 3-column control center for streamers and creators:
-
-1. In Stream Deck, open any YouTube Music key settings and ensure **Enable Streamer Tools & Web Server** is checked.
-2. Click **🌐 Open Streamer Dashboard** or navigate to `http://localhost:39865/dashboard` in your browser.
-3. The dashboard features:
-   - **Column 1 (Customizer & Chatbots)**: Live theme selector, color pickers, opacity slider, dimension controls, and vertically stacked chatbot commands with 1-click Copy buttons.
-   - **Column 2 (Live Preview & Blacklist)**: Real-time widget preview, quick track actions (`↗ Open Track`, `⛔ Blacklist & Skip`), and searchable `blacklist.txt` table.
-   - **Column 3 (Settings & Documentation)**: Two-way settings synchronization form and interactive setup reference with GitHub Wiki links.
-
----
-
-## [🎨 Method 1: Interactive OBS Browser Source Overlay](#top)
-
-Add an animated now-playing music widget directly to OBS Studio as a **Browser Source**.
+Add an animated now-playing music widget directly to OBS Studio as a **Browser Source**. The overlay connects locally to the plugin WebSocket and updates in real-time with zero polling overhead.
 
 ### 🚀 Step-by-Step Setup in OBS Studio:
 1. Open **OBS Studio**.
 2. Under **Sources**, click **+** (Add) ➔ **Browser**.
-3. Name the source (e.g., `YTM Overlay` or `Now Playing Widget`).
+3. Name the source (e.g. `YTM Overlay`).
 4. Set the **URL**:
    ```text
    http://localhost:39865/overlay
@@ -61,7 +30,7 @@ Add an animated now-playing music widget directly to OBS Studio as a **Browser S
    - **Card Theme (`theme=card`)**: Width `460`, Height `180`
    - **Compact Theme (`theme=compact`)**: Width `400`, Height `100`
    - **Pill Theme (`theme=pill`)**: Width `420`, Height `90`
-6. Check **Shutdown source when not visible** (optional, saves GPU cycles when hidden).
+6. Check **Shutdown source when not visible** (optional, saves GPU cycles).
 7. Click **OK**.
 
 <p align="center">
@@ -72,181 +41,132 @@ Add an animated now-playing music widget directly to OBS Studio as a **Browser S
 
 ---
 
-### 📜 Complete URL Parameters Reference
+### 📜 URL Parameters Reference
 
-Customize the widget simply by appending search parameters to the Browser Source URL (or generate it with 1-click in the Web Dashboard):
+Customize the appearance simply by appending query parameters to `http://localhost:39865/overlay`:
 
-#### 1. Layout & Theme
+#### Layout & Themes
 | Parameter | Values | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `theme` | `card`, `compact`, `pill` | `card` | Widget layout style. |
-| `showCover` | `true`, `false` | `true` | Display or hide the album cover thumbnail. |
+| `showCover` | `true`, `false` | `true` | Display or hide album artwork thumbnail. |
+| `showAlbum` | `true`, `false` | `false` | Display album name on Card theme (default: 2-line Title & Artist layout). |
 | `showProgress` | `true`, `false` | `true` | Display or hide the track progress bar. |
-| `timeMode` | `remaining`, `current`, `duration`, `both`, `none` | `remaining` | Time display mode (`-1:45`, `2:10`, `3:55`, `2:10 / 3:55`, or hidden). |
+| `timeMode` | `remaining`, `current`, `duration`, `both`, `none` | `remaining` | Time display format (`-1:45`, `2:10`, `3:55`, `2:10 / 3:55`, or hidden). |
 | `hideOnPause` | `true`, `false` | `false` | Automatically hide widget when music is paused. |
 
-#### 2. Typography & Custom Titles
-| Parameter | Values | Default | Description |
+#### Typography & Colors
+| Parameter | Values / Format | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `template` | Placeholders string | `{artist} - {title}` | Custom formatting (`{title}`, `{artist}`, `{album}`, `{duration}`, `{currentTime}`). |
-| `text` / `textColor` | HEX Code (e.g. `ffffff`, `000000`) | `#ffffff` | Primary song title text color. |
+| `template` | String with placeholders | `{artist} - {title}` | Custom text template (`{title}`, `{artist}`, `{album}`). |
+| `text` / `textColor` | HEX Code (e.g. `ffffff`, `000000`) | `#ffffff` | Primary title text color. |
 | `subColor` | HEX Code (e.g. `b3b3b3`, `888888`) | `#b3b3b3` | Secondary artist, album, and time text color. |
+| `marquee` / `scroll` | `true`, `false` | `true` | Ping-pong scrolling for long song titles. |
 
-#### 3. Marquee Auto-Scroll (Ping-Pong Animation)
-| Parameter | Values | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `marquee` / `scroll` | `true`, `false` | `true` | When enabled, long song titles smoothly scroll back and forth (Ping-Pong). |
-
-#### 4. Color, Glassmorphism & Background Styling
+#### Glassmorphism & Backgrounds
 | Parameter | Values / Format | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `accent` | HEX Code (e.g. `00d26a`, `3b82f6`, `ff0033`) | `#ff0033` | Accent color for progress bar fill, glow, and icons. |
-| `bg` | HEX Code (e.g. `121214`, `000000`) or `transparent` | Dark Frosted | Background fill. Use `transparent` for pure floating zero-background overlays. |
+| `bg` | HEX Code (e.g. `121214`) or `transparent` | Dark Frosted | Background fill. Use `transparent` for zero-background overlays. |
 | `bgOpacity` | Number (`0` to `1` or `0` to `100`) | `0.85` | Opacity level of the background card. |
-| `radius` | Number in px (e.g. `0`, `8`, `16`, `50`) | Theme default | Corner rounding radius. Use `radius=0` for sharp rectangular corners. |
-| `width` | Number in px (e.g. `300`, `380`, `450`) | Theme default | Custom fixed widget width override. |
-| `border` | HEX Code or `none` | Subtly translucent | Custom border color, or `border=none` to remove the border completely. |
-| `shadow` | `true`, `false` | `true` | Enable or disable the container drop shadow. |
+| `radius` | Number in px (e.g. `0`, `8`, `16`, `50`) | Theme default | Corner rounding radius (`radius=0` for sharp corners). |
+| `width` | Number in px (e.g. `320`, `360`, `420`) | Theme default | Custom fixed widget width override. |
+| `height` | Number in px (e.g. `50`, `60`, `96`) | Theme default | Custom fixed widget height override. |
+| `border` | HEX Code or `none` | Subtly translucent | Custom border color or `border=none`. |
+| `shadow` | `true`, `false` | `true` | Toggle container drop shadow. |
 
 ---
 
-### 🎨 Visual Theme & Style Examples
+### 🎨 1-Click Copy Ready Overlay Presets
 
-#### 1. Classic Dark Glass Card (Default)
+Copy any of these ready-to-use URLs directly into your OBS Studio Browser Source:
+
+#### 1. Default Setting (Dark Frosted Glass Card)
+Standard YouTube Music red accent with live album art, time remaining, and frosted card background:
 ```text
 http://localhost:39865/overlay
 ```
 
-#### 2. Pure Transparent Floating Overlay (Zero Background)
-Text, cover art, and progress bar float seamlessly over your stream background:
+#### 2. Pure Floating Overlay (Zero Background over Gameplay)
+Completely transparent card background without borders or shadows for floating seamlessly over gaming streams:
 ```text
-http://localhost:39865/overlay?bg=transparent&border=none&shadow=none
+http://localhost:39865/overlay?bg=transparent&border=none&shadow=false
 ```
 
-#### 3. Emerald Green Cyberpunk Theme
+#### 3. Compact Stream Edge Bar (Custom Accent & Auto-Hide on Pause)
+Slim single-line banner for top/bottom stream edges with custom sapphire accent, 420px width, and automatic hiding when music is paused:
 ```text
-http://localhost:39865/overlay?accent=00d26a&bg=0a0a0c&border=00d26a
+http://localhost:39865/overlay?theme=compact&accent=3B82F6&width=420&radius=8&timeMode=current&hideOnPause=true
 ```
 
-#### 4. Twitch / Sapphire Blue Pill
+#### 4. Twitch Purple Floating Pill (Curved Stadium Badge)
+Curved 50px rounded pill widget with official Twitch purple border, minimalist layout, and hidden time labels:
 ```text
-http://localhost:39865/overlay?theme=pill&accent=3b82f6&timeMode=none
-```
-
-#### 5. Streamer Sunset / Pastel Pink Theme
-```text
-http://localhost:39865/overlay?accent=ff66cc&bg=18101a&radius=18&border=ff66cc
+http://localhost:39865/overlay?theme=pill&accent=9146FF&border=9146FF&radius=50&timeMode=none
 ```
 
 ---
 
-## [🤖 Method 2: Chatbot Current Song Command (`!song`)](#top)
+## [🤖 2. Chatbot Current Song Command (`!song`)](#top)
 
-Let viewers check what song is currently playing in your Twitch, YouTube, or Kick chat.
+> [!IMPORTANT]
+> **Local System Requirement (Zero Telemetry & Maximum Security)**:
+> Because the endpoint `http://localhost:39865/api/current` runs strictly on your local PC via the Stream Deck plugin (ensuring complete privacy, zero telemetry, and zero latency), **your chatbot client MUST run locally on the same computer** (such as **Streamer.bot**, **MixItUp**, or **Fossabot Desktop**).
+>
+> Remote cloud-hosted bot web dashboards (such as cloud Nightbot or Streamlabs Cloudbot) **cannot reach your local `localhost` / `127.0.0.1` address**.
 
-### 📝 Placeholders Table
-Construct custom responses with `?format=...`:
-- `{title}`: Song title (e.g. `Never Gonna Give You Up`)
+Let viewers query what song is currently playing via a simple read-only HTTP GET request (`http://localhost:39865/api/current`).
+
+### 📝 Format Placeholders
+Custom format with `?format=...`:
+- `{title}`: Track title (e.g. `Never Gonna Give You Up`)
 - `{artist}`: Performing artist (e.g. `Rick Astley`)
-- `{album}`: Album / single name
+- `{album}`: Album or single name
 - `{url}`: Direct YouTube Music link
 - `{duration}`: Total track duration (e.g. `3:33`)
-- `{currentTime}`: Current elapsed time (e.g. `1:20`)
+- `{currentTime}`: Elapsed time (e.g. `1:20`)
 
-### 🤖 Bot-by-Bot Setup Guide:
+### 🤖 Local Bot Setup Guide:
 
-#### 1. Nightbot
-```text
-!addcom !song $(urlfetch http://localhost:39865/api/current?format=🎶 Now playing: {title} by {artist} | Link: {url})
-```
-
-#### 2. Streamer.bot
-1. In Streamer.bot: **Actions ➔ Add** (Name: `Get Current Song`).
-2. Add Sub-Action: **Core ➔ Network ➔ Fetch URL**:
+#### 1. Streamer.bot (Recommended - Local Native Bot)
+1. Open **Streamer.bot** on your streaming PC.
+2. In **Actions**, click **Add** (Name: `Get Current Song`).
+3. Add Sub-Action: **Core ➔ Network ➔ Fetch URL**:
    - URL: `http://localhost:39865/api/current?format=Now playing: {title} by {artist} ({url})`
    - Variable: `currentSong`
-3. Add Sub-Action: **Twitch (or YouTube) ➔ Send Message** (`%currentSong%`).
-4. Link to Command `!song`.
+4. Add Sub-Action: **Twitch (or YouTube) ➔ Send Message**:
+   - Message: `%currentSong%`
+5. In **Commands**, add command `!song` and link it to the `Get Current Song` action.
 
-#### 3. Streamlabs Cloudbot
-In Cloudbot ➔ **Commands ➔ Add Command**:
-- Command: `!song`
-- Response: `{readapi.http://localhost:39865/api/current?format=🎶 {title} by {artist} ({url})}`
-
-#### 4. MixItUp Bot
-1. Add Command `!song` ➔ Web Request (`GET http://localhost:39865/api/current?format=Now playing: {title} by {artist} | {url}`).
-2. Save to response variable `$songInfo` ➔ Chat Message `$songInfo`.
-
-#### 5. Fossabot
-- Command: `!song`
-- Response: `$(customapi http://localhost:39865/api/current?format={artist} - {title} ({url}))`
+#### 2. MixItUp Bot (Local Native Bot)
+1. In MixItUp, add a new Chat Command: `!song`.
+2. Add Action: **Web Request**:
+   - Request Type: `GET`
+   - URL: `http://localhost:39865/api/current?format=Now playing: {title} by {artist} | {url}`
+   - Save Response To: `$songInfo`
+3. Add Action: **Chat Message** ➔ Send: `$songInfo`.
 
 ---
 
-## [🎶 Method 3: Viewer Song Requests (`!playnext`)](#top)
+## [📄 3. Classic OBS Text File Export (.txt)](#top)
 
-Viewers can queue songs directly into your active YouTube Music session via chat command or Twitch Channel Points.
+For setups using native OBS **Text (GDI+)** or FreeType 2 sources:
 
-### 1. Bot Command Setup:
-- **Nightbot**:
-  ```text
-  !addcom !playnext $(urlfetch http://localhost:39865/api/playnext?url=$(querystring))
-  ```
-- **Streamer.bot (Channel Points Reward)**:
-  - Fetch URL: `http://localhost:39865/api/playnext?url=%rawInput%` (Variable: `queueResponse`).
-  - Send Message: `%queueResponse%`.
-
-### 2. Supported Link Formats:
-The endpoint automatically extracts and validates the 11-character video ID from:
-- `https://music.youtube.com/watch?v=VIDEO_ID`
-- `https://www.youtube.com/watch?v=VIDEO_ID`
-- `https://youtu.be/VIDEO_ID`
-- `https://www.youtube.com/shorts/VIDEO_ID`
-- Raw Video ID (`dQw4w9WgXcQ`)
-
-### 3. Song Blacklist (`blacklist.txt`):
-Exclude troll songs, copyright tracks, or meme videos from chat requests:
-- Stored in `blacklist.txt` (format: `<VIDEO_ID> | <Artist> - <Title>`).
-- Auto-reloads on file changes with zero restart.
-- Manage visually in the Web Dashboard (`/dashboard`) or via Stream Deck actions.
-
-### 4. Moderator Command: `!blacklist`
-Streamers and channel mods can ban songs directly from chat:
-- **Nightbot Setup**:
-  ```text
-  !addcom -ul=mod !blacklist $(urlfetch http://localhost:39865/api/blacklist?url=$(querystring))
-  ```
-- **Usage**:
-  - `!blacklist`: Blacklists the **currently playing track** and skips to the next song immediately.
-  - `!blacklist <url>`: Blacklists a specific YouTube URL or Video ID.
-
-### 5. Stream Deck Streamer Keys:
-- **Toggle Song Requests Key**: Instantly pause/resume requests during your stream with live Green/Red badge.
-- **Blacklist & Skip Track Key**: Instantly appends the active track to `blacklist.txt` and skips immediately.
-
----
-
-## [📄 Method 4: Classic OBS Text File Export (.txt)](#top)
-
-For setups that require native OBS Text (GDI+) or FreeType 2 text sources:
-
-### Setup Steps:
-1. In Stream Deck Property Inspector or the Web Dashboard, check **Enable OBS text export (.txt)**.
-2. The plugin automatically writes to `ytm_current_track.txt` inside the plugin directory (or a custom path).
-3. In OBS Studio:
+1. In Stream Deck Property Inspector for any YouTube Music action, expand **OBS Overlay & Chatbot**.
+2. Check **Enable OBS text export (.txt)** (Opt-in).
+3. *(Optional)* Set a custom **File Path** (e.g. `C:\Stream\now_playing.txt`) or leave it blank to use `ytm_current_track.txt` inside the plugin directory.
+4. *(Optional)* Customize the **Format** template (Default: `Currently Playing: {artist} - {title}`).
+5. In OBS Studio:
    - Add a **Text (GDI+)** source.
    - Check **Read from file**.
-   - Browse and select `ytm_current_track.txt`.
-   - Adjust fonts, colors, and outlines as desired.
+   - Browse and select your configured text file path.
 
 ---
 
 ## [❓ Troubleshooting & Tips](#top)
 
 * **Overlay appears blank or not updating**:
-  - Ensure the browser extension is connected (green badge) and YouTube Music is playing.
-  - Right-click the Browser Source in OBS and select **Refresh** (or **Interact** ➔ reload).
-* **Changed the WebSocket Port?**:
-  - If you change the port (e.g., to `40000`), update your Browser Source URL (`http://localhost:40000/overlay`).
-* **Overlay cutting off on the side**:
-  - Increase the Width of your Browser Source in OBS (recommended: Width: `460`, Height: `180`).
+  - Ensure the browser extension is connected and YouTube Music is playing.
+  - Right-click the Browser Source in OBS and select **Refresh**.
+* **Changed the Server Port?**:
+  - If you change the port to `40000` in Stream Deck settings, update your Browser Source URL (`http://localhost:40000/overlay`) and chatbot command accordingly.

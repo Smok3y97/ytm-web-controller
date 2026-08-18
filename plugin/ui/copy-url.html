@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Copy Song URL Settings</title>
+  <link rel="stylesheet" href="css/sdpi.css">
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <div class="sdpi-heading">Action Settings</div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Copy Format</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="copyFormatTemplate" placeholder="{url}" value="{url}">
+      </div>
+    </div>
+    <div class="sdpi-hint">
+      Format template copied to your clipboard on key press.<br>
+      Placeholders: <code>{url}</code>, <code>{title}</code>, <code>{artist}</code>, <code>{album}</code>, <code>{duration}</code>, <code>{currentTime}</code>.<br>
+      Examples: <code>{url}</code>, <code>{artist} - {title} ({url})</code>, <code>Now Playing: {artist} - {title}</code>
+    </div>
+
+    <!-- Global Settings container dynamically rendered by global-settings.js -->
+    <div id="global-settings-container"></div>
+
+    <div class="sdpi-heading">Controls</div>
+    <div class="sdpi-hint">
+      • <strong>Key Press</strong>: Copy formatted song URL / track info to system clipboard<br>
+      • <strong>Visual Feedback</strong>: Green checkmark icon confirms successful copy
+    </div>
+  </div>
+
+  <script src="streamdeck-client.js"></script>
+  <script src="global-settings.js"></script>
+  <script src="copy-url.js"></script>
+</body>
+</html>

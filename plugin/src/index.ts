@@ -10,6 +10,7 @@ import { StateManager } from './services/state-manager.js';
 import { DiscordRpcService } from './services/discord-rpc.js';
 import { ObsExporterService } from './services/obs-exporter.js';
 import { VersionControlService } from './services/version-control.js';
+import { HttpApiService } from './services/http-api.js';
 import { GlobalSettings, YTMPlaybackState } from './types/index.js';
 
 // Action Handlers
@@ -27,38 +28,19 @@ import { VolumeDownAction } from './actions/volume-down.js';
 import { MuteAction } from './actions/mute.js';
 import { VolumeDialAction } from './actions/volume-dial.js';
 import { SeekDialAction } from './actions/seek-dial.js';
-import { ToggleRequestsAction } from './actions/toggle-requests.js';
-import { BlacklistAndSkipAction } from './actions/blacklist-and-skip.js';
-
-import { HttpApiService } from './services/http-api.js';
-import { BlacklistService } from './services/blacklist-service.js';
 
 const wsService = WebSocketService.getInstance();
 const stateManager = StateManager.getInstance();
 const httpApiService = HttpApiService.getInstance();
-const blacklistService = BlacklistService.getInstance();
 const discordService = DiscordRpcService.getInstance();
 const obsService = ObsExporterService.getInstance();
 const versionService = VersionControlService.getInstance();
-
-// Initialize Blacklist storage
-blacklistService.init().catch((err) => {
-  streamDeck.logger.error(`[YTM Controller] Blacklist service init error: ${err}`);
-});
-
-// Connect HTTP API song requests and mod blacklist skip to WebSocket command dispatcher
-httpApiService.on('queueTrack', (data: { videoId: string; mode: string; url: string }) => {
-  wsService.sendCommand('queueTrack', data);
-});
-httpApiService.on('skipTrack', () => {
-  wsService.sendCommand('next');
-});
 
 // Enable logging
 streamDeck.logger.setLevel('info');
 streamDeck.logger.info(`[YTM Controller] Initializing plugin (v${versionService.currentPluginVersion})...`);
 
-// 1. Start WebSocket server immediately on default/fallback port
+// 1. Start WebSocket & HTTP server immediately on default/fallback port
 wsService.start(39865).catch((err) => {
   streamDeck.logger.error(`[YTM Controller] WebSocket server start error: ${err}`);
 });
@@ -78,8 +60,6 @@ streamDeck.actions.registerAction(new VolumeDownAction());
 streamDeck.actions.registerAction(new MuteAction());
 streamDeck.actions.registerAction(new VolumeDialAction());
 streamDeck.actions.registerAction(new SeekDialAction());
-streamDeck.actions.registerAction(new ToggleRequestsAction());
-streamDeck.actions.registerAction(new BlacklistAndSkipAction());
 
 // 3. Connect WebSocket state updates to StateManager
 wsService.on('stateUpdate', (state: YTMPlaybackState) => {
@@ -127,20 +107,15 @@ stateManager.on('stateChanged', (state: YTMPlaybackState) => {
   wsService.broadcastState(state);
 });
 
-// 7. Handle Property Inspector IPC messages (e.g. Open Blacklist File, Open Dashboard)
+// 7. Handle Property Inspector IPC messages
 streamDeck.ui.onSendToPlugin(async (ev) => {
   const payload = ev.payload as { event?: string; url?: string };
-  if (payload?.event === 'openBlacklistFile') {
-    await blacklistService.openInEditor();
-  } else if (payload?.event === 'openDashboard') {
-    const port = wsService.getPort() || 39865;
-    await streamDeck.system.openUrl(`http://localhost:${port}/dashboard`);
-  } else if (payload?.event === 'openUrl' && payload.url) {
+  if (payload?.event === 'openUrl' && payload.url) {
     await streamDeck.system.openUrl(payload.url);
   }
 });
 
-// 8. Handle global settings changes (WebSocket Port, Discord RPC, OBS Exporter, Blacklist, Streamer Mode)
+// 8. Handle global settings changes (WebSocket Port, Discord RPC, OBS Exporter)
 streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>(async (ev) => {
   const settings = ev.settings;
   const targetPort = settings.wsPort || 39865;
@@ -153,8 +128,6 @@ streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>(async (ev) => {
 
   await discordService.setEnabled(!!settings.enableDiscordRPC, settings.discordClientId);
   await obsService.updateSettings(settings);
-  await blacklistService.updateSettings(settings);
-  httpApiService.updateSettings(settings);
 });
 
 // 9. Connect to Stream Deck Application
@@ -169,8 +142,6 @@ streamDeck.connect().then(async () => {
       await discordService.setEnabled(true, globalSettings.discordClientId);
     }
     await obsService.updateSettings(globalSettings);
-    await blacklistService.updateSettings(globalSettings);
-    httpApiService.updateSettings(globalSettings);
   } catch (err) {
     streamDeck.logger.warn(`[YTM Controller] Could not fetch global settings: ${err}`);
   }

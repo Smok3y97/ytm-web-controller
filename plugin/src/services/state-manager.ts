@@ -190,6 +190,40 @@ export class StateManager extends EventEmitter {
   }
 
   /**
+   * Render custom track text with placeholders: {url}, {title}, {artist}, {album}, {duration}, {currentTime}
+   */
+  public formatTrackText(template: string = '{url}', targetState?: YTMPlaybackState): string {
+    const state = targetState || this.currentState;
+    if (!state.title && !state.artist && !state.trackUrl) {
+      return '';
+    }
+
+    const titleStr = (state.title || 'Unknown Title').trim();
+    const artistStr = (state.artist || 'Unknown Artist').trim();
+    const albumStr = (state.album || '').trim();
+    const trackUrlStr = (state.trackUrl || '').trim();
+    const durationStr = this.formatTime(state.duration);
+    const currentStr = this.formatTime(state.currentTime);
+
+    let output = (template || '{url}')
+      .replace(/{(title|titel|song|track)}/gi, titleStr)
+      .replace(/{(artist|kuenstler|künstler|interpret|author|channel)}/gi, artistStr)
+      .replace(/{(album)}/gi, albumStr)
+      .replace(/{(url|link|trackUrl|songUrl)}/gi, trackUrlStr)
+      .replace(/{(duration|total|length)}/gi, durationStr)
+      .replace(/{(currentTime|current|time)}/gi, currentStr);
+
+    output = output.replace(/\(\s*\)/g, '').replace(/\[\s*\]/g, '');
+    output = output.replace(/\s+/g, ' ').trim();
+    output = output
+      .replace(/^[\s\-\–\—\•\|\:]+/, '')
+      .replace(/[\s\-\–\—\•\|\:]+$/, '')
+      .trim();
+
+    return output || trackUrlStr;
+  }
+
+  /**
    * Render custom volume template with placeholders: {volume}
    */
   public formatVolumeTemplate(template: string = '{volume}%', volume?: number, muted?: boolean): string {

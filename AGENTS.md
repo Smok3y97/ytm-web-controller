@@ -13,7 +13,7 @@ The project consists of two core components working together over a local WebSoc
 ```
 ┌───────────────────────────────┐               ┌─────────────────────────────────┐
 │     Browser Extension         │   WebSocket   │       Stream Deck Plugin        │
-│  (Manifest V3 Content Script) │ ────────────► │      (Node.js SDK 2 Server)     │
+│  (Manifest V3 Content Script) │ ────────────► │      (Node.js SDK 3 Server)     │
 │                               │  ws://127...  │                                 │
 │  - Listens to <video> events  │  Port 39865   │  - Manages Keypad & Dial states │
 │  - MutationObserver for DOM   │               │  - Discord RPC Broadcaster      │
@@ -28,7 +28,7 @@ The project consists of two core components working together over a local WebSoc
    - **Zero Polling**: Never uses periodic `setInterval()` to query DOM. State updates are strictly dispatched on HTML5 `<video>` events (`play`, `pause`, `timeupdate`, `seeking`, `seeked`) and targeted DOM `MutationObserver` callbacks.
 
 2. **Stream Deck Plugin (`plugin/`)**:
-   - Built on `@elgato/streamdeck` SDK (SDK Version 2, Minimum Stream Deck Software: `6.5+`, Node.js `20`).
+   - Built on `@elgato/streamdeck` SDK (SDK Version 3, Minimum Stream Deck Software: `7.1+`, Node.js `24`).
    - Hosts a local `ws.Server` (Default port: `39865`).
    - Handles multi-controller setups: standard Keypad actions and Stream Deck + Dials & LCD Touchstrips.
    - **Zero Disk Footprint**: Computes dynamic images, cover thumbnails, and marquee LCD text strictly in memory using Base64 data URLs.

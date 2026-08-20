@@ -1,55 +1,53 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Track Dial Settings</title>
-  <link rel="stylesheet" href="css/sdpi.css">
-</head>
-<body>
-  <div class="sdpi-wrapper">
-    <div class="sdpi-heading">Track Dial Settings</div>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Track Dial Settings</title>
+		<link rel="stylesheet" href="css/sdpi.css" />
+	</head>
+	<body>
+		<div class="sdpi-wrapper">
+			<div class="sdpi-heading">Track Dial Settings</div>
 
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Title Template</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="titleTemplate" placeholder="{artist} - {title}" value="{artist} - {title}">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>
-    </div>
+			<div class="sdpi-item">
+				<div class="sdpi-item-label">Title Template</div>
+				<div class="sdpi-item-value">
+					<input type="text" id="titleTemplate" placeholder="{artist} - {title}" value="{artist} - {title}" />
+				</div>
+			</div>
+			<div class="sdpi-hint">Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code></div>
 
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Time Template</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="timeTemplate" placeholder="{remaining}" value="{remaining}">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Placeholders: <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>
-    </div>
+			<div class="sdpi-item">
+				<div class="sdpi-item-label">Time Template</div>
+				<div class="sdpi-item-value">
+					<input type="text" id="timeTemplate" placeholder="{remaining}" value="{remaining}" />
+				</div>
+			</div>
+			<div class="sdpi-hint">
+				Placeholders: <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>
+			</div>
 
-    <div class="sdpi-item">
-      <label class="sdpi-checkbox-wrap">
-        <input type="checkbox" id="showCover" checked>
-        <span>Show cover thumbnail on touchstrip</span>
-      </label>
-    </div>
+			<div class="sdpi-item">
+				<label class="sdpi-checkbox-wrap">
+					<input type="checkbox" id="showCover" checked />
+					<span>Show cover thumbnail on touchstrip</span>
+				</label>
+			</div>
 
-    <!-- Global Settings container dynamically rendered by global-settings.js -->
-    <div id="global-settings-container"></div>
+			<!-- Global Settings container dynamically rendered by global-settings.js -->
+			<div id="global-settings-container"></div>
 
-    <div class="sdpi-heading">Controls</div>
-    <div class="sdpi-hint">
-      • <strong>Rotate Clockwise</strong>: Next Track<br>
-      • <strong>Rotate Counter-Clockwise</strong>: Previous Track<br>
-      • <strong>Push Dial</strong>: Play / Pause<br>
-      • <strong>Touch Tap</strong>: Play / Pause
-    </div>
-  </div>
+			<div class="sdpi-heading">Controls</div>
+			<div class="sdpi-hint">
+				• <strong>Rotate Clockwise</strong>: Next Track<br />
+				• <strong>Rotate Counter-Clockwise</strong>: Previous Track<br />
+				• <strong>Push Dial</strong>: Play / Pause<br />
+				• <strong>Touch Tap</strong>: Play / Pause
+			</div>
+		</div>
 
-  <script src="streamdeck-client.js"></script>
-  <script src="global-settings.js"></script>
-  <script src="track-dial.js"></script>
-</body>
+		<script src="streamdeck-client.js"></script>
+		<script src="global-settings.js"></script>
+		<script src="track-dial.js"></script>
+	</body>
 </html>

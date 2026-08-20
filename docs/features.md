@@ -21,8 +21,8 @@ Stream Deck + provides 4 continuous dials with integrated push buttons and a cap
 | Action | Control Type | Hardware Feedback | Description |
 | :--- | :--- | :--- | :--- |
 | **Track Controller** | Dial + LCD Tap | Auto-scrolling title/artist marquee, cover thumbnail, live time & track progress bar | Rotate to skip tracks (Next / Previous). Push dial or tap LCD touchstrip to toggle Play/Pause. Includes push-jitter suppression. |
-| **Volume Controller** | Dial + LCD Tap | Real-time volume bar, percentage readout (`100%`, `MUTED`), cover thumbnail | Rotate to adjust volume (1% – 25% step). Push dial or tap LCD touchstrip to toggle Mute / Unmute. |
-| **Seek Controller** | Dial + LCD Tap | Real-time track progress bar, `{current} / {duration}` time display, cover thumbnail | Rotate to scrub forward/backward in track (1s – 60s step, default 10s). Push dial or tap LCD touchstrip to toggle Play/Pause. |
+| **Volume Controller** | Dial + LCD Tap | Real-time volume bar, percentage readout (`100%`, `MUTED`), cover thumbnail | Rotate to adjust volume (1% – 50% step, via range slider). Push dial or tap LCD touchstrip to toggle Mute / Unmute. |
+| **Seek Controller** | Dial + LCD Tap | Real-time track progress bar, `{current} / {duration}` time display, cover thumbnail | Rotate to scrub forward/backward in track (1s – 120s step, via range slider, default 10s). Push dial or tap LCD touchstrip to toggle Play/Pause. |
 
 ---
 
@@ -33,8 +33,8 @@ Standard 72×72 px Stream Deck keys supporting dual-state, tri-state, single-act
 | Action | Key Type | Dynamic Feedback | Description |
 | :--- | :--- | :--- | :--- |
 | **Play / Pause** | Dual-State | Dynamic Play/Pause vector state or live **Album Cover Art as button background** | Toggles playback state on short press. Long press (hold) brings the YouTube Music browser tab or PWA window to the foreground. Cover art is rendered directly in RAM with zero disk I/O. |
-| **Volume Up** | Single Key | Live `{volume}%` text readout | Increases playback volume by configurable step (1% – 25%). Fully stylable via native Title Styler. |
-| **Volume Down** | Single Key | Live `{volume}%` text readout | Decreases playback volume by configurable step (1% – 25%). Fully stylable via native Title Styler. |
+| **Volume Up** | Single Key | Live `{volume}%` text readout | Increases playback volume by configurable step (1% – 50%). Fully stylable via native Title Styler. |
+| **Volume Down** | Single Key | Live `{volume}%` text readout | Decreases playback volume by configurable step (1% – 50%). Fully stylable via native Title Styler. |
 | **Mute / Unmute** | Dual-State | Dynamic Unmuted / Muted speaker icons | Toggles mute status for active playback. |
 | **Next Track** | Single Key | Official vector Next icon | Skips to the next track in current queue. |
 | **Previous Track** | Single Key | Official vector Previous icon | Skips to previous track or restarts current track. |
@@ -55,7 +55,7 @@ Background services run locally inside the Stream Deck plugin process on port `3
 | **Discord Rich Presence (RPC)** | Discord Desktop & Mobile | Real-time status, album art, and animated timeline progress across Desktop & Mobile (interactive clickable song buttons available on Discord Desktop client). |
 | **OBS Browser Overlay** | OBS Studio / Streamlabs | Real-time interactive browser source widget (`http://localhost:39865/overlay`) with themes (`card`, `compact`, `pill`), visual styling engine, live album art, and smooth animations. |
 | **Chatbot API (`!song`)** | Streamer.bot / MixItUp / Local Bots | Instant read-only HTTP endpoint for current song info (`http://localhost:39865/api/current`) with customizable placeholders (`{artist}`, `{title}`, `{album}`, `{url}`). |
-| **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to `ytm_current_track.txt` (or custom path) for OBS Text (GDI+) overlay sources. Optional clear-on-pause. |
+| **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to a selected `.txt` file for OBS Text (GDI+) overlay sources. Requires selecting target file on activation; optional clear-on-pause. |
 
 ---
 

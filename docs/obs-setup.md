@@ -154,12 +154,12 @@ For setups using native OBS **Text (GDI+)** or FreeType 2 sources:
 
 1. In Stream Deck Property Inspector for any YouTube Music action, expand **OBS Overlay & Chatbot**.
 2. Check **Enable OBS text export (.txt)** (Opt-in).
-3. *(Optional)* Set a custom **File Path** (e.g. `C:\Stream\now_playing.txt`) or leave it blank to use `ytm_current_track.txt` inside the plugin directory.
+3. Click **Browse...** to select your target `.txt` file on your computer (e.g. `C:\Stream\now_playing.txt`). *(File selection is required when text export is enabled).*
 4. *(Optional)* Customize the **Format** template (Default: `Currently Playing: {artist} - {title}`).
 5. In OBS Studio:
    - Add a **Text (GDI+)** source.
    - Check **Read from file**.
-   - Browse and select your configured text file path.
+   - Browse and select the exact same `.txt` file configured in Stream Deck.
 
 ---
 

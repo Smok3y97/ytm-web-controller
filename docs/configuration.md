@@ -30,7 +30,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - Supports custom format strings via `?format=...` with placeholders `{artist}`, `{title}`, `{album}`, `{url}`, `{duration}`, `{currentTime}`.
 - **OBS Text File Export (.txt)**:
   - **Enable OBS text export (.txt)**: Automatically writes metadata of the currently playing track to a local text file for streaming overlays using OBS Text (GDI+).
-  - **File Path**: Absolute destination path where the `.txt` file is saved (defaults to `ytm_current_track.txt` inside plugin folder). Parent directories are created automatically if they do not exist.
+  - **Text File (Required)**: Select your destination `.txt` file on your system using the **Browse...** button. When OBS text export is enabled, choosing a target text file is strictly required.
   - **Format Template**: Fully customizable string with placeholders `{artist}`, `{title}`, `{album}` (Default: `Currently Playing: {artist} - {title}`).
   - **Clear file on pause/stop**: When enabled (default), empties the text file whenever music is paused or stopped. Disabling OBS export also clears the file cleanly.
 
@@ -64,7 +64,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔄 **Rotate Counter-Clockwise**: Decrease volume (-Step Size).
   - 🔘 **Push Dial**: Toggle Mute / Unmute.
   - 👆 **Touchstrip Tap**: Toggle Mute / Unmute.
-- **Step Size (%)**: Adjust volume step per dial tick from **1% to 25%** (Default: `5%`).
+- **Step Size (%)**: Adjust volume step per dial tick from **1% to 50%** (configured via range slider in 5% increments, Default: `5%`).
 - **Show Cover**: Toggles the album cover thumbnail on the touchstrip.
 - **LCD Feedback**: Displays real-time graphical volume bar, percentage readout (`100%`, `MUTED`), and cover artwork.
 
@@ -74,7 +74,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔄 **Rotate Counter-Clockwise**: Seek / scrub backward (-Seek Step).
   - 🔘 **Push Dial**: Toggle Play / Pause.
   - 👆 **Touchstrip Tap**: Toggle Play / Pause.
-- **Seek Step (s)**: Scrubbing duration per dial tick from **1s to 60s** (Default: `10s`).
+- **Seek Step (s)**: Scrubbing duration per dial tick from **1s to 120s** (configured via range slider in 5s increments, Default: `10s`).
 - **Title & Time Templates**: Configurable text templates for LCD readouts (`{current} / {duration}`, `{remaining}`, `{current}`).
 - **Show Cover**: Toggles album art thumbnail on the LCD strip.
 
@@ -98,7 +98,7 @@ Global settings are accessible in the Property Inspector of **every single butto
 - **Visual Feedback**: Green checkmark icon temporarily confirms successful copy directly on the key.
 
 ### Volume Up & Volume Down
-- **Step Size (%)**: Percentage volume adjustment per keypress (**1% to 25%**, Default: `5%`).
+- **Step Size (%)**: Percentage volume adjustment per keypress (**1% to 50%**, configured via range slider in 5% increments, Default: `5%`).
 - **Show volume text on key**: Toggles real-time volume percentage readout directly on the key.
 - **Text Format**: Template for volume text (`{volume}%`, `Vol {volume}%`).
 - **Native Title Styler ("T")**: Use Stream Deck's native **"T" (Title Styler)** button above the Property Inspector to customize font family, text size, color, and vertical alignment (Top, Middle, Bottom).

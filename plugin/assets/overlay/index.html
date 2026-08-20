@@ -1,46 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Music OBS Overlay</title>
-  <base href="/overlay/">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div id="overlay-widget" class="overlay-container theme-card is-hidden">
-    <div id="cover-container" class="cover-wrapper">
-      <img id="cover-art" class="cover-image" alt="" style="display: none;" />
-      <div id="cover-fallback" class="cover-fallback">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-          <polygon points="10,8 16,12 10,16" fill="currentColor"/>
-        </svg>
-      </div>
-    </div>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>YouTube Music OBS Overlay</title>
+		<base href="/overlay/" />
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div id="overlay-widget" class="overlay-container theme-card is-hidden">
+			<div id="cover-container" class="cover-wrapper">
+				<img id="cover-art" class="cover-image" alt="" style="display: none" />
+				<div id="cover-fallback" class="cover-fallback">
+					<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+						<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
+						<polygon points="10,8 16,12 10,16" fill="currentColor" />
+					</svg>
+				</div>
+			</div>
 
-    <div class="content-wrapper">
-      <div class="meta-wrapper">
-        <div id="title-track" class="marquee-track">
-          <span id="track-title" class="track-title">No Media</span>
-        </div>
-        <div id="artist-track" class="marquee-track">
-          <span id="track-artist" class="track-artist">YouTube Music</span>
-        </div>
-        <div id="album-track" class="marquee-track" style="display: none;">
-          <span id="track-album" class="track-album"></span>
-        </div>
-      </div>
+			<div class="content-wrapper">
+				<div class="meta-wrapper">
+					<div id="title-track" class="marquee-track">
+						<span id="track-title" class="track-title">No Media</span>
+					</div>
+					<div id="artist-track" class="marquee-track">
+						<span id="track-artist" class="track-artist">YouTube Music</span>
+					</div>
+					<div id="album-track" class="marquee-track" style="display: none">
+						<span id="track-album" class="track-album"></span>
+					</div>
+				</div>
 
-      <div id="progress-container" class="progress-wrapper">
-        <div class="progress-bar-bg">
-          <div id="progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
-        </div>
-        <div id="time-display" class="time-readout">0:00</div>
-      </div>
-    </div>
-  </div>
+				<div id="progress-container" class="progress-wrapper">
+					<div class="progress-bar-bg">
+						<div id="progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+					</div>
+					<div id="time-display" class="time-readout">0:00</div>
+				</div>
+			</div>
+		</div>
 
-  <script src="overlay.js"></script>
-</body>
+		<script src="overlay.js"></script>
+	</body>
 </html>

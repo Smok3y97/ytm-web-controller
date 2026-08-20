@@ -1,51 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Volume Settings</title>
-  <link rel="stylesheet" href="css/sdpi.css">
-</head>
-<body>
-  <div class="sdpi-wrapper">
-    <div class="sdpi-heading">Volume Action Settings</div>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Volume Settings</title>
+		<link rel="stylesheet" href="css/sdpi.css" />
+	</head>
+	<body>
+		<div class="sdpi-wrapper">
+			<div class="sdpi-heading">Volume Action Settings</div>
 
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Step Size (%)</div>
-      <div class="sdpi-item-value">
-        <input type="number" id="volumeStep" min="1" max="25" value="5" placeholder="5">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Percentage amount to adjust per key press (1% – 25%, Default: 5%).
-    </div>
+			<div class="sdpi-item">
+				<div class="sdpi-item-label">Step Size</div>
+				<div class="sdpi-item-value sdpi-range-wrap">
+					<input type="range" id="volumeStep" min="5" max="50" step="5" value="5" />
+					<span class="sdpi-range-value" id="volumeStepVal">5%</span>
+				</div>
+			</div>
+			<div class="sdpi-hint">Percentage amount to adjust per key press (5% – 50%, Default: 5%).</div>
 
-    <div class="sdpi-item">
-      <label class="sdpi-checkbox-wrap">
-        <input type="checkbox" id="showVolumeTitle" checked>
-        <span>Show volume text on key</span>
-      </label>
-    </div>
+			<div class="sdpi-item">
+				<label class="sdpi-checkbox-wrap">
+					<input type="checkbox" id="showVolumeTitle" checked />
+					<span>Show volume text on key</span>
+				</label>
+			</div>
 
-    <div class="sdpi-item" id="titleTemplateRow">
-      <div class="sdpi-item-label">Volume Format</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="titleTemplate" placeholder="{volume}%" value="{volume}%">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Placeholders: <code>{volume}</code> (e.g. <code>{volume}%</code>, <code>Vol: {volume}%</code>)
-    </div>
+			<div class="sdpi-item" id="titleTemplateRow">
+				<div class="sdpi-item-label">Volume Format</div>
+				<div class="sdpi-item-value">
+					<input type="text" id="titleTemplate" placeholder="{volume}%" value="{volume}%" />
+				</div>
+			</div>
+			<div class="sdpi-hint">
+				Placeholders: <code>{volume}</code> (e.g. <code>{volume}%</code>, <code>Vol: {volume}%</code>)
+			</div>
 
-    <div class="sdpi-hint" style="margin-top: 6px; font-style: italic; color: #999;">
-      💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck <b>"T" (Title Styler)</b> button directly above this settings pane.
-    </div>
+			<div class="sdpi-hint" style="margin-top: 6px; font-style: italic; color: #999">
+				💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck
+				<b>"T" (Title Styler)</b> button directly above this settings pane.
+			</div>
 
-    <!-- Global Settings container dynamically rendered by global-settings.js -->
-    <div id="global-settings-container"></div>
-  </div>
+			<!-- Global Settings container dynamically rendered by global-settings.js -->
+			<div id="global-settings-container"></div>
+		</div>
 
-  <script src="streamdeck-client.js"></script>
-  <script src="global-settings.js"></script>
-  <script src="volume.js"></script>
-</body>
+		<script src="streamdeck-client.js"></script>
+		<script src="global-settings.js"></script>
+		<script src="volume.js"></script>
+	</body>
 </html>

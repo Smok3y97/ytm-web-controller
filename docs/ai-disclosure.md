@@ -44,7 +44,7 @@ Full transparency and open-source honesty are core principles of the **YouTube M
 
 ## [🛠️ 2. What the AI Created](#top)
 
-1. **Stream Deck Plugin Backend (TypeScript / SDK 2)**:
+1. **Stream Deck Plugin Backend (TypeScript / SDK 3)**:
    - Full implementation of decoupled backend services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`, `http-api.ts`).
    - Action controllers for dual-state keys, step volume adjustments, dials, and track controls.
 2. **Browser Companion Extension (Manifest V3)**:
@@ -70,7 +70,7 @@ While the code is AI-generated, **all features, UI layouts, dials, and integrati
   - **Elgato Stream Deck +** (Physical Keys, Dials & LCD Touchstrip)
   - **Corsair Galleon 100 SD** (Physical Keys & Dials)
 - **Software Tested**:
-  - **Elgato Stream Deck Software**: `v7.5.1 (22901)` (Minimum SDK 2 requirement: `v6.5+`)
+  - **Elgato Stream Deck Software**: `v7.5.1 (22901)` (Minimum SDK 3 requirement: `v7.1+`)
   - **Discord Windows Client**: `v1.0.9253 x64 (88414)` (Desktop Rich Presence)
   - **OBS Studio**: `v28+` (Browser Source & Text GDI+ stream overlays)
   - **Browser**: Google Chrome (Official Web Player & PWA) *(Other Chromium browsers and Firefox are built on standard web extension APIs, but have not been personally tested)*.

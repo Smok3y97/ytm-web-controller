@@ -34,7 +34,7 @@ graph LR
         POP -. "Health Check / Config" .-> CS
     end
 
-    subgraph Plugin ["🎛️ Stream Deck Plugin (Node.js SDK 2)"]
+    subgraph Plugin ["🎛️ Stream Deck Plugin (Node.js SDK 3)"]
         SRV["Unified Server (Port 39865)\n(HTTP + ws.Server)"]
         HTTP["HTTP API Service\n(/overlay, /api/current)"]
         VCS["Version Control Service\n(plugin/src/services/version-control.ts)"]
@@ -133,11 +133,12 @@ ytm-web-controller/
 │   ├── popup.css                # Extension popup dark theme stylesheet
 │   ├── popup.js                 # Port storage & live connection diagnostic tester
 │   └── icons/                   # Extension toolbar icons (16, 48, 128 px)
-├── plugin/                      # Stream Deck Plugin (Node.js SDK 2)
+├── plugin/                      # Stream Deck Plugin (Node.js SDK 3)
 │   ├── manifest.json            # Stream Deck Plugin Manifest (com.smok3y97.ytmusicweb)
 │   ├── package.json             # Plugin dependencies & rollup build scripts
+│   ├── eslint.config.js         # Official Elgato ESLint flat configuration
 │   ├── rollup.config.mjs        # Rollup bundler configuration
-│   ├── tsconfig.json            # TypeScript compiler configuration
+│   ├── tsconfig.json            # TypeScript compiler configuration (ES2023)
 │   ├── bin/                     # Compiled plugin artifacts
 │   │   ├── plugin.js            # Node.js Rollup bundle
 │   │   └── ytm-focus.exe        # Native 7 KB Win32 foreground activation binary
@@ -296,7 +297,7 @@ graph TD
     end
 
     subgraph StorageLayer ["💾 Local Storage"]
-        TXT_FILE["ytm_current_track.txt\n(Plugin Directory)"]
+        TXT_FILE["Selected Text File (.txt)\n(Configured by User)"]
     end
 
     OBS_BROWSER -- "HTTP GET /overlay & Assets" --> HTTP_SRV

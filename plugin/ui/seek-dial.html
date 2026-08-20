@@ -1,65 +1,62 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Seek Dial Settings</title>
-  <link rel="stylesheet" href="css/sdpi.css">
-</head>
-<body>
-  <div class="sdpi-wrapper">
-    <div class="sdpi-heading">Seek Dial Settings</div>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Seek Dial Settings</title>
+		<link rel="stylesheet" href="css/sdpi.css" />
+	</head>
+	<body>
+		<div class="sdpi-wrapper">
+			<div class="sdpi-heading">Seek Dial Settings</div>
 
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Seek Step (s)</div>
-      <div class="sdpi-item-value">
-        <input type="number" id="seekStep" min="1" max="60" value="10" placeholder="10">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Seconds to scrub forward or backward per dial tick (1s – 60s, Default: 10s).
-    </div>
+			<div class="sdpi-item">
+				<div class="sdpi-item-label">Seek Step</div>
+				<div class="sdpi-item-value sdpi-range-wrap">
+					<input type="range" id="seekStep" min="5" max="120" step="5" value="10" />
+					<span class="sdpi-range-value" id="seekStepVal">10s</span>
+				</div>
+			</div>
+			<div class="sdpi-hint">Seconds to scrub forward or backward per dial tick (5s – 120s, Default: 10s).</div>
 
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Title Template</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="titleTemplate" placeholder="{artist} - {title}" value="{artist} - {title}">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>
-    </div>
+			<div class="sdpi-item">
+				<div class="sdpi-item-label">Title Template</div>
+				<div class="sdpi-item-value">
+					<input type="text" id="titleTemplate" placeholder="{artist} - {title}" value="{artist} - {title}" />
+				</div>
+			</div>
+			<div class="sdpi-hint">Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code></div>
 
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Time Template</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="timeTemplate" placeholder="{current} / {duration}" value="{current} / {duration}">
-      </div>
-    </div>
-    <div class="sdpi-hint">
-      Placeholders: <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>
-    </div>
+			<div class="sdpi-item">
+				<div class="sdpi-item-label">Time Template</div>
+				<div class="sdpi-item-value">
+					<input type="text" id="timeTemplate" placeholder="{current} / {duration}" value="{current} / {duration}" />
+				</div>
+			</div>
+			<div class="sdpi-hint">
+				Placeholders: <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>
+			</div>
 
-    <div class="sdpi-item">
-      <label class="sdpi-checkbox-wrap">
-        <input type="checkbox" id="showCover" checked>
-        <span>Show cover thumbnail on touchstrip</span>
-      </label>
-    </div>
+			<div class="sdpi-item">
+				<label class="sdpi-checkbox-wrap">
+					<input type="checkbox" id="showCover" checked />
+					<span>Show cover thumbnail on touchstrip</span>
+				</label>
+			</div>
 
-    <!-- Global Settings container dynamically rendered by global-settings.js -->
-    <div id="global-settings-container"></div>
+			<!-- Global Settings container dynamically rendered by global-settings.js -->
+			<div id="global-settings-container"></div>
 
-    <div class="sdpi-heading">Controls</div>
-    <div class="sdpi-hint">
-      • <strong>Rotate Clockwise</strong>: Seek Forward (+10s)<br>
-      • <strong>Rotate Counter-Clockwise</strong>: Seek Backward (-10s)<br>
-      • <strong>Push Dial</strong>: Play / Pause<br>
-      • <strong>Touch Tap</strong>: Play / Pause
-    </div>
-  </div>
+			<div class="sdpi-heading">Controls</div>
+			<div class="sdpi-hint">
+				• <strong>Rotate Clockwise</strong>: Seek Forward (+10s)<br />
+				• <strong>Rotate Counter-Clockwise</strong>: Seek Backward (-10s)<br />
+				• <strong>Push Dial</strong>: Play / Pause<br />
+				• <strong>Touch Tap</strong>: Play / Pause
+			</div>
+		</div>
 
-  <script src="streamdeck-client.js"></script>
-  <script src="global-settings.js"></script>
-  <script src="seek-dial.js"></script>
-</body>
+		<script src="streamdeck-client.js"></script>
+		<script src="global-settings.js"></script>
+		<script src="seek-dial.js"></script>
+	</body>
 </html>

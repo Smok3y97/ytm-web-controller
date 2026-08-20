@@ -1,23 +1,20 @@
 /**
  * Shared Global Settings Component for Property Inspector
- * 
+ *
  * Provides a clean, minimalist UI for general settings:
  * 1. General Settings (Direct Discord RPC Checkbox)
  * 2. OBS Overlay & Chatbot Endpoints + OBS Text Export (.txt)
  * 3. Advanced Settings (Discord Client ID & Server Port)
  */
 
-/* global StreamDeckClient */
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const GlobalSettingsComponent = (() => {
-  let isRendered = false;
+	let isRendered = false;
 
-  function render() {
-    const container = document.getElementById('global-settings-container');
-    if (!container || isRendered) return;
+	function render() {
+		const container = document.getElementById("global-settings-container");
+		if (!container || isRendered) return;
 
-    container.innerHTML = `
+		container.innerHTML = `
       <!-- Warning Banner for Version Mismatch -->
       <div id="versionMismatchBanner" class="sdpi-warning-box hidden"></div>
 
@@ -75,18 +72,24 @@ const GlobalSettingsComponent = (() => {
               </label>
             </div>
             <div class="sdpi-hint">
-              Writes track metadata to a local file for OBS Text (GDI+) overlay sources (strictly opt-in).
+              Writes track metadata to a local text file for OBS Text (GDI+) overlay sources.
             </div>
 
-            <!-- File Path -->
-            <div class="sdpi-item">
-              <div class="sdpi-item-label">File Path</div>
-              <div class="sdpi-item-value">
-                <input type="text" id="obsFilePath" placeholder="Default (ytm_current_track.txt)">
+            <!-- File Path Selector -->
+            <div class="sdpi-item" id="obsFilePathRow">
+              <div class="sdpi-item-label">Text File <span style="color: #ff3333;">*</span></div>
+              <div class="sdpi-item-value sdpi-file-wrap">
+                <input type="text" id="obsFilePath" placeholder="No file selected..." readonly style="cursor: pointer;">
+                <input type="file" id="obsFilePicker" accept=".txt,text/plain" style="display: none;">
+                <button type="button" id="obsBrowseBtn" class="sdpi-file-btn" title="Choose .txt file">Browse...</button>
+                <button type="button" id="obsClearFileBtn" class="sdpi-file-btn sdpi-file-clear-btn" title="Clear selected file" style="display: none;">✕</button>
               </div>
             </div>
-            <div class="sdpi-hint">
-              Custom file path (e.g. <code>C:\\Stream\\now_playing.txt</code>). Leave blank for default plugin path.
+            <div id="obsFileRequiredError" class="sdpi-hint" style="color: #ff5555; display: none;">
+              ⚠️ File selection is required when OBS Text Export is enabled.
+            </div>
+            <div class="sdpi-hint" id="obsFilePathHint">
+              Select an existing or newly created <code>.txt</code> file on your computer.
             </div>
 
             <!-- Format Template -->
@@ -142,163 +145,243 @@ const GlobalSettingsComponent = (() => {
       </div>
     `;
 
-    isRendered = true;
-    bindEvents();
-  }
+		isRendered = true;
+		bindEvents();
+	}
 
-  function ensureWarningBanner() {
-    return document.getElementById('versionMismatchBanner');
-  }
+	function ensureWarningBanner() {
+		return document.getElementById("versionMismatchBanner");
+	}
 
-  function updateDynamicUrls(port) {
-    const validPort = port || 39865;
-    const overlayInput = document.getElementById('obsOverlayUrl');
-    const chatbotInput = document.getElementById('chatbotApiUrl');
-    if (overlayInput) overlayInput.value = `http://localhost:${validPort}/overlay`;
-    if (chatbotInput) chatbotInput.value = `http://localhost:${validPort}/api/current`;
-  }
+	function updateDynamicUrls(port) {
+		const validPort = port || 39865;
+		const overlayInput = document.getElementById("obsOverlayUrl");
+		const chatbotInput = document.getElementById("chatbotApiUrl");
+		if (overlayInput) overlayInput.value = `http://localhost:${validPort}/overlay`;
+		if (chatbotInput) chatbotInput.value = `http://localhost:${validPort}/api/current`;
+	}
 
-  function bindEvents() {
-    const copyOverlayBtn = document.getElementById('copyOverlayBtn');
-    const copyChatbotBtn = document.getElementById('copyChatbotBtn');
-    const obsOverlayUrl = document.getElementById('obsOverlayUrl');
-    const chatbotApiUrl = document.getElementById('chatbotApiUrl');
+	function bindEvents() {
+		const copyOverlayBtn = document.getElementById("copyOverlayBtn");
+		const copyChatbotBtn = document.getElementById("copyChatbotBtn");
+		const obsOverlayUrl = document.getElementById("obsOverlayUrl");
+		const chatbotApiUrl = document.getElementById("chatbotApiUrl");
 
-    const enableDiscordCheckbox = document.getElementById('enableDiscordRPC');
-    const discordClientIdInput = document.getElementById('discordClientId');
-    const wsPortInput = document.getElementById('wsPort');
+		const enableDiscordCheckbox = document.getElementById("enableDiscordRPC");
+		const discordClientIdInput = document.getElementById("discordClientId");
+		const wsPortInput = document.getElementById("wsPort");
 
-    const enableObsExportCheckbox = document.getElementById('enableObsExport');
-    const obsFilePathInput = document.getElementById('obsFilePath');
-    const obsFormatTemplateInput = document.getElementById('obsFormatTemplate');
-    const obsClearOnPauseCheckbox = document.getElementById('obsClearOnPause');
+		const enableObsExportCheckbox = document.getElementById("enableObsExport");
+		const obsFilePathInput = document.getElementById("obsFilePath");
+		const obsFilePicker = document.getElementById("obsFilePicker");
+		const obsBrowseBtn = document.getElementById("obsBrowseBtn");
+		const obsClearFileBtn = document.getElementById("obsClearFileBtn");
+		const obsFormatTemplateInput = document.getElementById("obsFormatTemplate");
+		const obsClearOnPauseCheckbox = document.getElementById("obsClearOnPause");
 
-    if (copyOverlayBtn && obsOverlayUrl) {
-      copyOverlayBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(obsOverlayUrl.value).then(() => {
-          copyOverlayBtn.textContent = '✓';
-          setTimeout(() => { copyOverlayBtn.textContent = '📋'; }, 2000);
-        }).catch(() => { });
-      });
-    }
+		function updateFileUI() {
+			const isEnabled = enableObsExportCheckbox ? enableObsExportCheckbox.checked : false;
+			const pathVal = obsFilePathInput ? obsFilePathInput.value.trim() : "";
+			const errorElem = document.getElementById("obsFileRequiredError");
 
-    if (copyChatbotBtn && chatbotApiUrl) {
-      copyChatbotBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(chatbotApiUrl.value).then(() => {
-          copyChatbotBtn.textContent = '✓';
-          setTimeout(() => { copyChatbotBtn.textContent = '📋'; }, 2000);
-        }).catch(() => { });
-      });
-    }
+			if (obsClearFileBtn) {
+				obsClearFileBtn.style.display = pathVal ? "block" : "none";
+			}
 
-    if (enableDiscordCheckbox) enableDiscordCheckbox.addEventListener('change', save);
-    if (discordClientIdInput) {
-      discordClientIdInput.addEventListener('change', save);
-      discordClientIdInput.addEventListener('blur', save);
-    }
-    if (wsPortInput) {
-      wsPortInput.addEventListener('change', () => {
-        const port = parseInt(wsPortInput.value, 10);
-        if (port >= 1024 && port <= 65535) {
-          updateDynamicUrls(port);
-          save();
-        }
-      });
-      wsPortInput.addEventListener('input', () => {
-        const port = parseInt(wsPortInput.value, 10);
-        if (port >= 1024 && port <= 65535) {
-          updateDynamicUrls(port);
-          save();
-        }
-      });
-    }
+			if (isEnabled && !pathVal) {
+				if (obsFilePathInput) obsFilePathInput.classList.add("invalid");
+				if (errorElem) errorElem.style.display = "block";
+			} else {
+				if (obsFilePathInput) obsFilePathInput.classList.remove("invalid");
+				if (errorElem) errorElem.style.display = "none";
+			}
+		}
 
-    if (enableObsExportCheckbox) enableObsExportCheckbox.addEventListener('change', save);
-    if (obsFilePathInput) {
-      obsFilePathInput.addEventListener('change', save);
-      obsFilePathInput.addEventListener('blur', save);
-    }
-    if (obsFormatTemplateInput) {
-      obsFormatTemplateInput.addEventListener('change', save);
-      obsFormatTemplateInput.addEventListener('blur', save);
-    }
-    if (obsClearOnPauseCheckbox) obsClearOnPauseCheckbox.addEventListener('change', save);
+		if (copyOverlayBtn && obsOverlayUrl) {
+			copyOverlayBtn.addEventListener("click", () => {
+				navigator.clipboard
+					.writeText(obsOverlayUrl.value)
+					.then(() => {
+						copyOverlayBtn.textContent = "✓";
+						setTimeout(() => {
+							copyOverlayBtn.textContent = "📋";
+						}, 2000);
+					})
+					.catch(() => {});
+			});
+		}
 
-    // Register with StreamDeckClient for updates
-    StreamDeckClient.onGlobalSettings((gs) => {
-      populate(gs);
-    });
-  }
+		if (copyChatbotBtn && chatbotApiUrl) {
+			copyChatbotBtn.addEventListener("click", () => {
+				navigator.clipboard
+					.writeText(chatbotApiUrl.value)
+					.then(() => {
+						copyChatbotBtn.textContent = "✓";
+						setTimeout(() => {
+							copyChatbotBtn.textContent = "📋";
+						}, 2000);
+					})
+					.catch(() => {});
+			});
+		}
 
-  function populate(gs) {
-    render();
+		if (enableDiscordCheckbox) enableDiscordCheckbox.addEventListener("change", save);
+		if (discordClientIdInput) {
+			discordClientIdInput.addEventListener("change", save);
+			discordClientIdInput.addEventListener("blur", save);
+		}
+		if (wsPortInput) {
+			wsPortInput.addEventListener("change", () => {
+				const port = parseInt(wsPortInput.value, 10);
+				if (port >= 1024 && port <= 65535) {
+					updateDynamicUrls(port);
+					save();
+				}
+			});
+			wsPortInput.addEventListener("input", () => {
+				const port = parseInt(wsPortInput.value, 10);
+				if (port >= 1024 && port <= 65535) {
+					updateDynamicUrls(port);
+					save();
+				}
+			});
+		}
 
-    const warningBanner = ensureWarningBanner();
-    if (warningBanner) {
-      if (gs && gs.isVersionMismatch) {
-        const rawMsg = gs.warningMessage || '⚠️ Browser Extension outdated! Please update to the latest version via GitHub Releases.';
-        warningBanner.innerHTML = `<span>${rawMsg}</span> <a href="https://github.com/Smok3y97/ytm-web-controller/releases" target="_blank">Releases</a>`;
-        warningBanner.classList.remove('hidden');
-      } else {
-        warningBanner.classList.add('hidden');
-      }
-    }
+		if (obsBrowseBtn && obsFilePicker) {
+			obsBrowseBtn.addEventListener("click", () => {
+				obsFilePicker.click();
+			});
+		}
 
-    const enableDiscordCheckbox = document.getElementById('enableDiscordRPC');
-    const discordClientIdInput = document.getElementById('discordClientId');
-    const wsPortInput = document.getElementById('wsPort');
+		if (obsFilePathInput && obsFilePicker) {
+			obsFilePathInput.addEventListener("click", () => {
+				obsFilePicker.click();
+			});
+		}
 
-    const enableObsExportCheckbox = document.getElementById('enableObsExport');
-    const obsFilePathInput = document.getElementById('obsFilePath');
-    const obsFormatTemplateInput = document.getElementById('obsFormatTemplate');
-    const obsClearOnPauseCheckbox = document.getElementById('obsClearOnPause');
+		if (obsFilePicker && obsFilePathInput) {
+			obsFilePicker.addEventListener("change", () => {
+				const file = obsFilePicker.files?.[0];
+				if (file) {
+					obsFilePathInput.value = file.path || file.name;
+					updateFileUI();
+					save();
+				}
+			});
+		}
 
-    const port = gs?.wsPort || 39865;
-    if (wsPortInput) wsPortInput.value = port;
-    updateDynamicUrls(port);
+		if (obsClearFileBtn && obsFilePathInput) {
+			obsClearFileBtn.addEventListener("click", () => {
+				obsFilePathInput.value = "";
+				if (obsFilePicker) obsFilePicker.value = "";
+				updateFileUI();
+				save();
+			});
+		}
 
-    if (enableDiscordCheckbox) enableDiscordCheckbox.checked = !!gs?.enableDiscordRPC;
-    if (discordClientIdInput) discordClientIdInput.value = gs?.discordClientId || '';
+		if (enableObsExportCheckbox) {
+			enableObsExportCheckbox.addEventListener("change", () => {
+				updateFileUI();
+				save();
+			});
+		}
+		if (obsFormatTemplateInput) {
+			obsFormatTemplateInput.addEventListener("change", save);
+			obsFormatTemplateInput.addEventListener("blur", save);
+		}
+		if (obsClearOnPauseCheckbox) obsClearOnPauseCheckbox.addEventListener("change", save);
 
-    if (enableObsExportCheckbox) enableObsExportCheckbox.checked = !!gs?.enableObsExport;
-    if (obsFilePathInput) obsFilePathInput.value = gs?.obsFilePath || '';
-    if (obsFormatTemplateInput) obsFormatTemplateInput.value = gs?.obsFormatTemplate || '';
-    if (obsClearOnPauseCheckbox) obsClearOnPauseCheckbox.checked = gs?.obsClearOnPause !== false;
-  }
+		// Register with StreamDeckClient for updates
+		StreamDeckClient.onGlobalSettings((gs) => {
+			populate(gs);
+		});
+	}
 
-  function save() {
-    const enableDiscordCheckbox = document.getElementById('enableDiscordRPC');
-    const discordClientIdInput = document.getElementById('discordClientId');
-    const wsPortInput = document.getElementById('wsPort');
+	function populate(gs) {
+		render();
 
-    const enableObsExportCheckbox = document.getElementById('enableObsExport');
-    const obsFilePathInput = document.getElementById('obsFilePath');
-    const obsFormatTemplateInput = document.getElementById('obsFormatTemplate');
-    const obsClearOnPauseCheckbox = document.getElementById('obsClearOnPause');
+		const warningBanner = ensureWarningBanner();
+		if (warningBanner) {
+			if (gs && gs.isVersionMismatch) {
+				const rawMsg =
+					gs.warningMessage ||
+					"⚠️ Browser Extension outdated! Please update to the latest version via GitHub Releases.";
+				warningBanner.innerHTML = `<span>${rawMsg}</span> <a href="https://github.com/Smok3y97/ytm-web-controller/releases" target="_blank">Releases</a>`;
+				warningBanner.classList.remove("hidden");
+			} else {
+				warningBanner.classList.add("hidden");
+			}
+		}
 
-    const port = wsPortInput ? (parseInt(wsPortInput.value, 10) || 39865) : 39865;
+		const enableDiscordCheckbox = document.getElementById("enableDiscordRPC");
+		const discordClientIdInput = document.getElementById("discordClientId");
+		const wsPortInput = document.getElementById("wsPort");
 
-    StreamDeckClient.saveGlobalSettings({
-      enableDiscordRPC: enableDiscordCheckbox ? enableDiscordCheckbox.checked : false,
-      discordClientId: discordClientIdInput ? (discordClientIdInput.value.trim() || undefined) : undefined,
-      wsPort: port,
-      enableObsExport: enableObsExportCheckbox ? enableObsExportCheckbox.checked : false,
-      obsFilePath: obsFilePathInput ? (obsFilePathInput.value.trim() || undefined) : undefined,
-      obsFormatTemplate: obsFormatTemplateInput ? (obsFormatTemplateInput.value.trim() || undefined) : undefined,
-      obsClearOnPause: obsClearOnPauseCheckbox ? obsClearOnPauseCheckbox.checked : true
-    });
-  }
+		const enableObsExportCheckbox = document.getElementById("enableObsExport");
+		const obsFilePathInput = document.getElementById("obsFilePath");
+		const obsFormatTemplateInput = document.getElementById("obsFormatTemplate");
+		const obsClearOnPauseCheckbox = document.getElementById("obsClearOnPause");
+		const obsClearFileBtn = document.getElementById("obsClearFileBtn");
+		const errorElem = document.getElementById("obsFileRequiredError");
 
-  // Auto-render when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', render);
-  } else {
-    render();
-  }
+		const port = gs?.wsPort || 39865;
+		if (wsPortInput) wsPortInput.value = port;
+		updateDynamicUrls(port);
 
-  return {
-    render,
-    populate,
-    save
-  };
+		if (enableDiscordCheckbox) enableDiscordCheckbox.checked = !!gs?.enableDiscordRPC;
+		if (discordClientIdInput) discordClientIdInput.value = gs?.discordClientId || "";
+
+		const isObsExport = !!gs?.enableObsExport;
+		const pathVal = gs?.obsFilePath || "";
+
+		if (enableObsExportCheckbox) enableObsExportCheckbox.checked = isObsExport;
+		if (obsFilePathInput) obsFilePathInput.value = pathVal;
+		if (obsFormatTemplateInput) obsFormatTemplateInput.value = gs?.obsFormatTemplate || "";
+		if (obsClearOnPauseCheckbox) obsClearOnPauseCheckbox.checked = gs?.obsClearOnPause !== false;
+
+		if (obsClearFileBtn) obsClearFileBtn.style.display = pathVal ? "block" : "none";
+		if (isObsExport && !pathVal) {
+			if (obsFilePathInput) obsFilePathInput.classList.add("invalid");
+			if (errorElem) errorElem.style.display = "block";
+		} else {
+			if (obsFilePathInput) obsFilePathInput.classList.remove("invalid");
+			if (errorElem) errorElem.style.display = "none";
+		}
+	}
+
+	function save() {
+		const enableDiscordCheckbox = document.getElementById("enableDiscordRPC");
+		const discordClientIdInput = document.getElementById("discordClientId");
+		const wsPortInput = document.getElementById("wsPort");
+
+		const enableObsExportCheckbox = document.getElementById("enableObsExport");
+		const obsFilePathInput = document.getElementById("obsFilePath");
+		const obsFormatTemplateInput = document.getElementById("obsFormatTemplate");
+		const obsClearOnPauseCheckbox = document.getElementById("obsClearOnPause");
+
+		const port = wsPortInput ? parseInt(wsPortInput.value, 10) || 39865 : 39865;
+
+		StreamDeckClient.saveGlobalSettings({
+			enableDiscordRPC: enableDiscordCheckbox ? enableDiscordCheckbox.checked : false,
+			discordClientId: discordClientIdInput ? discordClientIdInput.value.trim() || undefined : undefined,
+			wsPort: port,
+			enableObsExport: enableObsExportCheckbox ? enableObsExportCheckbox.checked : false,
+			obsFilePath: obsFilePathInput ? obsFilePathInput.value.trim() || undefined : undefined,
+			obsFormatTemplate: obsFormatTemplateInput ? obsFormatTemplateInput.value.trim() || undefined : undefined,
+			obsClearOnPause: obsClearOnPauseCheckbox ? obsClearOnPauseCheckbox.checked : true,
+		});
+	}
+
+	// Auto-render when DOM is ready
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", render);
+	} else {
+		render();
+	}
+
+	return {
+		render,
+		populate,
+		save,
+	};
 })();

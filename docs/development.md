@@ -16,9 +16,9 @@ This document outlines the local development setup, build scripts, testing proce
 
 ## [🛠️ Prerequisites](#top)
 
-- **Node.js**: `v20.0.0` or newer recommended.
+- **Node.js**: `v24.0.0` or newer recommended.
 - **npm**: `v10.0.0` or newer.
-- **Elgato Stream Deck Software**: `v6.5+` (tested on `v7.5+`).
+- **Elgato Stream Deck Software**: `v7.1+` (tested on `v7.5+`).
 - **PowerShell**: Windows PowerShell or PowerShell 7 (for automated packaging scripts).
 
 ---
@@ -31,15 +31,20 @@ All commands can be executed directly from the monorepo root:
 # 1. Compile TypeScript and build plugin JS bundle via Rollup
 npm run build
 
-# 2. Package release archive & automatically deploy to local Stream Deck plugins folder
+# 2. Run TypeScript typechecking & official Elgato ESLint check
+npm run lint
+# Or auto-fix and format with Prettier:
+npm run lint:fix
+
+# 3. Package release archive & automatically deploy to local Stream Deck plugins folder
 npm run package
 # (or execute directly with PowerShell):
 powershell -ExecutionPolicy Bypass -File .\scripts\package_plugin.ps1
 
-# 3. Synchronize versions centrally across all manifests & packages
-npm run bump 1.7.0.0
+# 4. Synchronize versions centrally across all manifests & packages
+npm run bump 1.8.0.0
 
-# 4. Validate packaged plugin against official Elgato SDK Schema
+# 5. Validate packaged plugin against official Elgato SDK Schema
 npm run validate
 # (or directly via npx):
 npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin

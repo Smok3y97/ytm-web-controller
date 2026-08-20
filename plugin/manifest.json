@@ -1,326 +1,326 @@
 {
-  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
-  "UUID": "com.smok3y97.ytmusicweb",
-  "Name": "YouTube Music Web",
-  "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. GitHub: https://github.com/Smok3y97/ytm-web-controller",
-  "Author": "Smok3y97",
-  "URL": "https://github.com/Smok3y97/ytm-web-controller",
-  "Version": "1.8.0.0",
-  "SDKVersion": 2,
-  "Software": {
-    "MinimumVersion": "6.5"
-  },
-  "Icon": "assets/plugin-icon",
-  "Category": "YouTube Music Web",
-  "CategoryIcon": "assets/category-icon",
-  "CodePath": "bin/plugin.js",
-  "Nodejs": {
-    "Version": "20"
-  },
-  "OS": [
-    {
-      "Platform": "windows",
-      "MinimumVersion": "10"
+    "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+    "UUID": "com.smok3y97.ytmusicweb",
+    "Name": "YouTube Music Web",
+    "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. GitHub: https://github.com/Smok3y97/ytm-web-controller",
+    "Author": "Smok3y97",
+    "URL": "https://github.com/Smok3y97/ytm-web-controller",
+    "Version": "1.9.0.0",
+    "SDKVersion": 3,
+    "Software": {
+        "MinimumVersion": "7.1"
     },
-    {
-      "Platform": "mac",
-      "MinimumVersion": "12"
-    }
-  ],
-  "Actions": [
-    {
-      "UUID": "com.smok3y97.ytmusicweb.playpause",
-      "Name": "Play / Pause",
-      "Tooltip": "Toggle Play / Pause (Hold to bring YouTube Music to foreground)",
-      "Icon": "assets/actions/playpause/icon",
-      "PropertyInspectorPath": "ui/playpause.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
+    "Icon": "assets/plugin-icon",
+    "Category": "YouTube Music Web",
+    "CategoryIcon": "assets/category-icon",
+    "CodePath": "bin/plugin.js",
+    "Nodejs": {
+        "Version": "24"
+    },
+    "OS": [
         {
-          "Image": "assets/actions/playpause/play",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "Platform": "windows",
+            "MinimumVersion": "10"
         },
         {
-          "Image": "assets/actions/playpause/pause",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "Platform": "mac",
+            "MinimumVersion": "12"
         }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.trackdial",
-      "Name": "Track Controller (Dial)",
-      "Tooltip": "Stream Deck + Dial: rotate to skip tracks, press to toggle play/pause, view LCD feedback",
-      "Icon": "assets/actions/trackdial/icon",
-      "PropertyInspectorPath": "ui/track-dial.html",
-      "Controllers": [
-        "Encoder"
-      ],
-      "States": [
+    ],
+    "Actions": [
         {
-          "Image": "assets/actions/trackdial/icon"
-        }
-      ],
-      "Encoder": {
-        "layout": "layouts/dial_layout.json",
-        "StackColor": "#FF0000",
-        "TriggerDescription": {
-          "Rotate": "Skip Tracks (Next / Previous)",
-          "Push": "Toggle Play / Pause",
-          "Touch": "Toggle Play / Pause"
-        }
-      }
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.volumedial",
-      "Name": "Volume Controller (Dial)",
-      "Tooltip": "Stream Deck + Dial: rotate to adjust volume, press/touch to toggle mute, view volume feedback",
-      "Icon": "assets/actions/volumedial/icon",
-      "PropertyInspectorPath": "ui/volume-dial.html",
-      "Controllers": [
-        "Encoder"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/volumedial/icon"
-        }
-      ],
-      "Encoder": {
-        "layout": "layouts/dial_layout.json",
-        "StackColor": "#FF0000",
-        "TriggerDescription": {
-          "Rotate": "Adjust Volume (Up / Down)",
-          "Push": "Toggle Mute / Unmute",
-          "Touch": "Toggle Mute / Unmute"
-        }
-      }
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.seekdial",
-      "Name": "Seek Controller (Dial)",
-      "Tooltip": "Stream Deck + Dial: rotate to seek forward / backward in track, press/touch to toggle play/pause, view live time & progress",
-      "Icon": "assets/actions/seekdial/icon",
-      "PropertyInspectorPath": "ui/seek-dial.html",
-      "Controllers": [
-        "Encoder"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/seekdial/icon"
-        }
-      ],
-      "Encoder": {
-        "layout": "layouts/dial_layout.json",
-        "StackColor": "#FF0000",
-        "TriggerDescription": {
-          "Rotate": "Seek Track (Forward / Backward)",
-          "Push": "Toggle Play / Pause",
-          "Touch": "Toggle Play / Pause"
-        }
-      }
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.volumeup",
-      "Name": "Volume Up",
-      "Tooltip": "Increase playback volume",
-      "Icon": "assets/actions/volumeup/icon",
-      "PropertyInspectorPath": "ui/volume.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/volumeup/icon",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.volumedown",
-      "Name": "Volume Down",
-      "Tooltip": "Decrease playback volume",
-      "Icon": "assets/actions/volumedown/icon",
-      "PropertyInspectorPath": "ui/volume.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/volumedown/icon",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.mute",
-      "Name": "Mute / Unmute",
-      "Tooltip": "Toggle mute state for currently playing track",
-      "Icon": "assets/actions/mute/icon",
-      "PropertyInspectorPath": "ui/common.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/mute/unmuted",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "UUID": "com.smok3y97.ytmusicweb.playpause",
+            "Name": "Play / Pause",
+            "Tooltip": "Toggle Play / Pause (Hold to bring YouTube Music to foreground)",
+            "Icon": "assets/actions/playpause/icon",
+            "PropertyInspectorPath": "ui/playpause.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/playpause/play",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                },
+                {
+                    "Image": "assets/actions/playpause/pause",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
         },
         {
-          "Image": "assets/actions/mute/muted",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.next",
-      "Name": "Next Track",
-      "Tooltip": "Skip to the next track",
-      "Icon": "assets/actions/next/icon",
-      "PropertyInspectorPath": "ui/common.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/next/icon",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.prev",
-      "Name": "Previous Track",
-      "Tooltip": "Skip to the previous track or restart current track",
-      "Icon": "assets/actions/prev/icon",
-      "PropertyInspectorPath": "ui/common.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/prev/icon",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.like",
-      "Name": "Like Track",
-      "Tooltip": "Toggle like rating for currently playing track",
-      "Icon": "assets/actions/like/icon",
-      "PropertyInspectorPath": "ui/common.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/like/like-inactive",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "UUID": "com.smok3y97.ytmusicweb.trackdial",
+            "Name": "Track Controller (Dial)",
+            "Tooltip": "Stream Deck + Dial: rotate to skip tracks, press to toggle play/pause, view LCD feedback",
+            "Icon": "assets/actions/trackdial/icon",
+            "PropertyInspectorPath": "ui/track-dial.html",
+            "Controllers": [
+                "Encoder"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/trackdial/icon"
+                }
+            ],
+            "Encoder": {
+                "layout": "layouts/dial_layout.json",
+                "StackColor": "#FF0000",
+                "TriggerDescription": {
+                    "Rotate": "Skip Tracks (Next / Previous)",
+                    "Push": "Toggle Play / Pause",
+                    "Touch": "Toggle Play / Pause"
+                }
+            }
         },
         {
-          "Image": "assets/actions/like/like-active",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.dislike",
-      "Name": "Dislike Track",
-      "Tooltip": "Toggle dislike rating for currently playing track",
-      "Icon": "assets/actions/dislike/icon",
-      "PropertyInspectorPath": "ui/common.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/dislike/dislike-inactive",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "UUID": "com.smok3y97.ytmusicweb.volumedial",
+            "Name": "Volume Controller (Dial)",
+            "Tooltip": "Stream Deck + Dial: rotate to adjust volume, press/touch to toggle mute, view volume feedback",
+            "Icon": "assets/actions/volumedial/icon",
+            "PropertyInspectorPath": "ui/volume-dial.html",
+            "Controllers": [
+                "Encoder"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/volumedial/icon"
+                }
+            ],
+            "Encoder": {
+                "layout": "layouts/dial_layout.json",
+                "StackColor": "#FF0000",
+                "TriggerDescription": {
+                    "Rotate": "Adjust Volume (Up / Down)",
+                    "Push": "Toggle Mute / Unmute",
+                    "Touch": "Toggle Mute / Unmute"
+                }
+            }
         },
         {
-          "Image": "assets/actions/dislike/dislike-active",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.shuffle",
-      "Name": "Shuffle",
-      "Tooltip": "Toggle playlist shuffle mode",
-      "Icon": "assets/actions/shuffle/icon",
-      "PropertyInspectorPath": "ui/common.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/shuffle/shuffle-inactive",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "UUID": "com.smok3y97.ytmusicweb.seekdial",
+            "Name": "Seek Controller (Dial)",
+            "Tooltip": "Stream Deck + Dial: rotate to seek forward / backward in track, press/touch to toggle play/pause, view live time & progress",
+            "Icon": "assets/actions/seekdial/icon",
+            "PropertyInspectorPath": "ui/seek-dial.html",
+            "Controllers": [
+                "Encoder"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/seekdial/icon"
+                }
+            ],
+            "Encoder": {
+                "layout": "layouts/dial_layout.json",
+                "StackColor": "#FF0000",
+                "TriggerDescription": {
+                    "Rotate": "Seek Track (Forward / Backward)",
+                    "Push": "Toggle Play / Pause",
+                    "Touch": "Toggle Play / Pause"
+                }
+            }
         },
         {
-          "Image": "assets/actions/shuffle/shuffle-active",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.repeat",
-      "Name": "Repeat Mode",
-      "Tooltip": "Cycle repeat mode (Off / All / One)",
-      "Icon": "assets/actions/repeat/icon",
-      "PropertyInspectorPath": "ui/common.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
-        {
-          "Image": "assets/actions/repeat/repeat-off",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "UUID": "com.smok3y97.ytmusicweb.volumeup",
+            "Name": "Volume Up",
+            "Tooltip": "Increase playback volume",
+            "Icon": "assets/actions/volumeup/icon",
+            "PropertyInspectorPath": "ui/volume.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/volumeup/icon",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
         },
         {
-          "Image": "assets/actions/repeat/repeat-all",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "UUID": "com.smok3y97.ytmusicweb.volumedown",
+            "Name": "Volume Down",
+            "Tooltip": "Decrease playback volume",
+            "Icon": "assets/actions/volumedown/icon",
+            "PropertyInspectorPath": "ui/volume.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/volumedown/icon",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
         },
         {
-          "Image": "assets/actions/repeat/repeat-one",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
-        }
-      ]
-    },
-    {
-      "UUID": "com.smok3y97.ytmusicweb.copyurl",
-      "Name": "Copy Song URL",
-      "Tooltip": "Copy current song URL to clipboard",
-      "Icon": "assets/actions/copyurl/icon",
-      "PropertyInspectorPath": "ui/copy-url.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "States": [
+            "UUID": "com.smok3y97.ytmusicweb.mute",
+            "Name": "Mute / Unmute",
+            "Tooltip": "Toggle mute state for currently playing track",
+            "Icon": "assets/actions/mute/icon",
+            "PropertyInspectorPath": "ui/common.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/mute/unmuted",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                },
+                {
+                    "Image": "assets/actions/mute/muted",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
         {
-          "Image": "assets/actions/copyurl/icon",
-          "TitleAlignment": "bottom",
-          "FontSize": 9
+            "UUID": "com.smok3y97.ytmusicweb.next",
+            "Name": "Next Track",
+            "Tooltip": "Skip to the next track",
+            "Icon": "assets/actions/next/icon",
+            "PropertyInspectorPath": "ui/common.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/next/icon",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
+        {
+            "UUID": "com.smok3y97.ytmusicweb.prev",
+            "Name": "Previous Track",
+            "Tooltip": "Skip to the previous track or restart current track",
+            "Icon": "assets/actions/prev/icon",
+            "PropertyInspectorPath": "ui/common.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/prev/icon",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
+        {
+            "UUID": "com.smok3y97.ytmusicweb.like",
+            "Name": "Like Track",
+            "Tooltip": "Toggle like rating for currently playing track",
+            "Icon": "assets/actions/like/icon",
+            "PropertyInspectorPath": "ui/common.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/like/like-inactive",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                },
+                {
+                    "Image": "assets/actions/like/like-active",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
+        {
+            "UUID": "com.smok3y97.ytmusicweb.dislike",
+            "Name": "Dislike Track",
+            "Tooltip": "Toggle dislike rating for currently playing track",
+            "Icon": "assets/actions/dislike/icon",
+            "PropertyInspectorPath": "ui/common.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/dislike/dislike-inactive",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                },
+                {
+                    "Image": "assets/actions/dislike/dislike-active",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
+        {
+            "UUID": "com.smok3y97.ytmusicweb.shuffle",
+            "Name": "Shuffle",
+            "Tooltip": "Toggle playlist shuffle mode",
+            "Icon": "assets/actions/shuffle/icon",
+            "PropertyInspectorPath": "ui/common.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/shuffle/shuffle-inactive",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                },
+                {
+                    "Image": "assets/actions/shuffle/shuffle-active",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
+        {
+            "UUID": "com.smok3y97.ytmusicweb.repeat",
+            "Name": "Repeat Mode",
+            "Tooltip": "Cycle repeat mode (Off / All / One)",
+            "Icon": "assets/actions/repeat/icon",
+            "PropertyInspectorPath": "ui/common.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/repeat/repeat-off",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                },
+                {
+                    "Image": "assets/actions/repeat/repeat-all",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                },
+                {
+                    "Image": "assets/actions/repeat/repeat-one",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
+        {
+            "UUID": "com.smok3y97.ytmusicweb.copyurl",
+            "Name": "Copy Song URL",
+            "Tooltip": "Copy current song URL to clipboard",
+            "Icon": "assets/actions/copyurl/icon",
+            "PropertyInspectorPath": "ui/copy-url.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/copyurl/icon",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

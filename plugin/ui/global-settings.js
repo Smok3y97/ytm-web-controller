@@ -19,14 +19,14 @@ const GlobalSettingsComponent = (() => {
       <div id="versionMismatchBanner" class="sdpi-warning-box hidden"></div>
 
       <!-- General Settings (Directly Accessible) -->
-      <div class="sdpi-heading">General Settings</div>
+      <div class="sdpi-heading" data-i18n="general.heading">General Settings</div>
       <div class="sdpi-item">
         <label class="sdpi-checkbox-wrap">
           <input type="checkbox" id="enableDiscordRPC">
-          <span>Enable Discord Rich Presence</span>
+          <span data-i18n="discord.rpc.label">Enable Discord Rich Presence</span>
         </label>
       </div>
-      <div class="sdpi-hint">
+      <div class="sdpi-hint" data-i18n="discord.rpc.hint">
         Broadcasts active playback and album art to Discord Desktop in real-time.
       </div>
 
@@ -35,71 +35,71 @@ const GlobalSettingsComponent = (() => {
         <!-- OBS Overlay & Chatbot Integrations -->
         <details class="sdpi-group">
           <summary class="sdpi-group-summary">
-            <span class="sdpi-group-title">OBS Overlay & Chatbot</span>
+            <span class="sdpi-group-title" data-i18n="obs.group.title">OBS Overlay & Chatbot</span>
           </summary>
           <div class="sdpi-group-content">
             <!-- OBS Browser Overlay URL -->
             <div class="sdpi-item">
-              <div class="sdpi-item-label">OBS Overlay</div>
+              <div class="sdpi-item-label" data-i18n="obs.overlay.label">OBS Overlay</div>
               <div class="sdpi-item-value" style="display: flex; gap: 4px;">
                 <input type="text" id="obsOverlayUrl" readonly value="http://localhost:39865/overlay" style="cursor: pointer;">
                 <button type="button" id="copyOverlayBtn" title="Copy Overlay URL" style="padding: 0 8px; cursor: pointer;">📋</button>
               </div>
             </div>
-            <div class="sdpi-hint">
+            <div class="sdpi-hint" data-i18n="obs.overlay.hint">
               Add as <strong>Browser Source</strong> in OBS. Parameters: <code>?theme=card|compact|pill</code>, <code>?accent=FF0033</code>, <code>?hideOnPause=true</code>.
             </div>
 
             <!-- Chatbot API URL -->
             <div class="sdpi-item">
-              <div class="sdpi-item-label">Chatbot URL</div>
+              <div class="sdpi-item-label" data-i18n="chatbot.url.label">Chatbot URL</div>
               <div class="sdpi-item-value" style="display: flex; gap: 4px;">
                 <input type="text" id="chatbotApiUrl" readonly value="http://localhost:39865/api/current" style="cursor: pointer;">
                 <button type="button" id="copyChatbotBtn" title="Copy Chatbot URL" style="padding: 0 8px; cursor: pointer;">📋</button>
               </div>
             </div>
-            <div class="sdpi-hint">
+            <div class="sdpi-hint" data-i18n="chatbot.url.hint">
               Use in local bots (Streamer.bot, MixItUp): <code>http://localhost:39865/api/current</code> for <code>!song</code>.
             </div>
 
-            <div class="sdpi-heading" style="margin-top: 6px; margin-bottom: 2px;">OBS Text Export (.txt)</div>
+            <div class="sdpi-heading" style="margin-top: 6px; margin-bottom: 2px;" data-i18n="obs.export.heading">OBS Text Export (.txt)</div>
 
             <!-- Enable OBS Text Export (Opt-in) -->
             <div class="sdpi-item">
               <label class="sdpi-checkbox-wrap">
                 <input type="checkbox" id="enableObsExport">
-                <span>Enable OBS text export (.txt)</span>
+                <span data-i18n="obs.export.label">Enable OBS text export (.txt)</span>
               </label>
             </div>
-            <div class="sdpi-hint">
+            <div class="sdpi-hint" data-i18n="obs.export.hint">
               Writes track metadata to a local text file for OBS Text (GDI+) overlay sources.
             </div>
 
             <!-- File Path Selector -->
             <div class="sdpi-item" id="obsFilePathRow">
-              <div class="sdpi-item-label">Text File <span style="color: #ff3333;">*</span></div>
+              <div class="sdpi-item-label"><span data-i18n="obs.file.label">Text File</span> <span style="color: #ff3333;">*</span></div>
               <div class="sdpi-item-value sdpi-file-wrap">
-                <input type="text" id="obsFilePath" placeholder="No file selected..." readonly style="cursor: pointer;">
+                <input type="text" id="obsFilePath" placeholder="No file selected..." data-i18n-placeholder="no_file_selected" readonly style="cursor: pointer;">
                 <input type="file" id="obsFilePicker" accept=".txt,text/plain" style="display: none;">
-                <button type="button" id="obsBrowseBtn" class="sdpi-file-btn" title="Choose .txt file">Browse...</button>
+                <button type="button" id="obsBrowseBtn" class="sdpi-file-btn" title="Choose .txt file" data-i18n="browse">Browse...</button>
                 <button type="button" id="obsClearFileBtn" class="sdpi-file-btn sdpi-file-clear-btn" title="Clear selected file" style="display: none;">✕</button>
               </div>
             </div>
-            <div id="obsFileRequiredError" class="sdpi-hint" style="color: #ff5555; display: none;">
+            <div id="obsFileRequiredError" class="sdpi-hint" style="color: #ff5555; display: none;" data-i18n="obs.file.required">
               ⚠️ File selection is required when OBS Text Export is enabled.
             </div>
-            <div class="sdpi-hint" id="obsFilePathHint">
+            <div class="sdpi-hint" id="obsFilePathHint" data-i18n="obs.file.hint">
               Select an existing or newly created <code>.txt</code> file on your computer.
             </div>
 
             <!-- Format Template -->
             <div class="sdpi-item">
-              <div class="sdpi-item-label">Format</div>
+              <div class="sdpi-item-label" data-i18n="obs.format.label">Format</div>
               <div class="sdpi-item-value">
-                <input type="text" id="obsFormatTemplate" placeholder="Currently Playing: {artist} - {title}">
+                <input type="text" id="obsFormatTemplate" placeholder="Currently Playing: {artist} - {title}" data-i18n-placeholder="obs.format.placeholder">
               </div>
             </div>
-            <div class="sdpi-hint">
+            <div class="sdpi-hint" data-i18n="obs.format.hint">
               Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>.
             </div>
 
@@ -107,7 +107,7 @@ const GlobalSettingsComponent = (() => {
             <div class="sdpi-item">
               <label class="sdpi-checkbox-wrap">
                 <input type="checkbox" id="obsClearOnPause" checked>
-                <span>Clear text file when paused</span>
+                <span data-i18n="obs.clear_on_pause.label">Clear text file when paused</span>
               </label>
             </div>
           </div>
@@ -116,28 +116,42 @@ const GlobalSettingsComponent = (() => {
         <!-- Advanced Connection Settings -->
         <details class="sdpi-group">
           <summary class="sdpi-group-summary">
-            <span class="sdpi-group-title">Advanced Settings</span>
+            <span class="sdpi-group-title" data-i18n="advanced.group.title">Advanced Settings</span>
           </summary>
-          <div class="sdpi-group-content">
-            <!-- Discord Client ID -->
+            <!-- Language Selection -->
             <div class="sdpi-item">
-              <div class="sdpi-item-label">Discord Client ID</div>
+              <div class="sdpi-item-label" data-i18n="language.label">Language</div>
               <div class="sdpi-item-value">
-                <input type="text" id="discordClientId" placeholder="Default (Embedded App ID)">
+                <select id="languageSelect">
+                  <option value="auto" data-i18n="language.auto">Auto (System / Stream Deck)</option>
+                  <option value="en" data-i18n="language.en">English</option>
+                  <option value="de" data-i18n="language.de">Deutsch</option>
+                </select>
               </div>
             </div>
-            <div class="sdpi-hint">
+            <div class="sdpi-hint" data-i18n="language.hint">
+              Override the Property Inspector display language or use the Stream Deck system language.
+            </div>
+
+            <!-- Discord Client ID -->
+            <div class="sdpi-item">
+              <div class="sdpi-item-label" data-i18n="discord.client_id.label">Discord Client ID</div>
+              <div class="sdpi-item-value">
+                <input type="text" id="discordClientId" placeholder="Default (Embedded App ID)" data-i18n-placeholder="discord.client_id.placeholder">
+              </div>
+            </div>
+            <div class="sdpi-hint" data-i18n="discord.client_id.hint">
               Custom Discord Application ID. Leave blank to use the official default.
             </div>
 
             <!-- WebSocket / Server Port -->
             <div class="sdpi-item">
-              <div class="sdpi-item-label">Server Port</div>
+              <div class="sdpi-item-label" data-i18n="server.port.label">Server Port</div>
               <div class="sdpi-item-value">
                 <input type="number" id="wsPort" placeholder="39865" min="1024" max="65535" value="39865">
               </div>
             </div>
-            <div class="sdpi-hint">
+            <div class="sdpi-hint" data-i18n="server.port.hint">
               Unified WebSocket & HTTP port. Default: <code>39865</code>.
             </div>
           </div>
@@ -146,6 +160,9 @@ const GlobalSettingsComponent = (() => {
     `;
 
 		isRendered = true;
+		if (typeof I18n !== "undefined") {
+			I18n.translateDOM(container);
+		}
 		bindEvents();
 	}
 
@@ -225,6 +242,21 @@ const GlobalSettingsComponent = (() => {
 			});
 		}
 
+		const languageSelect = document.getElementById("languageSelect");
+		if (languageSelect) {
+			languageSelect.addEventListener("change", () => {
+				const selectedLang = languageSelect.value;
+				if (typeof I18n !== "undefined" && I18n.setLanguage) {
+					if (selectedLang && selectedLang !== "auto") {
+						I18n.setLanguage(selectedLang);
+					} else {
+						I18n.setLanguage(StreamDeckClient.getLanguage() || "en");
+					}
+				}
+				save();
+			});
+		}
+
 		if (enableDiscordCheckbox) enableDiscordCheckbox.addEventListener("change", save);
 		if (discordClientIdInput) {
 			discordClientIdInput.addEventListener("change", save);
@@ -259,21 +291,28 @@ const GlobalSettingsComponent = (() => {
 			});
 		}
 
-		if (obsFilePicker && obsFilePathInput) {
-			obsFilePicker.addEventListener("change", () => {
-				const file = obsFilePicker.files?.[0];
+		if (obsFilePicker) {
+			obsFilePicker.addEventListener("change", (e) => {
+				const file = e.target.files && e.target.files[0];
 				if (file) {
-					obsFilePathInput.value = file.path || file.name;
+					const path = file.path || file.name;
+					if (obsFilePathInput) {
+						obsFilePathInput.value = path;
+					}
 					updateFileUI();
 					save();
 				}
 			});
 		}
 
-		if (obsClearFileBtn && obsFilePathInput) {
+		if (obsClearFileBtn) {
 			obsClearFileBtn.addEventListener("click", () => {
-				obsFilePathInput.value = "";
-				if (obsFilePicker) obsFilePicker.value = "";
+				if (obsFilePathInput) {
+					obsFilePathInput.value = "";
+				}
+				if (obsFilePicker) {
+					obsFilePicker.value = "";
+				}
 				updateFileUI();
 				save();
 			});
@@ -281,6 +320,17 @@ const GlobalSettingsComponent = (() => {
 
 		if (enableObsExportCheckbox) {
 			enableObsExportCheckbox.addEventListener("change", () => {
+				updateFileUI();
+				save();
+			});
+		}
+
+		if (obsFilePathInput) {
+			obsFilePathInput.addEventListener("input", () => {
+				updateFileUI();
+				save();
+			});
+			obsFilePathInput.addEventListener("change", () => {
 				updateFileUI();
 				save();
 			});
@@ -305,12 +355,20 @@ const GlobalSettingsComponent = (() => {
 			if (gs && gs.isVersionMismatch) {
 				const rawMsg =
 					gs.warningMessage ||
-					"⚠️ Browser Extension outdated! Please update to the latest version via GitHub Releases.";
-				warningBanner.innerHTML = `<span>${rawMsg}</span> <a href="https://github.com/Smok3y97/ytm-web-controller/releases" target="_blank">Releases</a>`;
+					(typeof I18n !== "undefined"
+						? I18n.t("warning.outdated_extension")
+						: "⚠️ Browser Extension outdated! Please update to the latest version via GitHub Releases.");
+				const releaseText = typeof I18n !== "undefined" ? I18n.t("releases") : "Releases";
+				warningBanner.innerHTML = `<span>${rawMsg}</span> <a href="https://github.com/Smok3y97/ytm-web-controller/releases" target="_blank">${releaseText}</a>`;
 				warningBanner.classList.remove("hidden");
 			} else {
 				warningBanner.classList.add("hidden");
 			}
+		}
+
+		const languageSelect = document.getElementById("languageSelect");
+		if (languageSelect) {
+			languageSelect.value = gs?.language || "auto";
 		}
 
 		const enableDiscordCheckbox = document.getElementById("enableDiscordRPC");
@@ -350,6 +408,7 @@ const GlobalSettingsComponent = (() => {
 	}
 
 	function save() {
+		const languageSelect = document.getElementById("languageSelect");
 		const enableDiscordCheckbox = document.getElementById("enableDiscordRPC");
 		const discordClientIdInput = document.getElementById("discordClientId");
 		const wsPortInput = document.getElementById("wsPort");
@@ -362,6 +421,7 @@ const GlobalSettingsComponent = (() => {
 		const port = wsPortInput ? parseInt(wsPortInput.value, 10) || 39865 : 39865;
 
 		StreamDeckClient.saveGlobalSettings({
+			language: languageSelect ? languageSelect.value : "auto",
 			enableDiscordRPC: enableDiscordCheckbox ? enableDiscordCheckbox.checked : false,
 			discordClientId: discordClientIdInput ? discordClientIdInput.value.trim() || undefined : undefined,
 			wsPort: port,
@@ -377,6 +437,17 @@ const GlobalSettingsComponent = (() => {
 		document.addEventListener("DOMContentLoaded", render);
 	} else {
 		render();
+	}
+
+	if (typeof I18n !== "undefined" && I18n.onLanguageChange) {
+		I18n.onLanguageChange(() => {
+			if (isRendered) {
+				const container = document.getElementById("global-settings-container");
+				if (container) {
+					I18n.translateDOM(container);
+				}
+			}
+		});
 	}
 
 	return {

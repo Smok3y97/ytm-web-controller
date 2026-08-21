@@ -56,6 +56,7 @@ Background services run locally inside the Stream Deck plugin process on port `3
 | **OBS Browser Overlay** | OBS Studio / Streamlabs | Real-time interactive browser source widget (`http://localhost:39865/overlay`) with themes (`card`, `compact`, `pill`), visual styling engine, live album art, and smooth animations. |
 | **Chatbot API (`!song`)** | Streamer.bot / MixItUp / Local Bots | Instant read-only HTTP endpoint for current song info (`http://localhost:39865/api/current`) with customizable placeholders (`{artist}`, `{title}`, `{album}`, `{url}`). |
 | **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to a selected `.txt` file for OBS Text (GDI+) overlay sources. Requires selecting target file on activation; optional clear-on-pause. |
+| **Internationalization (i18n)** | Stream Deck & Property Inspector | Built-in localization support for **English (Default)** and **German (`de`)**. All action names, tooltips, encoder descriptions, and Property Inspector settings adapt automatically to the Stream Deck language. |
 
 ---
 

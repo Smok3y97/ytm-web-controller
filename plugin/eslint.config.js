@@ -35,6 +35,7 @@ export default defineConfig([
 				...globals.browser,
 				StreamDeckClient: "readonly",
 				GlobalSettingsComponent: "readonly",
+				I18n: "readonly",
 				connectElgatoStreamDeckSocket: "writable",
 			},
 		},
@@ -42,8 +43,9 @@ export default defineConfig([
 			"no-unused-vars": [
 				"warn",
 				{
-					varsIgnorePattern: "^(connectElgatoStreamDeckSocket|GlobalSettingsComponent)$",
+					varsIgnorePattern: "^(connectElgatoStreamDeckSocket|GlobalSettingsComponent|I18n)$",
 					argsIgnorePattern: "^_",
+					caughtErrorsIgnorePattern: "^_",
 				},
 			],
 		},

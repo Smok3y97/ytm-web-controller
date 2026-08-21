@@ -2,10 +2,10 @@
     "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
     "UUID": "com.smok3y97.ytmusicweb",
     "Name": "YouTube Music Web",
-    "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. GitHub: https://github.com/Smok3y97/ytm-web-controller",
+    "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence.",
     "Author": "Smok3y97",
     "URL": "https://github.com/Smok3y97/ytm-web-controller",
-    "Version": "1.9.0.0",
+    "Version": "1.10.0.0",
     "SDKVersion": 3,
     "Software": {
         "MinimumVersion": "7.1"
@@ -68,9 +68,9 @@
                 "layout": "layouts/dial_layout.json",
                 "StackColor": "#FF0000",
                 "TriggerDescription": {
-                    "Rotate": "Skip Tracks (Next / Previous)",
-                    "Push": "Toggle Play / Pause",
-                    "Touch": "Toggle Play / Pause"
+                    "Rotate": "Skip Tracks",
+                    "Push": "Play / Pause",
+                    "Touch": "Play / Pause"
                 }
             }
         },
@@ -92,9 +92,9 @@
                 "layout": "layouts/dial_layout.json",
                 "StackColor": "#FF0000",
                 "TriggerDescription": {
-                    "Rotate": "Adjust Volume (Up / Down)",
-                    "Push": "Toggle Mute / Unmute",
-                    "Touch": "Toggle Mute / Unmute"
+                    "Rotate": "Adjust Volume",
+                    "Push": "Toggle Mute",
+                    "Touch": "Toggle Mute"
                 }
             }
         },
@@ -116,9 +116,9 @@
                 "layout": "layouts/dial_layout.json",
                 "StackColor": "#FF0000",
                 "TriggerDescription": {
-                    "Rotate": "Seek Track (Forward / Backward)",
-                    "Push": "Toggle Play / Pause",
-                    "Touch": "Toggle Play / Pause"
+                    "Rotate": "Seek Track",
+                    "Push": "Play / Pause",
+                    "Touch": "Play / Pause"
                 }
             }
         },

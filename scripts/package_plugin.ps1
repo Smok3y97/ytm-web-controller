@@ -14,17 +14,22 @@ if (Test-Path $releaseDir) {
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 
-# 1. Copy Manifest & Package
+# 1. Copy Manifest, Package & Localization Files
 Copy-Item (Join-Path $pluginDir "manifest.json") $stageDir
 Copy-Item (Join-Path $pluginDir "package.json") $stageDir
+Get-ChildItem -Path $pluginDir -Filter "*.json" | Where-Object { $_.Name -notin @("package.json", "package-lock.json", "tsconfig.json") } | ForEach-Object {
+    Copy-Item $_.FullName $stageDir
+}
 
 # 2. Compile binary
-Write-Output "Building plugin bundle..."
+Write-Output "Checking code style, formatting & building plugin bundle..."
 Push-Location $pluginDir
 if (!(Test-Path (Join-Path $pluginDir "node_modules"))) {
     Write-Output "Installing plugin dependencies..."
     npm install
 }
+Write-Output "Running Prettier formatting and ESLint checks..."
+npm run lint:fix
 npm run build
 Pop-Location
 
@@ -64,14 +69,21 @@ if (Test-Path (Join-Path $pluginDir "layouts")) {
     Copy-Item (Join-Path $pluginDir "layouts") $stageDir -Recurse
 }
 
-# 6. Create .streamDeckPlugin Archive using Compress-Archive
-$archiveZip = Join-Path $releaseDir "$uuid.zip"
+# 6. Create .streamDeckPlugin Archive using official Elgato Stream Deck CLI
 $archivePath = Join-Path $releaseDir "$uuid.streamDeckPlugin"
+Write-Output "Packaging plugin with official Elgato CLI (streamdeck pack)..."
+try {
+    npx streamdeck pack $stageDir -o $releaseDir --force
+} catch {
+    Write-Warning "Elgato CLI pack failed, falling back to Compress-Archive..."
+    $archiveZip = Join-Path $releaseDir "$uuid.zip"
+    Compress-Archive -Path $stageDir -DestinationPath $archiveZip -Force
+    Rename-Item -Path $archiveZip -NewName "$uuid.streamDeckPlugin" -Force
+}
 
-Compress-Archive -Path $stageDir -DestinationPath $archiveZip -Force
-Rename-Item -Path $archiveZip -NewName "$uuid.streamDeckPlugin" -Force
-
-Write-Output "Successfully created package: $archivePath"
+if (Test-Path $archivePath) {
+    Write-Output "Successfully created package: $archivePath"
+}
 
 # 7. Package Extension into release folder as extension.zip
 $extDir = Join-Path $rootDir "extension"
@@ -110,4 +122,12 @@ if ($appDataPlugins) {
     }
     Copy-Item -Path "$stageDir\*" -Destination $targetSdPlugin -Recurse -Force
     Write-Output "Plugin successfully updated in Stream Deck plugins directory!"
+
+    # 9. Hot-restart plugin via Stream Deck CLI so changes apply instantly
+    Write-Output "Hot-restarting plugin via Elgato CLI (streamdeck restart)..."
+    try {
+        npx streamdeck restart $uuid
+    } catch {
+        Write-Warning "Could not restart plugin via CLI (Stream Deck app might not be running)."
+    }
 }

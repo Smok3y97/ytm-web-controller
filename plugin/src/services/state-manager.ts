@@ -165,15 +165,16 @@ export class StateManager extends EventEmitter {
 	}
 
 	/**
-	 * Render custom time template with placeholders: {current}, {duration}, {remaining}
+	 * Render custom time template with placeholders: {current}, {duration}, {remaining}, {both}
 	 */
-	public formatTimeTemplate(template: string = "{remaining}", currentTime?: number, duration?: number): string {
+	public formatTimeTemplate(template: string = "{both}", currentTime?: number, duration?: number): string {
 		const state = this.currentState;
 		const cur = typeof currentTime === "number" ? currentTime : state.currentTime;
 		const dur = typeof duration === "number" ? duration : state.duration;
 
 		const currentStr = this.formatTime(cur);
 		const durationStr = this.formatTime(dur);
+		const bothStr = `${currentStr} / ${durationStr}`;
 
 		let remainingStr = "-0:00";
 		if (dur > 0) {
@@ -185,6 +186,7 @@ export class StateManager extends EventEmitter {
 		}
 
 		return (template || "{remaining}")
+			.replace(/{(both|current_duration|current_and_duration|beides)}/gi, bothStr)
 			.replace(/{(current|currentTime|current_time|aktuell|zeit|elapsed|time)}/gi, currentStr)
 			.replace(/{(duration|total|totalTime|total_time|dauer|gesamt|length)}/gi, durationStr)
 			.replace(/{(remaining|remainingTime|remaining_time|rest|restzeit|left)}/gi, remainingStr);

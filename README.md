@@ -95,6 +95,7 @@ For detailed setup instructions, developer guidelines, and architectural specifi
 | 🏗️ **[Development & Contribution Guide](docs/development.md)** | Build commands, Rollup bundle setup, packaging pipeline, and versioning standards. |
 | 📋 **[Marketplace Guidelines Compliance](docs/plugin-guideline.md)** | Elgato Stream Deck Marketplace compliance rules and asset specifications. |
 | 🤖 **[AI Collaboration & Transparency](docs/ai-disclosure.md)** | Transparent breakdown of AI pair programming with Google Antigravity and quality assurance practices. |
+| 🤝 **[Community Contribution Guidelines](CONTRIBUTING.md)** | Code of conduct, bug reporting, PR workflow, and coding standards. |
 | 📋 **[Agent & Developer Guidelines](AGENTS.md)** | Persistent rules for human contributors and AI coding agents. |
 
 ---

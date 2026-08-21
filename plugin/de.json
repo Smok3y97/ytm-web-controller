@@ -1,0 +1,167 @@
+{
+    "Name": "YouTube Music Web",
+    "Description": "Steuern Sie YouTube Music Web über Ihr Elgato Stream Deck mit Echtzeit-Feedback, Drehregler-Unterstützung und Discord Rich Presence.",
+    "Category": "YouTube Music Web",
+    "com.smok3y97.ytmusicweb.playpause": {
+        "Name": "Wiedergabe / Pause",
+        "Tooltip": "Wiedergabe / Pause umschalten (Gedrückt halten, um YouTube Music in den Vordergrund zu holen)"
+    },
+    "com.smok3y97.ytmusicweb.trackdial": {
+        "Name": "Titel-Steuerung (Drehregler)",
+        "Tooltip": "Stream Deck + Drehregler: Drehen zum Überspringen von Titeln, Drücken für Wiedergabe/Pause, LCD-Feedback anzeigen",
+        "Encoder": {
+            "TriggerDescription": {
+                "Rotate": "Titel überspringen",
+                "Push": "Wiedergabe / Pause",
+                "Touch": "Wiedergabe / Pause"
+            }
+        }
+    },
+    "com.smok3y97.ytmusicweb.volumedial": {
+        "Name": "Lautstärkeregler (Drehregler)",
+        "Tooltip": "Stream Deck + Drehregler: Drehen zur Lautstärkeregelung, Drücken/Tippen zum Stummschalten, Lautstärke-Feedback anzeigen",
+        "Encoder": {
+            "TriggerDescription": {
+                "Rotate": "Lautstärke anpassen",
+                "Push": "Stummschalten",
+                "Touch": "Stummschalten"
+            }
+        }
+    },
+    "com.smok3y97.ytmusicweb.seekdial": {
+        "Name": "Positionsregler (Drehregler)",
+        "Tooltip": "Stream Deck + Drehregler: Drehen zum Vor-/Zurückspulen im Titel, Drücken/Tippen für Wiedergabe/Pause, Live-Zeit & Fortschritt anzeigen",
+        "Encoder": {
+            "TriggerDescription": {
+                "Rotate": "Titel spulen",
+                "Push": "Wiedergabe / Pause",
+                "Touch": "Wiedergabe / Pause"
+            }
+        }
+    },
+    "com.smok3y97.ytmusicweb.volumeup": {
+        "Name": "Lauter",
+        "Tooltip": "Wiedergabelautstärke erhöhen"
+    },
+    "com.smok3y97.ytmusicweb.volumedown": {
+        "Name": "Leiser",
+        "Tooltip": "Wiedergabelautstärke verringern"
+    },
+    "com.smok3y97.ytmusicweb.mute": {
+        "Name": "Stummschalten / Aufheben",
+        "Tooltip": "Stummschaltung für den aktuellen Titel umschalten"
+    },
+    "com.smok3y97.ytmusicweb.next": {
+        "Name": "Nächster Titel",
+        "Tooltip": "Zum nächsten Titel springen"
+    },
+    "com.smok3y97.ytmusicweb.prev": {
+        "Name": "Vorheriger Titel",
+        "Tooltip": "Zum vorherigen Titel springen oder aktuellen Titel neu starten"
+    },
+    "com.smok3y97.ytmusicweb.like": {
+        "Name": "Gefällt mir",
+        "Tooltip": "Positive Bewertung (Like) für aktuellen Titel umschalten"
+    },
+    "com.smok3y97.ytmusicweb.dislike": {
+        "Name": "Gefällt mir nicht",
+        "Tooltip": "Negative Bewertung (Dislike) für aktuellen Titel umschalten"
+    },
+    "com.smok3y97.ytmusicweb.shuffle": {
+        "Name": "Zufallswiedergabe",
+        "Tooltip": "Zufallswiedergabe für Playlist umschalten"
+    },
+    "com.smok3y97.ytmusicweb.repeat": {
+        "Name": "Wiederholungsmodus",
+        "Tooltip": "Wiederholungsmodus wechseln (Aus / Alle / Einzeln)"
+    },
+    "com.smok3y97.ytmusicweb.copyurl": {
+        "Name": "Song-URL kopieren",
+        "Tooltip": "Aktuelle Song-URL in die Zwischenablage kopieren"
+    },
+    "Localization": {
+        "info.heading": "Information",
+        "info.default_title": "YouTube Music Web",
+        "info.default_description": "Steuert die Wiedergabe direkt über ein lokales WebSocket.",
+        "action.settings": "Aktions-Einstellungen",
+        "controls.heading": "Steuerung",
+        "tip.title": "Tipp",
+        "browse": "Durchsuchen...",
+        "no_file_selected": "Keine Datei ausgewählt...",
+        "releases": "Releases",
+        "action.com.smok3y97.ytmusicweb.dislike.title": "Gefällt mir nicht",
+        "action.com.smok3y97.ytmusicweb.dislike.description": "Bewertet den aktuellen Titel negativ (Daumen runter) oder hebt die Bewertung auf.",
+        "action.com.smok3y97.ytmusicweb.like.title": "Gefällt mir",
+        "action.com.smok3y97.ytmusicweb.like.description": "Bewertet den aktuellen Titel positiv (Daumen hoch) oder hebt die Bewertung auf.",
+        "action.com.smok3y97.ytmusicweb.next.title": "Nächster Titel",
+        "action.com.smok3y97.ytmusicweb.next.description": "Springt sofort zum nächsten Titel in der Playlist oder Warteschlange.",
+        "action.com.smok3y97.ytmusicweb.prev.title": "Vorheriger Titel",
+        "action.com.smok3y97.ytmusicweb.prev.description": "Springt zum vorherigen Titel zurück oder startet den aktuellen Titel neu.",
+        "action.com.smok3y97.ytmusicweb.mute.title": "Stummschalten / Aufheben",
+        "action.com.smok3y97.ytmusicweb.mute.description": "Schaltet den Ton von YouTube Music stumm oder hebt die Stummschaltung auf.",
+        "action.com.smok3y97.ytmusicweb.shuffle.title": "Zufallswiedergabe",
+        "action.com.smok3y97.ytmusicweb.shuffle.description": "Schaltet die Zufallswiedergabe für die aktuelle Playlist ein oder aus.",
+        "action.com.smok3y97.ytmusicweb.repeat.title": "Wiederholungsmodus",
+        "action.com.smok3y97.ytmusicweb.repeat.description": "Wechselt durch die Modi: Aus ➔ Playlist wiederholen ➔ Einzelnen Titel wiederholen.",
+        "general.heading": "Allgemeine Einstellungen",
+        "discord.rpc.label": "Discord Rich Presence aktivieren",
+        "discord.rpc.hint": "Überträgt die aktive Wiedergabe und das Albumcover in Echtzeit an Discord Desktop.",
+        "obs.group.title": "OBS Overlay & Chatbot",
+        "obs.overlay.label": "OBS Overlay",
+        "obs.overlay.hint": "Als <strong>Browserquelle</strong> in OBS einbinden. Parameter: <code>?theme=card|compact|pill</code>, <code>?accent=FF0033</code>, <code>?hideOnPause=true</code>.",
+        "chatbot.url.label": "Chatbot-URL",
+        "chatbot.url.hint": "Für lokale Bots (Streamer.bot, MixItUp): <code>http://localhost:39865/api/current</code> für <code>!song</code>.",
+        "obs.export.heading": "OBS Text-Export (.txt)",
+        "obs.export.label": "OBS Text-Export aktivieren (.txt)",
+        "obs.export.hint": "Schreibt Titel-Metadaten in eine lokale Textdatei für OBS Text (GDI+) Overlays.",
+        "obs.file.label": "Textdatei",
+        "obs.file.required": "⚠️ Eine Dateiauswahl ist erforderlich, wenn der OBS Text-Export aktiviert ist.",
+        "obs.file.hint": "Wählen Sie eine bestehende oder neu erstellte <code>.txt</code>-Datei auf Ihrem Computer aus.",
+        "obs.format.label": "Format",
+        "obs.format.placeholder": "Aktueller Titel: {artist} - {title}",
+        "obs.format.hint": "Platzhalter: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>.",
+        "obs.clear_on_pause.label": "Textdatei leeren bei Pause",
+        "advanced.group.title": "Erweiterte Einstellungen",
+        "language.label": "Sprache",
+        "language.auto": "Automatisch (System / Stream Deck)",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.hint": "Überschreibt die Anzeigesprache des Einstellungsfensters oder folgt der Stream Deck Systemsprache.",
+        "discord.client_id.label": "Discord Client-ID",
+        "discord.client_id.placeholder": "Standard (Integrierte App-ID)",
+        "discord.client_id.hint": "Benutzerdefinierte Discord-Anwendungs-ID. Leer lassen für Standard.",
+        "server.port.label": "Server-Port",
+        "server.port.hint": "Einheitlicher WebSocket- & HTTP-Port. Standard: <code>39865</code>.",
+        "warning.outdated_extension": "⚠️ Browser-Erweiterung veraltet! Bitte auf die neueste Version über GitHub Releases aktualisieren.",
+        "playpause.heading": "Wiedergabe / Pause Einstellungen",
+        "playpause.cover_bg.label": "Albumcover als Tasten-Hintergrund",
+        "playpause.cover_bg.hint": "Zeigt das Albumcover des aktuellen Titels direkt als Hintergrund der Taste an.",
+        "playpause.controls.hint": "• <strong>Kurzer Druck</strong>: Wiedergabe / Pause umschalten<br />• <strong>Langer Druck (Halten)</strong>: YouTube Music / PWA in den Vordergrund holen",
+        "copyurl.heading": "Song-URL kopieren",
+        "copyurl.format.label": "Kopierformat",
+        "copyurl.format.hint": "Formatvorlage, die beim Drücken in die Zwischenablage kopiert wird.<br />Platzhalter: <code>{url}</code>, <code>{title}</code>, <code>{artist}</code>, <code>{album}</code>, <code>{duration}</code>, <code>{currentTime}</code>.<br />Beispiele: <code>{url}</code>, <code>{artist} - {title} ({url})</code>, <code>Aktueller Song: {artist} - {title}</code>",
+        "copyurl.controls.hint": "• <strong>Tastendruck</strong>: Formatierte Song-URL / Titelinfo in die Zwischenablage kopieren<br />• <strong>Visuelles Feedback</strong>: Grünes Häkchen bestätigt erfolgreiches Kopieren",
+        "seekdial.heading": "Positionsregler-Einstellungen",
+        "seekdial.step.label": "Schrittweite",
+        "seekdial.step.hint": "Sekunden pro Reglerschritt für Vor-/Zurückspulen (5s – 120s, Standard: 10s).",
+        "seekdial.title_template.label": "Titel-Vorlage",
+        "seekdial.title_template.hint": "Platzhalter: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>",
+        "seekdial.time_template.label": "Zeit-Vorlage",
+        "seekdial.time_template.hint": "Platzhalter: <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>, <code>{both}</code>",
+        "seekdial.show_cover.label": "Cover-Miniatur auf Touchstrip anzeigen",
+        "trackdial.heading": "Titel-Steuerung Einstellungen",
+        "volumedial.heading": "Lautstärkeregler-Einstellungen",
+        "volumedial.step.label": "Schrittweite",
+        "volumedial.step.hint": "Prozentuale Lautstärkeänderung pro Schritt (5% – 50%, Standard: 5%).",
+        "volumedial.title_template.label": "Titel-Vorlage",
+        "volumedial.title_template.placeholder": "YouTube Music Lautstärke",
+        "volumedial.title_template.hint": "Platzhalter: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code> (oder ein statischer Text wie <code>YouTube Music Lautstärke</code>)",
+        "volume.heading": "Lautstärke-Einstellungen",
+        "volume.step.label": "Schrittweite",
+        "volume.step.hint": "Prozentuale Lautstärkeänderung pro Tastendruck (5% – 50%, Standard: 5%).",
+        "volume.show_text.label": "Lautstärke-Text auf Taste anzeigen",
+        "volume.format.label": "Lautstärke-Format",
+        "volume.format.hint": "Platzhalter: <code>{volume}</code> (z.B. <code>{volume}%</code>, <code>Vol: {volume}%</code>)",
+        "volume.tip.hint": "💡 Tipp: Um Textposition (Oben, Mitte, Unten), Schriftgröße oder Textfarbe anzupassen, verwenden Sie die native Stream Deck <b>\"T\" (Titelformatierung)</b>-Schaltfläche direkt über dieser Leiste."
+    }
+}

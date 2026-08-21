@@ -55,7 +55,7 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 					? Math.min(100, Math.max(0, Math.round((optimisticSeconds / currentState.duration) * 100)))
 					: 0;
 
-			const timeTemplate = ev.payload.settings.timeTemplate || "{current} / {duration}";
+			const timeTemplate = ev.payload.settings.timeTemplate || "{both}";
 			const valueText = StateManager.getInstance().formatTimeTemplate(
 				timeTemplate,
 				optimisticSeconds,
@@ -113,7 +113,7 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 				}
 
 				const marqueeTitle = this.getFormattedMarqueeTitle(settings, dialAction.id);
-				const timeTemplate = settings.timeTemplate || "{current} / {duration}";
+				const timeTemplate = settings.timeTemplate || "{both}";
 				const timeText = StateManager.getInstance().formatTimeTemplate(timeTemplate, state.currentTime, state.duration);
 				const indicatorValue =
 					state.duration > 0 ? Math.min(100, Math.max(0, Math.round((state.currentTime / state.duration) * 100))) : 0;

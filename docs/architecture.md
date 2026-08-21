@@ -101,6 +101,7 @@ ytm-web-controller/
 ├── version.json                 # Single Source of Truth for project version
 ├── package.json                 # Monorepo root package configuration & npm scripts
 ├── AGENTS.md                    # Persistent Developer & AI Agent Guidelines
+├── CONTRIBUTING.md              # Community contribution guidelines & coding standards
 ├── LICENSE                      # MIT License
 ├── README.md                    # User guide, installation walkthrough & setup documentation
 ├── scripts/                     # Workspace automation & deployment scripts
@@ -135,6 +136,8 @@ ytm-web-controller/
 │   └── icons/                   # Extension toolbar icons (16, 48, 128 px)
 ├── plugin/                      # Stream Deck Plugin (Node.js SDK 3)
 │   ├── manifest.json            # Stream Deck Plugin Manifest (com.smok3y97.ytmusicweb)
+│   ├── de.json                  # German localization manifest & action strings
+│   ├── en.json                  # English default localization reference strings
 │   ├── package.json             # Plugin dependencies & rollup build scripts
 │   ├── eslint.config.js         # Official Elgato ESLint flat configuration
 │   ├── rollup.config.mjs        # Rollup bundler configuration
@@ -156,9 +159,10 @@ ytm-web-controller/
 │   ├── layouts/                 # Stream Deck + Dial LCD JSON layouts
 │   │   └── dial_layout.json     # Single-source-of-truth 4-item LCD strip layout
 │   ├── ui/                      # Modular Property Inspector (PI) Frontend
+│   │   ├── i18n.js              # Property Inspector internationalization helper (DE/EN)
 │   │   ├── streamdeck-client.js # Low-level Stream Deck WebSocket SDK bridge
 │   │   ├── global-settings.js   # Global settings UI component (Discord / OBS / Port)
-│   │   ├── common.html          # Standard inspector for stateless/trigger keys
+│   │   ├── common.html/.js      # Standard inspector for stateless/trigger keys (Dynamic action descriptions)
 │   │   ├── track-dial.html/.js  # Track Controller Dial inspector
 │   │   ├── volume-dial.html/.js # Volume Controller Dial inspector
 │   │   ├── seek-dial.html/.js   # Seek Controller Dial inspector
@@ -263,6 +267,41 @@ The browser companion extension runs in the context of `https://music.youtube.co
 | **Like / Dislike** | `LikeAction`, `DislikeAction` | `like.ts`, `dislike.ts` |
 | **Shuffle / Repeat** | `ShuffleAction`, `RepeatAction` | `shuffle.ts`, `repeat.ts` |
 | **Copy Song URL** | `CopyUrlAction` | `copy-url.ts` |
+
+---
+
+## [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/ui/`)](#top)
+
+The Property Inspector frontend uses a modular architecture with centralized internationalization:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 Property Inspector Frontend                 │
+│                                                             │
+│  ┌───────────────────────┐       ┌───────────────────────┐  │
+│  │   streamdeck-client   │       │     i18n.js Loader    │  │
+│  │  (WebSocket SDK Bridge│ ◄───► │ (Loads de.json/en.json│  │
+│  │  & App Language Parser│       │  & DOM Auto-Translate│  │
+│  └───────────┬───────────┘       └───────────┬───────────┘  │
+│              │                               │              │
+│  ┌───────────▼───────────┐       ┌───────────▼───────────┐  │
+│  │   global-settings.js  │       │  Action Specific HTML │  │
+│  │  (Discord / OBS / Port│       │ (common, playpause,   │  │
+│  │   Auto-Save Settings) │       │  dials, volume, etc.) │  │
+│  └───────────────────────┘       └───────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+1. **Centralized Localization Single Source of Truth**:
+   - All translation strings, labels, hints, and dynamic descriptions are stored under `"Localization"` in [`plugin/en.json`](../plugin/en.json) (Default English) and [`plugin/de.json`](../plugin/de.json) (German).
+   - Zero duplication: `i18n.js` contains no hardcoded strings and dynamically loads the JSON files at runtime.
+2. **Automatic Language Resolution & Fallback**:
+   - `StreamDeckClient` extracts the active Stream Deck language (`application.language`) on socket connection and initializes `I18n`.
+   - `I18n` scans the DOM for `data-i18n`, `data-i18n-placeholder`, and `data-i18n-title` attributes. If a translation key is missing or undefined in a non-English locale, it automatically falls back to English.
+3. **Dynamic Action Descriptions**:
+   - [`common.js`](../plugin/ui/common.js) inspects the active `actionInfo.action` UUID and renders a concise, action-specific description.
+4. **Auto-Save**:
+   - All settings automatically sync on `change` / `input` events via `StreamDeckClient.saveLocalSettings()` and `StreamDeckClient.saveGlobalSettings()`. No manual save buttons.
 
 ---
 

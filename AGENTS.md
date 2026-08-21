@@ -153,15 +153,22 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package_plugin.ps1
 npm run validate
 # or directly:
 npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
+
+# 4. Hot-restart plugin in Stream Deck app without restarting Stream Deck
+npm run restart
+# or directly:
+npx streamdeck restart com.smok3y97.ytmusicweb
 ```
 
 ### Packaging Script (`scripts/package_plugin.ps1`):
 The packaging script automates:
-1. Building plugin JS bundle with Rollup.
-2. Invoking `generate_assets.ps1` to ensure all vector and raster assets are up to date.
-3. Staging and creating `release/com.smok3y97.ytmusicweb.streamDeckPlugin`.
-4. Packaging `release/extension.zip` for browser deployment.
-5. Deploying the staged `.sdPlugin` directly to `%APPDATA%\Elgato\StreamDeck\Plugins\com.smok3y97.ytmusicweb.sdPlugin` for instant live testing.
+1. Running Prettier formatting and ESLint checks (`npm run lint:fix`).
+2. Building plugin JS bundle with Rollup (`npm run build`).
+3. Invoking `generate_assets.ps1` to ensure all vector and raster assets are up to date.
+4. Staging and packaging `release/com.smok3y97.ytmusicweb.streamDeckPlugin` via `streamdeck pack`.
+5. Packaging `release/extension.zip` for browser deployment.
+6. Deploying the staged `.sdPlugin` directly to `%APPDATA%\Elgato\StreamDeck\Plugins\com.smok3y97.ytmusicweb.sdPlugin`.
+7. Hot-restarting the live plugin process in Stream Deck via `streamdeck restart` for instant live testing.
 
 ---
 

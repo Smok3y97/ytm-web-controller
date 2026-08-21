@@ -7,17 +7,21 @@
 	</head>
 	<body>
 		<div class="sdpi-wrapper">
-			<div class="sdpi-heading">Information</div>
+			<div class="sdpi-heading" data-i18n="info.heading">Information</div>
 			<div class="sdpi-info-box">
-				<strong>YouTube Music Web Controller</strong><br />
-				This key interacts directly with the active YouTube Music Web app via local WebSocket.
+				<strong id="actionTitle" data-i18n="info.default_title">YouTube Music Web</strong><br />
+				<span id="actionDescription" data-i18n="info.default_description"
+					>Controls active playback directly via local WebSocket.</span
+				>
 			</div>
 
 			<!-- Global Settings container dynamically rendered by global-settings.js -->
 			<div id="global-settings-container"></div>
 		</div>
 
+		<script src="i18n.js"></script>
 		<script src="streamdeck-client.js"></script>
 		<script src="global-settings.js"></script>
+		<script src="common.js"></script>
 	</body>
 </html>

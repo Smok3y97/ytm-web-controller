@@ -7,24 +7,32 @@
 	</head>
 	<body>
 		<div class="sdpi-wrapper">
-			<div class="sdpi-heading">Volume Dial Settings</div>
+			<div class="sdpi-heading" data-i18n="volumedial.heading">Volume Dial Settings</div>
 
 			<div class="sdpi-item">
-				<div class="sdpi-item-label">Step Size</div>
+				<div class="sdpi-item-label" data-i18n="volumedial.step.label">Step Size</div>
 				<div class="sdpi-item-value sdpi-range-wrap">
 					<input type="range" id="volumeStep" min="5" max="50" step="5" value="5" />
 					<span class="sdpi-range-value" id="volumeStepVal">5%</span>
 				</div>
 			</div>
-			<div class="sdpi-hint">Percentage amount adjusted per dial tick (5% – 50%, Default: 5%).</div>
+			<div class="sdpi-hint" data-i18n="volumedial.step.hint">
+				Percentage amount adjusted per dial tick (5% – 50%, Default: 5%).
+			</div>
 
 			<div class="sdpi-item">
-				<div class="sdpi-item-label">Title Template</div>
+				<div class="sdpi-item-label" data-i18n="volumedial.title_template.label">Title Template</div>
 				<div class="sdpi-item-value">
-					<input type="text" id="titleTemplate" placeholder="YouTube Music Volume" value="YouTube Music Volume" />
+					<input
+						type="text"
+						id="titleTemplate"
+						placeholder="YouTube Music Volume"
+						value="YouTube Music Volume"
+						data-i18n-placeholder="volumedial.title_template.placeholder"
+					/>
 				</div>
 			</div>
-			<div class="sdpi-hint">
+			<div class="sdpi-hint" data-i18n="volumedial.title_template.hint">
 				Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code> (or static title like
 				<code>YouTube Music Volume</code>)
 			</div>
@@ -32,22 +40,15 @@
 			<div class="sdpi-item">
 				<label class="sdpi-checkbox-wrap">
 					<input type="checkbox" id="showCover" checked />
-					<span>Show cover thumbnail on touchstrip</span>
+					<span data-i18n="seekdial.show_cover.label">Show cover thumbnail on touchstrip</span>
 				</label>
 			</div>
 
 			<!-- Global Settings container dynamically rendered by global-settings.js -->
 			<div id="global-settings-container"></div>
-
-			<div class="sdpi-heading">Controls</div>
-			<div class="sdpi-hint">
-				• <strong>Rotate Clockwise</strong>: Volume Up<br />
-				• <strong>Rotate Counter-Clockwise</strong>: Volume Down<br />
-				• <strong>Push Dial</strong>: Toggle Mute / Unmute<br />
-				• <strong>Touch Tap</strong>: Toggle Mute / Unmute
-			</div>
 		</div>
 
+		<script src="i18n.js"></script>
 		<script src="streamdeck-client.js"></script>
 		<script src="global-settings.js"></script>
 		<script src="volume-dial.js"></script>

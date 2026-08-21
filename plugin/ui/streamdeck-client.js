@@ -11,11 +11,24 @@ const StreamDeckClient = (function () {
 	let localSettings = {};
 	let globalSettings = {};
 
+	let appInfo = {};
+	let language = "en";
+
 	const localSettingsCallbacks = new Set();
 	const globalSettingsCallbacks = new Set();
 
 	function connect(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
 		uuid = inPropertyInspectorUUID;
+		try {
+			appInfo = JSON.parse(inInfo);
+			language = appInfo.application?.language || "en";
+		} catch {
+			appInfo = {};
+			language = "en";
+		}
+		if (typeof I18n !== "undefined" && I18n.setLanguage) {
+			I18n.setLanguage(language);
+		}
 		try {
 			actionInfo = JSON.parse(inActionInfo);
 		} catch {
@@ -70,6 +83,13 @@ const StreamDeckClient = (function () {
 				notifyLocalSettings(localSettings);
 			} else if (event === "didReceiveGlobalSettings") {
 				globalSettings = payload.settings || {};
+				if (typeof I18n !== "undefined" && I18n.setLanguage) {
+					if (globalSettings.language && globalSettings.language !== "auto") {
+						I18n.setLanguage(globalSettings.language);
+					} else {
+						I18n.setLanguage(language);
+					}
+				}
 				notifyGlobalSettings(globalSettings);
 			}
 		};
@@ -175,6 +195,8 @@ const StreamDeckClient = (function () {
 		bindAutoSave,
 		getLocalSettings: () => localSettings,
 		getGlobalSettings: () => globalSettings,
+		getLanguage: () => language,
+		getAppInfo: () => appInfo,
 		getUUID: () => uuid,
 		getActionInfo: () => actionInfo,
 	};

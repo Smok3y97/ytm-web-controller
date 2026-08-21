@@ -7,14 +7,14 @@ const showCoverCheckbox = document.getElementById("showCover");
 
 StreamDeckClient.onLocalSettings((settings) => {
 	if (titleTemplateInput) titleTemplateInput.value = settings.titleTemplate || "{artist} - {title}";
-	if (timeTemplateInput) timeTemplateInput.value = settings.timeTemplate || "{remaining}";
+	if (timeTemplateInput) timeTemplateInput.value = settings.timeTemplate || "{both}";
 	if (showCoverCheckbox) showCoverCheckbox.checked = settings.showCover !== false;
 });
 
 function saveSettings() {
 	StreamDeckClient.saveLocalSettings({
 		titleTemplate: titleTemplateInput ? titleTemplateInput.value : "{artist} - {title}",
-		timeTemplate: timeTemplateInput ? timeTemplateInput.value : "{remaining}",
+		timeTemplate: timeTemplateInput ? timeTemplateInput.value : "{both}",
 		showCover: showCoverCheckbox ? showCoverCheckbox.checked : true,
 	});
 }

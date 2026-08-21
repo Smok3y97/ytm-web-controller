@@ -17,7 +17,7 @@ StreamDeckClient.onLocalSettings((settings) => {
 	if (seekStepInput) seekStepInput.value = settings.seekStep || 10;
 	updateStepLabel();
 	if (titleTemplateInput) titleTemplateInput.value = settings.titleTemplate || "{artist} - {title}";
-	if (timeTemplateInput) timeTemplateInput.value = settings.timeTemplate || "{current} / {duration}";
+	if (timeTemplateInput) timeTemplateInput.value = settings.timeTemplate || "{both}";
 	if (showCoverCheckbox) showCoverCheckbox.checked = settings.showCover !== false;
 });
 
@@ -33,7 +33,7 @@ function saveSettings() {
 	StreamDeckClient.saveLocalSettings({
 		seekStep: stepVal,
 		titleTemplate: titleTemplateInput ? titleTemplateInput.value : "{artist} - {title}",
-		timeTemplate: timeTemplateInput ? timeTemplateInput.value : "{current} / {duration}",
+		timeTemplate: timeTemplateInput ? timeTemplateInput.value : "{both}",
 		showCover: showCoverCheckbox ? showCoverCheckbox.checked : true,
 	});
 }

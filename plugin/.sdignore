@@ -1,0 +1,7 @@
+*.ts
+*.map
+tsconfig.json
+.prettierignore
+eslint.config.js
+assets/generate_assets.ps1
+assets/generate_official_svgs.mjs

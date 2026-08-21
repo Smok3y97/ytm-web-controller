@@ -1,6 +1,6 @@
 {
     "name": "com.smok3y97.ytmusicweb",
-    "version": "1.9.0.0",
+    "version": "1.10.0.0",
     "description": "Elgato Stream Deck Plugin for YouTube Music Web with Discord RPC",
     "type": "module",
     "main": "bin/plugin.js",
@@ -10,6 +10,7 @@
         "lint": "tsc --noEmit && eslint . --max-warnings 0",
         "lint:fix": "eslint . --fix && prettier . --write",
         "format": "prettier . --write",
+        "restart": "streamdeck restart com.smok3y97.ytmusicweb",
         "pack": "rollup -c && streamdeck pack . -o ../bin"
     },
     "prettier": "@elgato/prettier-config",

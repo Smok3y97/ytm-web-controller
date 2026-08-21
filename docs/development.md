@@ -2,13 +2,14 @@
 
 # Development & Contribution Guide (`docs/development.md`)
 
-This document outlines the local development setup, build scripts, testing procedures, packaging workflow, and versioning standards.
+This document outlines the local development setup, build scripts, testing procedures, packaging workflow, and versioning standards. For community contribution steps and PR guidelines, see [**`CONTRIBUTING.md`**](../CONTRIBUTING.md).
 
 ---
 
 ## 📑 Table of Contents
 - [🛠️ Prerequisites](#-prerequisites)
 - [🚀 Build & Packaging Commands](#-build--packaging-commands)
+- [✨ Elgato SDK Linting & Code Style Guide](#-elgato-sdk-linting--code-style-guide)
 - [📦 Packaging Pipeline (`scripts/package_plugin.ps1`)](#-packaging-pipeline-scriptspackage_pluginps1)
 - [🏷️ Versioning Scheme](#-versioning-scheme)
 
@@ -49,21 +50,38 @@ npm run validate
 # (or directly via npx):
 npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
 
+# 6. Hot-restart plugin process in Stream Deck without restarting the app
+npm run restart
+# (or directly via npx):
+npx streamdeck restart com.smok3y97.ytmusicweb
+
 # Optional: Watch mode for active live development
 npm run watch
 ```
 
 ---
 
+## [✨ Elgato SDK Linting & Code Style Guide](#top)
+
+The codebase strictly adheres to the official [Elgato Stream Deck Style Guide for Linting](https://docs.elgato.com/streamdeck/sdk/style-guide/linting):
+
+- **ESLint Configuration**: Uses `@elgato/eslint-config` with flat config format (`plugin/eslint.config.js`).
+- **Prettier Configuration**: Uses `@elgato/prettier-config` across TypeScript, JavaScript, CSS, and JSON files.
+- **Automated Verification**: Enforces `0 errors` and `0 warnings` via `tsc --noEmit && eslint . --max-warnings 0`.
+
+---
+
 ## [📦 Packaging Pipeline (`scripts/package_plugin.ps1`)](#top)
 
-The automated packaging script performs the following tasks:
-1. Compiles the plugin bundle with Rollup to `plugin/bin/plugin.js`.
-2. Generates all vector SVGs and PNG raster badges using `plugin/assets/generate_assets.ps1`.
-3. Stages the `.sdPlugin` directory under `release/com.smok3y97.ytmusicweb.sdPlugin`.
-4. Creates `release/com.smok3y97.ytmusicweb.streamDeckPlugin` distribution archive.
-5. Archives the companion browser extension into `release/extension.zip`.
-6. Automatically copies the staged `.sdPlugin` to `%APPDATA%\Elgato\StreamDeck\Plugins\` for instantaneous testing in your local Stream Deck app.
+The automated packaging script executes a complete quality assurance and deployment pipeline:
+1. **Automated Formatting & Linting**: Runs `npm run lint:fix` (Prettier code formatting and ESLint auto-fix) on the codebase.
+2. **Bundle Compilation**: Compiles the plugin bundle with Rollup to `plugin/bin/plugin.js`.
+3. **Asset Generation**: Generates all vector SVGs and PNG raster badges using `plugin/assets/generate_assets.ps1`.
+4. **Staging**: Stages the `.sdPlugin` directory under `release/com.smok3y97.ytmusicweb.sdPlugin` (including localized language files `de.json`, `en.json`).
+5. **Plugin Distribution Package**: Creates `release/com.smok3y97.ytmusicweb.streamDeckPlugin` release archive via `streamdeck pack`.
+6. **Browser Extension Package**: Archives the companion browser extension into `release/extension.zip`.
+7. **Live Deployment**: Automatically deploys the staged `.sdPlugin` directly to `%APPDATA%\Elgato\StreamDeck\Plugins\`.
+8. **Hot Restart**: Automatically invokes `streamdeck restart` to instantly reload the live plugin in Stream Deck without restarting the application.
 
 ---
 

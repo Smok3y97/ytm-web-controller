@@ -98,7 +98,7 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 					progressPercent = Math.min(100, Math.max(0, Math.round((clampedTime / state.duration) * 100)));
 				}
 				const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
-				const timeText = StateManager.getInstance().formatTimeTemplate(settings.timeTemplate || "{remaining}");
+				const timeText = StateManager.getInstance().formatTimeTemplate(settings.timeTemplate || "{both}");
 
 				const coverImage =
 					settings.showCover !== false && state.coverBase64

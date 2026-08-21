@@ -1,0 +1,167 @@
+{
+    "Name": "YouTube Music Web",
+    "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence.",
+    "Category": "YouTube Music Web",
+    "com.smok3y97.ytmusicweb.playpause": {
+        "Name": "Play / Pause",
+        "Tooltip": "Toggle Play / Pause (Hold to bring YouTube Music to foreground)"
+    },
+    "com.smok3y97.ytmusicweb.trackdial": {
+        "Name": "Track Controller (Dial)",
+        "Tooltip": "Stream Deck + Dial: rotate to skip tracks, press to toggle play/pause, view LCD feedback",
+        "Encoder": {
+            "TriggerDescription": {
+                "Rotate": "Skip Tracks",
+                "Push": "Play / Pause",
+                "Touch": "Play / Pause"
+            }
+        }
+    },
+    "com.smok3y97.ytmusicweb.volumedial": {
+        "Name": "Volume Controller (Dial)",
+        "Tooltip": "Stream Deck + Dial: rotate to adjust volume, press/touch to toggle mute, view volume feedback",
+        "Encoder": {
+            "TriggerDescription": {
+                "Rotate": "Adjust Volume",
+                "Push": "Toggle Mute",
+                "Touch": "Toggle Mute"
+            }
+        }
+    },
+    "com.smok3y97.ytmusicweb.seekdial": {
+        "Name": "Seek Controller (Dial)",
+        "Tooltip": "Stream Deck + Dial: rotate to seek forward / backward in track, press/touch to toggle play/pause, view live time & progress",
+        "Encoder": {
+            "TriggerDescription": {
+                "Rotate": "Seek Track",
+                "Push": "Play / Pause",
+                "Touch": "Play / Pause"
+            }
+        }
+    },
+    "com.smok3y97.ytmusicweb.volumeup": {
+        "Name": "Volume Up",
+        "Tooltip": "Increase playback volume"
+    },
+    "com.smok3y97.ytmusicweb.volumedown": {
+        "Name": "Volume Down",
+        "Tooltip": "Decrease playback volume"
+    },
+    "com.smok3y97.ytmusicweb.mute": {
+        "Name": "Mute / Unmute",
+        "Tooltip": "Toggle mute state for currently playing track"
+    },
+    "com.smok3y97.ytmusicweb.next": {
+        "Name": "Next Track",
+        "Tooltip": "Skip to the next track"
+    },
+    "com.smok3y97.ytmusicweb.prev": {
+        "Name": "Previous Track",
+        "Tooltip": "Skip to the previous track or restart current track"
+    },
+    "com.smok3y97.ytmusicweb.like": {
+        "Name": "Like Track",
+        "Tooltip": "Toggle like rating for currently playing track"
+    },
+    "com.smok3y97.ytmusicweb.dislike": {
+        "Name": "Dislike Track",
+        "Tooltip": "Toggle dislike rating for currently playing track"
+    },
+    "com.smok3y97.ytmusicweb.shuffle": {
+        "Name": "Shuffle",
+        "Tooltip": "Toggle playlist shuffle mode"
+    },
+    "com.smok3y97.ytmusicweb.repeat": {
+        "Name": "Repeat Mode",
+        "Tooltip": "Cycle repeat mode (Off / All / One)"
+    },
+    "com.smok3y97.ytmusicweb.copyurl": {
+        "Name": "Copy Song URL",
+        "Tooltip": "Copy current song URL to clipboard"
+    },
+    "Localization": {
+        "info.heading": "Information",
+        "info.default_title": "YouTube Music Web",
+        "info.default_description": "Controls active playback directly via local WebSocket.",
+        "action.settings": "Action Settings",
+        "controls.heading": "Controls",
+        "tip.title": "Tip",
+        "browse": "Browse...",
+        "no_file_selected": "No file selected...",
+        "releases": "Releases",
+        "action.com.smok3y97.ytmusicweb.dislike.title": "Dislike Track",
+        "action.com.smok3y97.ytmusicweb.dislike.description": "Toggles dislike (thumbs down) rating for the currently playing track.",
+        "action.com.smok3y97.ytmusicweb.like.title": "Like Track",
+        "action.com.smok3y97.ytmusicweb.like.description": "Toggles like (thumbs up) rating for the currently playing track.",
+        "action.com.smok3y97.ytmusicweb.next.title": "Next Track",
+        "action.com.smok3y97.ytmusicweb.next.description": "Skips immediately to the next track in the current queue.",
+        "action.com.smok3y97.ytmusicweb.prev.title": "Previous Track",
+        "action.com.smok3y97.ytmusicweb.prev.description": "Skips back to the previous track or restarts the current track.",
+        "action.com.smok3y97.ytmusicweb.mute.title": "Mute / Unmute",
+        "action.com.smok3y97.ytmusicweb.mute.description": "Toggles mute state for active YouTube Music playback.",
+        "action.com.smok3y97.ytmusicweb.shuffle.title": "Shuffle",
+        "action.com.smok3y97.ytmusicweb.shuffle.description": "Toggles queue shuffle mode on or off.",
+        "action.com.smok3y97.ytmusicweb.repeat.title": "Repeat Mode",
+        "action.com.smok3y97.ytmusicweb.repeat.description": "Cycles repeat modes: Off ➔ Repeat All ➔ Repeat One.",
+        "general.heading": "General Settings",
+        "discord.rpc.label": "Enable Discord Rich Presence",
+        "discord.rpc.hint": "Broadcasts active playback and album art to Discord Desktop in real-time.",
+        "obs.group.title": "OBS Overlay & Chatbot",
+        "obs.overlay.label": "OBS Overlay",
+        "obs.overlay.hint": "Add as <strong>Browser Source</strong> in OBS. Parameters: <code>?theme=card|compact|pill</code>, <code>?accent=FF0033</code>, <code>?hideOnPause=true</code>.",
+        "chatbot.url.label": "Chatbot URL",
+        "chatbot.url.hint": "Use in local bots (Streamer.bot, MixItUp): <code>http://localhost:39865/api/current</code> for <code>!song</code>.",
+        "obs.export.heading": "OBS Text Export (.txt)",
+        "obs.export.label": "Enable OBS text export (.txt)",
+        "obs.export.hint": "Writes track metadata to a local text file for OBS Text (GDI+) overlay sources.",
+        "obs.file.label": "Text File",
+        "obs.file.required": "⚠️ File selection is required when OBS Text Export is enabled.",
+        "obs.file.hint": "Select an existing or newly created <code>.txt</code> file on your computer.",
+        "obs.format.label": "Format",
+        "obs.format.placeholder": "Currently Playing: {artist} - {title}",
+        "obs.format.hint": "Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>.",
+        "obs.clear_on_pause.label": "Clear text file when paused",
+        "advanced.group.title": "Advanced Settings",
+        "language.label": "Language",
+        "language.auto": "Auto (System / Stream Deck)",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.hint": "Override the Property Inspector display language or use the Stream Deck system language.",
+        "discord.client_id.label": "Discord Client ID",
+        "discord.client_id.placeholder": "Default (Embedded App ID)",
+        "discord.client_id.hint": "Custom Discord Application ID. Leave blank to use the official default.",
+        "server.port.label": "Server Port",
+        "server.port.hint": "Unified WebSocket & HTTP port. Default: <code>39865</code>.",
+        "warning.outdated_extension": "⚠️ Browser Extension outdated! Please update to the latest version via GitHub Releases.",
+        "playpause.heading": "Play / Pause Settings",
+        "playpause.cover_bg.label": "Album cover as button background",
+        "playpause.cover_bg.hint": "When enabled, the album cover of the current track is displayed directly on the button.",
+        "playpause.controls.hint": "• <strong>Short Press</strong>: Toggle Play / Pause<br />• <strong>Long Press (Hold)</strong>: Bring YouTube Music / PWA to foreground",
+        "copyurl.heading": "Copy Song URL Settings",
+        "copyurl.format.label": "Copy Format",
+        "copyurl.format.hint": "Format template copied to your clipboard on key press.<br />Placeholders: <code>{url}</code>, <code>{title}</code>, <code>{artist}</code>, <code>{album}</code>, <code>{duration}</code>, <code>{currentTime}</code>.<br />Examples: <code>{url}</code>, <code>{artist} - {title} ({url})</code>, <code>Now Playing: {artist} - {title}</code>",
+        "copyurl.controls.hint": "• <strong>Key Press</strong>: Copy formatted song URL / track info to system clipboard<br />• <strong>Visual Feedback</strong>: Green checkmark icon confirms successful copy",
+        "seekdial.heading": "Seek Dial Settings",
+        "seekdial.step.label": "Seek Step",
+        "seekdial.step.hint": "Seconds to scrub forward or backward per dial tick (5s – 120s, Default: 10s).",
+        "seekdial.title_template.label": "Title Template",
+        "seekdial.title_template.hint": "Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>",
+        "seekdial.time_template.label": "Time Template",
+        "seekdial.time_template.hint": "Placeholders: <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>, <code>{both}</code>",
+        "seekdial.show_cover.label": "Show cover thumbnail on touchstrip",
+        "trackdial.heading": "Track Dial Settings",
+        "volumedial.heading": "Volume Dial Settings",
+        "volumedial.step.label": "Step Size",
+        "volumedial.step.hint": "Percentage amount adjusted per dial tick (5% – 50%, Default: 5%).",
+        "volumedial.title_template.label": "Title Template",
+        "volumedial.title_template.placeholder": "YouTube Music Volume",
+        "volumedial.title_template.hint": "Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code> (or static title like <code>YouTube Music Volume</code>)",
+        "volume.heading": "Volume Action Settings",
+        "volume.step.label": "Step Size",
+        "volume.step.hint": "Percentage amount to adjust per key press (5% – 50%, Default: 5%).",
+        "volume.show_text.label": "Show volume text on key",
+        "volume.format.label": "Volume Format",
+        "volume.format.hint": "Placeholders: <code>{volume}</code> (e.g. <code>{volume}%</code>, <code>Vol: {volume}%</code>)",
+        "volume.tip.hint": "💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck <b>\"T\" (Title Styler)</b> button directly above this settings pane."
+    }
+}

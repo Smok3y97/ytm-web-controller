@@ -35,6 +35,9 @@ Global settings are accessible in the Property Inspector of **every single butto
   - **Clear file on pause/stop**: When enabled (default), empties the text file whenever music is paused or stopped. Disabling OBS export also clears the file cleanly.
 
 ### 🔌 Advanced / Connection Settings
+- **Language (Sprache)** (Default: `Auto (System / Stream Deck)`):
+  - Allows overriding the Property Inspector display language manually (`English` or `Deutsch`) or automatically following your Stream Deck application language setting (`Auto`).
+  - Useful for debugging translations, testing localized layouts, or setting preferred language independently of the OS.
 - **WebSocket Port** (Default: `39865`):
   - The local WebSocket server port used for communication between the browser extension and the Stream Deck plugin.
   - If port `39865` conflicts with other software on your PC, change it here and enter the matching port in the browser extension popup.
@@ -55,7 +58,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔘 **Push Dial**: Toggle Play / Pause (protected by 250ms push-jitter suppression).
   - 👆 **Touchstrip Tap**: Toggle Play / Pause.
 - **Title Template**: Format string for LCD song banner (Default: `{artist} - {title}`). Automatically uses Ping-Pong marquee bounce scrolling if text exceeds LCD width (198px).
-- **Time Template**: Format string for LCD duration indicator (Default: `{remaining}`). Supports `{current}`, `{duration}`, and `{remaining}`.
+- **Time Template**: Format string for LCD duration indicator (Default: `{both}`). Supports `{both}` (`{current} / {duration}`), `{current}`, `{duration}`, and `{remaining}`.
 - **Show Cover**: Toggles the 35×35 px album thumbnail on the left side of the LCD touchstrip.
 
 ### Volume Controller (Dial)
@@ -75,7 +78,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔘 **Push Dial**: Toggle Play / Pause.
   - 👆 **Touchstrip Tap**: Toggle Play / Pause.
 - **Seek Step (s)**: Scrubbing duration per dial tick from **1s to 120s** (configured via range slider in 5s increments, Default: `10s`).
-- **Title & Time Templates**: Configurable text templates for LCD readouts (`{current} / {duration}`, `{remaining}`, `{current}`).
+- **Title & Time Templates**: Configurable text templates for LCD readouts (Default Time Template: `{both}`). Supports `{both}`, `{current}`, `{duration}`, and `{remaining}`.
 - **Show Cover**: Toggles album art thumbnail on the LCD strip.
 
 ---

@@ -25,10 +25,10 @@
     try {
       const api = getApi();
       if (api?.runtime?.getManifest) {
-        return api.runtime.getManifest().version || '1.9.0.0';
+        return api.runtime.getManifest().version || '1.10.0.0';
       }
     } catch (e) { }
-    return '1.9.0.0';
+    return '1.10.0.0';
   }
 
   function getStorage() {

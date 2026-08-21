@@ -79,6 +79,14 @@
         "Name": "Copy Song URL",
         "Tooltip": "Copy current song URL to clipboard"
     },
+    "com.smok3y97.ytmusicweb.seekforward": {
+        "Name": "Fast Forward",
+        "Tooltip": "Fast forward playback by configured seconds"
+    },
+    "com.smok3y97.ytmusicweb.seekbackward": {
+        "Name": "Rewind",
+        "Tooltip": "Rewind playback by configured seconds"
+    },
     "Localization": {
         "info.heading": "Information",
         "info.default_title": "YouTube Music Web",
@@ -130,12 +138,18 @@
         "discord.client_id.label": "Discord Client ID",
         "discord.client_id.placeholder": "Default (Embedded App ID)",
         "discord.client_id.hint": "Custom Discord Application ID. Leave blank to use the official default.",
+        "marquee.speed.label": "Marquee Speed",
+        "marquee.speed.hint": "Text scroll speed for keys & dials (100ms – 600ms, Default: 320ms / ~3.1 Hz). Maximum 10 Hz rate limit.",
         "server.port.label": "Server Port",
         "server.port.hint": "Unified WebSocket & HTTP port. Default: <code>39865</code>.",
         "warning.outdated_extension": "⚠️ Browser Extension outdated! Please update to the latest version via GitHub Releases.",
         "playpause.heading": "Play / Pause Settings",
-        "playpause.cover_bg.label": "Album cover as button background",
-        "playpause.cover_bg.hint": "When enabled, the album cover of the current track is displayed directly on the button.",
+        "playpause.cover_bg.label": "Song cover as button background",
+        "playpause.cover_bg.hint": "When enabled, the song cover of the current track is displayed directly on the button.",
+        "playpause.show_title.label": "Show song info / time text on key",
+        "playpause.format.label": "Text Format",
+        "playpause.format.hint": "Placeholders: <code>{artist}</code>, <code>{song}</code>, <code>{title}</code>, <code>{album}</code>, <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>, <code>{both}</code> (Default: <code>{artist}\\n\\n{song}\\n\\n{both}</code>)",
+        "playpause.tip.hint": "💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck <b>\"T\" (Title Styler)</b> button directly above this settings pane.",
         "playpause.controls.hint": "• <strong>Short Press</strong>: Toggle Play / Pause<br />• <strong>Long Press (Hold)</strong>: Bring YouTube Music / PWA to foreground",
         "copyurl.heading": "Copy Song URL Settings",
         "copyurl.format.label": "Copy Format",
@@ -162,6 +176,13 @@
         "volume.show_text.label": "Show volume text on key",
         "volume.format.label": "Volume Format",
         "volume.format.hint": "Placeholders: <code>{volume}</code> (e.g. <code>{volume}%</code>, <code>Vol: {volume}%</code>)",
-        "volume.tip.hint": "💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck <b>\"T\" (Title Styler)</b> button directly above this settings pane."
+        "volume.tip.hint": "💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck <b>\"T\" (Title Styler)</b> button directly above this settings pane.",
+        "seek.heading": "Seek Action Settings",
+        "seek.step.label": "Seek Step",
+        "seek.step.hint": "Seconds to seek per key press (5s – 120s, Default: 10s).",
+        "seek.show_text.label": "Show seek text on key",
+        "seek.format.label": "Title Format",
+        "seek.format.hint": "Placeholders: <code>{step}</code>, <code>{sign}</code> (e.g. <code>+{step}s</code>, <code>-{step}s</code>, <code>{sign}{step}s</code>)",
+        "seek.tip.hint": "💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck <b>\"T\" (Title Styler)</b> button directly above this settings pane."
     }
 }

@@ -2,7 +2,8 @@
  * Play / Pause Action
  *
  * UUID: com.smok3y97.ytmusicweb.playpause
- * Supports dual-state playback toggling and in-RAM album artwork button backgrounds.
+ * Supports single-state dynamic playback icon toggling, in-RAM song cover button backgrounds,
+ * full native Title Styler compatibility, and live multi-line marquee text overlay.
  */
 import {
 	action,
@@ -15,18 +16,22 @@ import {
 } from "@elgato/streamdeck";
 
 import { ImageRenderer } from "../services/image-renderer.js";
+import { MarqueeService } from "../services/marquee-service.js";
 import { StateManager } from "../services/state-manager.js";
 import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
 import { WebSocketService } from "../services/websocket-server.js";
 import { WindowFocusService } from "../services/window-focus.js";
 import { PlayPauseSettings, YTMPlaybackState } from "../types/index.js";
 
+export const DEFAULT_PLAYPAUSE_TEMPLATE = "{artist}\n\n{song}\n\n{both}";
+
 @action({ UUID: "com.smok3y97.ytmusicweb.playpause" })
 export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 	private activeActions: Set<WillAppearEvent<PlayPauseSettings>["action"]> = new Set();
-	private lastRenderedState: Map<string, number> = new Map();
 	private lastRenderedImage: Map<string, string | undefined> = new Map();
+	private lastRenderedTitle: Map<string, string> = new Map();
 	private lastRenderedMismatch: Map<string, boolean> = new Map();
+	private registeredConsumers: Set<string> = new Set();
 	private keyPressTimers: Map<string, NodeJS.Timeout> = new Map();
 	private isLongPressTriggered: Map<string, boolean> = new Map();
 	private readonly LONG_PRESS_THRESHOLD_MS = 450;
@@ -38,12 +43,17 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		stateManager.on("stateChanged", (state: YTMPlaybackState) => {
 			this.updateAllInstances(state);
 		});
+
+		const marqueeService = MarqueeService.getInstance();
+		marqueeService.on("tick", () => {
+			this.handleMarqueeTick();
+		});
 	}
 
 	override async onWillAppear(ev: WillAppearEvent<PlayPauseSettings>): Promise<void> {
 		this.activeActions.add(ev.action);
-		this.lastRenderedState.delete(ev.action.id);
 		this.lastRenderedImage.delete(ev.action.id);
+		this.lastRenderedTitle.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
 		const state = StateManager.getInstance().getState();
 		await this.updateInstance(ev.action, state, ev.payload.settings);
@@ -57,9 +67,10 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 			this.keyPressTimers.delete(actionId);
 		}
 		this.isLongPressTriggered.delete(actionId);
-		this.lastRenderedState.delete(actionId);
 		this.lastRenderedImage.delete(actionId);
+		this.lastRenderedTitle.delete(actionId);
 		this.lastRenderedMismatch.delete(actionId);
+		this.syncConsumerState(actionId, false);
 		this.removeActiveAction(actionId);
 	}
 
@@ -72,10 +83,20 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		}
 	}
 
+	private syncConsumerState(actionId: string, needsMarquee: boolean): void {
+		const isRegistered = this.registeredConsumers.has(actionId);
+		if (needsMarquee && !isRegistered) {
+			this.registeredConsumers.add(actionId);
+			MarqueeService.getInstance().registerConsumer();
+		} else if (!needsMarquee && isRegistered) {
+			this.registeredConsumers.delete(actionId);
+			MarqueeService.getInstance().unregisterConsumer();
+		}
+	}
+
 	override async onKeyDown(ev: KeyDownEvent<PlayPauseSettings>): Promise<void> {
 		if (StateManager.getInstance().isVersionMismatch()) {
 			if (ev.action.isKey()) {
-				await ev.action.setState(0);
 				await ev.action.showAlert();
 			}
 			return;
@@ -133,6 +154,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<PlayPauseSettings>): Promise<void> {
 		this.lastRenderedImage.delete(ev.action.id);
+		this.lastRenderedTitle.delete(ev.action.id);
 		const state = StateManager.getInstance().getState();
 		await this.updateInstance(ev.action, state, ev.payload.settings);
 	}
@@ -142,6 +164,30 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 			try {
 				const settings = await actionInstance.getSettings();
 				await this.updateInstance(actionInstance, state, settings);
+			} catch {}
+		}
+	}
+
+	private async handleMarqueeTick(): Promise<void> {
+		const state = StateManager.getInstance().getState();
+		if (state.paused || state.isVersionMismatch) return;
+
+		for (const actionInstance of this.activeActions) {
+			if (!actionInstance.isKey()) continue;
+			try {
+				const settings = await actionInstance.getSettings();
+				if (!settings.showTitle) continue;
+
+				const rawTemplate = settings.titleTemplate?.trim();
+				const template = rawTemplate ? settings.titleTemplate : DEFAULT_PLAYPAUSE_TEMPLATE;
+				const rawFormatted = StateManager.getInstance().formatTrackText(template, state);
+				const marqueeTitle = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
+
+				const prevTitle = this.lastRenderedTitle.get(actionInstance.id);
+				if (prevTitle !== marqueeTitle) {
+					await actionInstance.setTitle(marqueeTitle);
+					this.lastRenderedTitle.set(actionInstance.id, marqueeTitle);
+				}
 			} catch {}
 		}
 	}
@@ -158,26 +204,18 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 			const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
 
 			if (isMismatch) {
+				this.syncConsumerState(actionInstance.id, false);
 				if (prevMismatch !== true) {
 					await actionInstance.setTitle("");
 					await actionInstance.setImage(getActionWarningSvgDataUrl("playpause"));
-					await actionInstance.setState(0);
 					this.lastRenderedMismatch.set(actionInstance.id, true);
-					this.lastRenderedState.set(actionInstance.id, 0);
 					this.lastRenderedImage.set(actionInstance.id, getActionWarningSvgDataUrl("playpause"));
+					this.lastRenderedTitle.set(actionInstance.id, "");
 				}
 				return;
 			}
 
-			const targetState = state.paused ? 0 : 1;
-			const prevState = this.lastRenderedState.get(actionInstance.id);
-
-			if (prevState !== targetState || prevMismatch === true) {
-				await actionInstance.setState(targetState);
-				this.lastRenderedState.set(actionInstance.id, targetState);
-			}
-
-			// Calculate target custom image (default enabled unless explicitly unchecked)
+			// 1. Calculate target custom image (Cover art or standard Play/Pause SVG icon)
 			let targetImage: string | undefined = undefined;
 			if (settings.showCoverAsBackground !== false && (state.coverBase64 || state.coverUrl)) {
 				const rawCover = state.coverBase64 || (await ImageRenderer.getInstance().getCoverAsBase64(state.coverUrl));
@@ -186,11 +224,33 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 				}
 			}
 
+			if (!targetImage) {
+				targetImage = state.paused ? "assets/actions/playpause/play.svg" : "assets/actions/playpause/pause.svg";
+			}
+
 			const hasPrevImage = this.lastRenderedImage.has(actionInstance.id);
 			const prevImage = this.lastRenderedImage.get(actionInstance.id);
 			if (!hasPrevImage || prevImage !== targetImage || prevMismatch === true) {
 				await actionInstance.setImage(targetImage);
 				this.lastRenderedImage.set(actionInstance.id, targetImage);
+			}
+
+			// 2. Calculate and set key title (Artist / Title / Time with Marquee support)
+			let titleText = "";
+			const needsMarquee = !!settings.showTitle;
+			this.syncConsumerState(actionInstance.id, needsMarquee);
+
+			if (settings.showTitle) {
+				const rawTemplate = settings.titleTemplate?.trim();
+				const template = rawTemplate ? settings.titleTemplate : DEFAULT_PLAYPAUSE_TEMPLATE;
+				const rawFormatted = StateManager.getInstance().formatTrackText(template, state);
+				titleText = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
+			}
+
+			const prevTitle = this.lastRenderedTitle.get(actionInstance.id);
+			if (prevTitle !== titleText || prevMismatch === true) {
+				await actionInstance.setTitle(titleText);
+				this.lastRenderedTitle.set(actionInstance.id, titleText);
 			}
 
 			this.lastRenderedMismatch.set(actionInstance.id, false);

@@ -32,7 +32,7 @@ Standard 72×72 px Stream Deck keys supporting dual-state, tri-state, single-act
 
 | Action | Key Type | Dynamic Feedback | Description |
 | :--- | :--- | :--- | :--- |
-| **Play / Pause** | Dual-State | Dynamic Play/Pause vector state or live **Album Cover Art as button background** | Toggles playback state on short press. Long press (hold) brings the YouTube Music browser tab or PWA window to the foreground. Cover art is rendered directly in RAM with zero disk I/O. |
+| **Play / Pause** | Dynamic Key | Dynamic Play/Pause vector state, live **Song Cover as button background**, and optional song info / time text readout | Toggles playback state on short press. Long press (hold) brings the YouTube Music browser tab or PWA window to the foreground. Song cover art is rendered directly in RAM with zero disk I/O, with optional customizable text overlay (`{artist}`, `{title}`, `{both}`, `{current}`, `{duration}`). |
 | **Volume Up** | Single Key | Live `{volume}%` text readout | Increases playback volume by configurable step (1% – 50%). Fully stylable via native Title Styler. |
 | **Volume Down** | Single Key | Live `{volume}%` text readout | Decreases playback volume by configurable step (1% – 50%). Fully stylable via native Title Styler. |
 | **Mute / Unmute** | Dual-State | Dynamic Unmuted / Muted speaker icons | Toggles mute status for active playback. |
@@ -42,6 +42,8 @@ Standard 72×72 px Stream Deck keys supporting dual-state, tri-state, single-act
 | **Dislike Track** | Dual-State | Dynamic active/inactive thumbs-down highlight (`#FF0033`) | Toggles dislike rating on current song. |
 | **Shuffle** | Dual-State | Dynamic active/inactive shuffle highlight (`#FF0033`) | Toggles queue shuffle mode on/off. |
 | **Repeat Mode** | Tri-State | Dynamic cycle icons: **Off** ➔ **All** ➔ **One (1)** | Cycles playlist repeat modes. |
+| **Fast Forward** | Single Key | Live `+{step}s` text readout | Fast forwards playback by configurable seconds (5s – 120s, default 10s). Fully stylable via native Title Styler. |
+| **Rewind** | Single Key | Live `-{step}s` text readout | Rewinds playback by configurable seconds (5s – 120s, default 10s). Fully stylable via native Title Styler. |
 | **Copy Song URL** | Single Key | Visual checkmark confirmation on key | Copies current track URL or custom formatted track info (`{url}`, `{title}`, `{artist}`, `{album}`) directly to clipboard. |
 
 ---

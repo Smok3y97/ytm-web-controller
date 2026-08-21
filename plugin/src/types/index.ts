@@ -66,6 +66,7 @@ export interface GlobalSettings extends JsonObject {
 	obsFilePath?: string;
 	obsFormatTemplate?: string;
 	obsClearOnPause?: boolean;
+	marqueeSpeedMs?: number;
 	isVersionMismatch?: boolean;
 	extensionVersion?: string;
 	requiredPluginVersion?: string;
@@ -75,6 +76,8 @@ export interface GlobalSettings extends JsonObject {
 export interface PlayPauseSettings extends JsonObject {
 	[key: string]: JsonValue | undefined;
 	showCoverAsBackground?: boolean;
+	showTitle?: boolean;
+	titleTemplate?: string;
 }
 
 export interface TrackDialSettings extends JsonObject {
@@ -108,6 +111,13 @@ export interface SeekDialSettings extends JsonObject {
 	titleTemplate?: string;
 	timeTemplate?: string;
 	showCover?: boolean;
+}
+
+export interface SeekButtonSettings extends JsonObject {
+	[key: string]: JsonValue | undefined;
+	step?: number;
+	showSeekTitle?: boolean;
+	titleTemplate?: string;
 }
 
 export interface CopyUrlSettings extends JsonObject {

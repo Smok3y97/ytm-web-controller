@@ -168,6 +168,7 @@ ytm-web-controller/
 │   │   ├── seek-dial.html/.js   # Seek Controller Dial inspector
 │   │   ├── playpause.html/.js   # Play/Pause inspector (Album cover toggle)
 │   │   ├── volume.html/.js      # Volume Up & Down keys inspector
+│   │   ├── seek.html/.js        # Seek Forward & Rewind keys inspector
 │   │   ├── copy-url.html/.js    # Copy Song URL inspector (Custom format template)
 │   │   └── css/sdpi.css         # Stream Deck Property Inspector stylesheet
 │   └── src/                     # Backend Source Code (TypeScript)
@@ -188,13 +189,16 @@ ytm-web-controller/
 │       └── actions/             # Independent Action Controllers
 │           ├── base-state-action.ts  # Base class for stateful keypad buttons
 │           ├── base-volume-action.ts # Base class for volume keypad buttons
+│           ├── base-seek-action.ts   # Base class for seek keypad buttons
 │           ├── base-dial-action.ts   # Base class for Stream Deck + dials & LCDs
-│           ├── play-pause.ts    # Play / Pause dual-state key handler
+│           ├── play-pause.ts    # Play / Pause dynamic key handler (cover & icon)
 │           ├── track-dial.ts    # Track Controller (Dial & LCD)
 │           ├── volume-dial.ts   # Volume Controller (Dial & LCD)
 │           ├── seek-dial.ts     # Seek Controller (Dial & LCD)
 │           ├── volume-up.ts     # Volume Up key
 │           ├── volume-down.ts   # Volume Down key
+│           ├── seek-forward.ts  # Fast Forward key
+│           ├── seek-backward.ts # Rewind key
 │           ├── mute.ts          # Mute / Unmute toggle key
 │           ├── next.ts          # Next Track key
 │           ├── previous.ts      # Previous Track key
@@ -262,6 +266,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
 | **Volume Controller (Dial)** | `VolumeDialAction` | `volume-dial.ts` |
 | **Seek Controller (Dial)** | `SeekDialAction` | `seek-dial.ts` |
 | **Volume Up / Down** | `VolumeUpAction`, `VolumeDownAction` | `volume-up.ts`, `volume-down.ts` |
+| **Fast Forward / Rewind** | `SeekForwardAction`, `SeekBackwardAction` | `seek-forward.ts`, `seek-backward.ts` |
 | **Mute / Unmute** | `MuteAction` | `mute.ts` |
 | **Next / Previous** | `NextAction`, `PreviousAction` | `next.ts`, `previous.ts` |
 | **Like / Dislike** | `LikeAction`, `DislikeAction` | `like.ts`, `dislike.ts` |

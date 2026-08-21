@@ -44,7 +44,7 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 ## [✨ Key Features](#top)
 
 - 🎛️ **Stream Deck + Dial Controls**: Dial controls for Track Skipping, Volume, and Scrubbing/Seeking with real-time LCD progress bars and dynamic album cover thumbnails.
-- 🔘 **11 Keypad Actions**: Live Album Cover Art backgrounds, Play/Pause, Volume Up/Down, Mute, Next/Prev, Like/Dislike, Shuffle, Repeat (Tri-State), and Copy Song URL.
+- 🔘 **13 Keypad Actions**: Live Song Cover Art backgrounds & track info overlay, Play/Pause, Volume Up/Down, Fast Forward / Rewind, Mute, Next/Prev, Like/Dislike, Shuffle, Repeat (Tri-State), and Copy Song URL.
 - 💬 **Discord Rich Presence (RPC)**: Automatic status broadcasting with album art and animated progress across Desktop & Mobile *(clickable song links are supported on the Discord Desktop client)*.
 
 > [!TIP]

@@ -14,7 +14,9 @@ import { NextAction } from "./actions/next.js";
 import { PlayPauseAction } from "./actions/play-pause.js";
 import { PreviousAction } from "./actions/previous.js";
 import { RepeatAction } from "./actions/repeat.js";
+import { SeekBackwardAction } from "./actions/seek-backward.js";
 import { SeekDialAction } from "./actions/seek-dial.js";
+import { SeekForwardAction } from "./actions/seek-forward.js";
 import { ShuffleAction } from "./actions/shuffle.js";
 import { TrackDialAction } from "./actions/track-dial.js";
 import { VolumeDialAction } from "./actions/volume-dial.js";
@@ -22,6 +24,7 @@ import { VolumeDownAction } from "./actions/volume-down.js";
 import { VolumeUpAction } from "./actions/volume-up.js";
 import { DiscordRpcService } from "./services/discord-rpc.js";
 import { HttpApiService } from "./services/http-api.js";
+import { MarqueeService } from "./services/marquee-service.js";
 import { ObsExporterService } from "./services/obs-exporter.js";
 import { StateManager } from "./services/state-manager.js";
 import { VersionControlService } from "./services/version-control.js";
@@ -34,6 +37,7 @@ HttpApiService.getInstance();
 const discordService = DiscordRpcService.getInstance();
 const obsService = ObsExporterService.getInstance();
 const versionService = VersionControlService.getInstance();
+const marqueeService = MarqueeService.getInstance();
 
 // Enable logging
 streamDeck.logger.setLevel("info");
@@ -59,6 +63,8 @@ streamDeck.actions.registerAction(new VolumeDownAction());
 streamDeck.actions.registerAction(new MuteAction());
 streamDeck.actions.registerAction(new VolumeDialAction());
 streamDeck.actions.registerAction(new SeekDialAction());
+streamDeck.actions.registerAction(new SeekForwardAction());
+streamDeck.actions.registerAction(new SeekBackwardAction());
 
 // 3. Connect WebSocket state updates to StateManager
 wsService.on("stateUpdate", (state: YTMPlaybackState) => {
@@ -114,7 +120,7 @@ streamDeck.ui.onSendToPlugin(async (ev) => {
 	}
 });
 
-// 8. Handle global settings changes (WebSocket Port, Discord RPC, OBS Exporter)
+// 8. Handle global settings changes (WebSocket Port, Discord RPC, OBS Exporter, Marquee Speed)
 streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>(async (ev) => {
 	const settings = ev.settings;
 	const targetPort = settings.wsPort || 39865;
@@ -123,6 +129,10 @@ streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>(async (ev) => {
 		streamDeck.logger.info(`[YTM Controller] Global port changed to ${targetPort}. Rebinding WebSocket server...`);
 		stateManager.resetVersionStatus();
 		await wsService.start(targetPort);
+	}
+
+	if (settings.marqueeSpeedMs) {
+		marqueeService.setSpeed(settings.marqueeSpeedMs);
 	}
 
 	await discordService.setEnabled(!!settings.enableDiscordRPC, settings.discordClientId);
@@ -139,6 +149,9 @@ streamDeck
 			if (globalSettings.wsPort && globalSettings.wsPort !== 39865) {
 				await wsService.start(globalSettings.wsPort);
 			}
+			if (globalSettings.marqueeSpeedMs) {
+				marqueeService.setSpeed(globalSettings.marqueeSpeedMs);
+			}
 			if (globalSettings.enableDiscordRPC) {
 				await discordService.setEnabled(true, globalSettings.discordClientId);
 			}
@@ -147,6 +160,7 @@ streamDeck
 			streamDeck.logger.warn(`[YTM Controller] Could not fetch global settings: ${err}`);
 		}
 	})
+
 	.catch((err) => {
 		streamDeck.logger.error(`[YTM Controller] Connection to Stream Deck failed: ${err}`);
 	});

@@ -5,7 +5,7 @@
     "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence.",
     "Author": "Smok3y97",
     "URL": "https://github.com/Smok3y97/ytm-web-controller",
-    "Version": "1.10.0.0",
+    "Version": "1.11.0.0",
     "SDKVersion": 3,
     "Software": {
         "MinimumVersion": "7.1"
@@ -21,10 +21,6 @@
         {
             "Platform": "windows",
             "MinimumVersion": "10"
-        },
-        {
-            "Platform": "mac",
-            "MinimumVersion": "12"
         }
     ],
     "Actions": [
@@ -40,13 +36,8 @@
             "States": [
                 {
                     "Image": "assets/actions/playpause/play",
-                    "TitleAlignment": "bottom",
-                    "FontSize": 9
-                },
-                {
-                    "Image": "assets/actions/playpause/pause",
-                    "TitleAlignment": "bottom",
-                    "FontSize": 9
+                    "TitleAlignment": "middle",
+                    "FontSize": 8
                 }
             ]
         },
@@ -317,6 +308,40 @@
             "States": [
                 {
                     "Image": "assets/actions/copyurl/icon",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
+        {
+            "UUID": "com.smok3y97.ytmusicweb.seekforward",
+            "Name": "Fast Forward",
+            "Tooltip": "Fast forward playback by configured seconds",
+            "Icon": "assets/actions/seekforward/icon",
+            "PropertyInspectorPath": "ui/seek.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/seekforward/icon",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 9
+                }
+            ]
+        },
+        {
+            "UUID": "com.smok3y97.ytmusicweb.seekbackward",
+            "Name": "Rewind",
+            "Tooltip": "Rewind playback by configured seconds",
+            "Icon": "assets/actions/seekbackward/icon",
+            "PropertyInspectorPath": "ui/seek.html",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "assets/actions/seekbackward/icon",
                     "TitleAlignment": "bottom",
                     "FontSize": 9
                 }

@@ -13,11 +13,36 @@
 			<div class="sdpi-item">
 				<label class="sdpi-checkbox-wrap">
 					<input type="checkbox" id="showCoverAsBackground" checked />
-					<span data-i18n="playpause.cover_bg.label">Album cover as button background</span>
+					<span data-i18n="playpause.cover_bg.label">Song cover as button background</span>
 				</label>
 			</div>
 			<div class="sdpi-hint" data-i18n="playpause.cover_bg.hint">
-				When enabled, the album cover of the current track is displayed directly on the button.
+				When enabled, the song cover of the current track is displayed directly on the button.
+			</div>
+
+			<div class="sdpi-item">
+				<label class="sdpi-checkbox-wrap">
+					<input type="checkbox" id="showTitle" />
+					<span data-i18n="playpause.show_title.label">Show song info / time text on key</span>
+				</label>
+			</div>
+
+			<div class="sdpi-item-vertical" id="titleTemplateRow">
+				<div class="sdpi-item-label" data-i18n="playpause.format.label">Text Format</div>
+				<div class="sdpi-item-value" style="width: 100%">
+					<textarea id="titleTemplate" rows="5" placeholder="{artist}&#10;&#10;{song}&#10;&#10;{both}"></textarea>
+				</div>
+			</div>
+			<div class="sdpi-hint" data-i18n="playpause.format.hint">
+				Placeholders: <code>{artist}</code>, <code>{song}</code>, <code>{title}</code>, <code>{album}</code>,
+				<code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>, <code>{both}</code>.<br />
+				Multi-line support: Press Enter to create new lines (Default: <code>{artist}\n\n{song}\n\n{both}</code>). Long
+				text scrolls smoothly via marquee!
+			</div>
+
+			<div class="sdpi-hint" style="margin-top: 6px; font-style: italic; color: #999" data-i18n="playpause.tip.hint">
+				💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck
+				<b>"T" (Title Styler)</b> button directly above this settings pane.
 			</div>
 
 			<!-- Global Settings container dynamically rendered by global-settings.js -->

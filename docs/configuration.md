@@ -38,6 +38,9 @@ Global settings are accessible in the Property Inspector of **every single butto
 - **Language (Sprache)** (Default: `Auto (System / Stream Deck)`):
   - Allows overriding the Property Inspector display language manually (`English` or `Deutsch`) or automatically following your Stream Deck application language setting (`Auto`).
   - Useful for debugging translations, testing localized layouts, or setting preferred language independently of the OS.
+- **Marquee Speed** (Default: `320 ms` / `~3.1 Hz`):
+  - Range slider configuring the marquee scrolling interval for text on keypad buttons and Stream Deck + LCD Touchstrips (**100 ms to 600 ms** in 20 ms increments).
+  - Strictly limited to a maximum rate of 10 Hz (100 ms) in compliance with Elgato hardware performance guidelines.
 - **WebSocket Port** (Default: `39865`):
   - The local WebSocket server port used for communication between the browser extension and the Stream Deck plugin.
   - If port `39865` conflicts with other software on your PC, change it here and enter the matching port in the browser extension popup.
@@ -46,6 +49,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - The unique Application ID registered on the [Discord Developer Portal](https://discord.com/developers/applications) that defines the RPC profile name and branding (e.g. "Playing YouTube Music").
   - **Default Application ID**: Uses the pre-configured project app with official YouTube Music assets.
   - **Custom Application ID**: If you want your Discord profile to display a custom name, custom icons, or your own branding, create a Discord Application in the Developer Portal and enter your custom Client ID here. Leave blank to revert to the default.
+
 
 ---
 
@@ -89,7 +93,13 @@ Global settings are accessible in the Property Inspector of **every single butto
 - **Controls & Interactions**:
   - 🔘 **Short Press**: Toggle Play / Pause state.
   - ⏳ **Long Press (Hold ~450ms)**: Bring the YouTube Music browser tab or PWA window directly to the foreground and focus it.
-- **Album cover as button background**: When enabled, renders the high-resolution album cover art directly as the key background in memory (RAM). When disabled, uses official vector Play/Pause states.
+- **Song cover as button background**: When enabled, renders the high-resolution song cover art directly as the key background in memory (RAM). When disabled, uses official vector Play/Pause states.
+- **Show song info / time text on key**: When enabled, renders real-time track info or playback time directly over the button (works seamlessly whether song cover background is enabled or disabled).
+- **Text Format**: Multi-line `<textarea>` format template (`{artist}`, `{title}`, `{album}`, `{current}`, `{duration}`, `{remaining}`, `{both}`). Press Enter to insert newlines (e.g. Line 1: `{artist}`, Line 2: `{title}`, Line 3: `{both}`). If left empty, it automatically defaults to `{artist}\n\n{song}\n\n{both}`.
+- **Automatic Marquee Scrolling**: Any line exceeding key width smoothly scrolls back-and-forth using the global marquee service while keeping shorter lines static.
+- **Native Title Styler ("T")**: Use Stream Deck's native **"T" (Title Styler)** button above the Property Inspector to customize font family, size, text color, and alignment (Top, Middle, Bottom).
+
+
 
 ### Copy Song URL
 - **Copy Format**: Custom template copied to your clipboard on key press (Default: `{url}`).
@@ -105,3 +115,10 @@ Global settings are accessible in the Property Inspector of **every single butto
 - **Show volume text on key**: Toggles real-time volume percentage readout directly on the key.
 - **Text Format**: Template for volume text (`{volume}%`, `Vol {volume}%`).
 - **Native Title Styler ("T")**: Use Stream Deck's native **"T" (Title Styler)** button above the Property Inspector to customize font family, text size, color, and vertical alignment (Top, Middle, Bottom).
+
+### Fast Forward & Rewind
+- **Seek Step (s)**: Seconds to jump per keypress (**5s to 120s**, configured via range slider in 5s increments, Default: `10s`).
+- **Show seek text on key**: Toggles real-time step readout directly on the key (Default: enabled).
+- **Title Format**: Template for seek text (`+{step}s`, `-{step}s`, `{sign}{step}s`). Leave blank for automatic formatting based on action direction.
+- **Native Title Styler ("T")**: Use Stream Deck's native **"T" (Title Styler)** button above the Property Inspector to customize font, size, color, and positioning.
+

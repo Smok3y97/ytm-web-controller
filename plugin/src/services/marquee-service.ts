@@ -4,9 +4,10 @@ import { YTMPlaybackState } from "../types/index.js";
 import { StateManager } from "./state-manager.js";
 
 export const MAX_LCD_PIXEL_WIDTH = 198; // Full 200px touchstrip width for Stream Deck +
-export const MARQUEE_SPEED_MS = 320; // ~3.1 Hz: calm, pleasant and easy-to-follow reading pace
-export const START_PAUSE_TICKS = 9; // ~2.9 seconds comfortable pause at beginning of song title
-export const END_PAUSE_TICKS = 8; // ~2.5 seconds comfortable pause at the end of song title
+export const KEYPAD_MAX_PIXEL_WIDTH = 64; // Usable text width for standard 72x72 px Stream Deck key (with margin padding)
+export const DEFAULT_MARQUEE_SPEED_MS = 320; // ~3.1 Hz default reading pace
+export const START_PAUSE_TICKS = 4; // Responsive pause at beginning of song title (~1.2s)
+export const END_PAUSE_TICKS = 3; // Responsive pause at the end of song title (~1.0s)
 
 function estimateCharWidthPx(char: string): number {
 	if ("ilj!:. ,'|/\\()[]{}".includes(char)) return 3.4;
@@ -71,6 +72,7 @@ export class MarqueeService extends EventEmitter {
 	private pauseTicks: number = START_PAUSE_TICKS;
 	private lastTrackKey: string = "";
 	private activeConsumerCount: number = 0;
+	private speedMs: number = DEFAULT_MARQUEE_SPEED_MS;
 
 	private constructor() {
 		super();
@@ -86,6 +88,23 @@ export class MarqueeService extends EventEmitter {
 			MarqueeService.instance = new MarqueeService();
 		}
 		return MarqueeService.instance;
+	}
+
+	public getSpeed(): number {
+		return this.speedMs;
+	}
+
+	public setSpeed(speedMs: number): void {
+		const validSpeed = Math.max(100, Math.min(1000, Number(speedMs) || DEFAULT_MARQUEE_SPEED_MS));
+		if (this.speedMs === validSpeed) return;
+
+		this.speedMs = validSpeed;
+		if (this.marqueeTimer) {
+			clearInterval(this.marqueeTimer);
+			this.marqueeTimer = setInterval(() => {
+				this.tick();
+			}, this.speedMs);
+		}
 	}
 
 	public registerConsumer(): void {
@@ -117,7 +136,7 @@ export class MarqueeService extends EventEmitter {
 			if (!this.marqueeTimer) {
 				this.marqueeTimer = setInterval(() => {
 					this.tick();
-				}, MARQUEE_SPEED_MS);
+				}, this.speedMs);
 			}
 		} else if (this.marqueeTimer) {
 			clearInterval(this.marqueeTimer);
@@ -131,8 +150,15 @@ export class MarqueeService extends EventEmitter {
 			return;
 		}
 
-		const rawTitle = StateManager.getInstance().formatTitleTemplate("{artist} - {title}");
-		const maxOffset = findMaxMarqueeOffset(rawTitle, MAX_LCD_PIXEL_WIDTH);
+		const state = StateManager.getInstance().getState();
+		const artistStr = (state.artist || "").trim();
+		const titleStr = (state.title || "").trim();
+		const rawTitle = `${artistStr} - ${titleStr}`;
+
+		const lcdMaxOffset = findMaxMarqueeOffset(rawTitle, MAX_LCD_PIXEL_WIDTH);
+		const keypadArtistMaxOffset = findMaxMarqueeOffset(artistStr, KEYPAD_MAX_PIXEL_WIDTH);
+		const keypadTitleMaxOffset = findMaxMarqueeOffset(titleStr, KEYPAD_MAX_PIXEL_WIDTH);
+		const maxOffset = Math.max(lcdMaxOffset, keypadArtistMaxOffset, keypadTitleMaxOffset);
 
 		if (maxOffset <= 0) {
 			this.currentOffset = 0;
@@ -159,10 +185,29 @@ export class MarqueeService extends EventEmitter {
 	}
 
 	/**
-	 * Pure formatting function to get the current pixel-fitted marquee slice for a given full string
+	 * Pure formatting function to get the current pixel-fitted marquee slice for a given full string (Stream Deck + LCD)
 	 */
 	public getDisplayText(fullText: string): string {
 		if (!fullText) return "";
 		return getFittingTextSlice(fullText, this.currentOffset, MAX_LCD_PIXEL_WIDTH);
+	}
+
+	/**
+	 * Pure formatting function to get current pixel-fitted marquee text for keypad buttons (multi-line aware).
+	 * Fits each line to maxPx width (default: 64 px for standard 72x72 Stream Deck key).
+	 */
+	public formatKeypadMarqueeText(multiLineText: string, maxPx: number = KEYPAD_MAX_PIXEL_WIDTH): string {
+		if (!multiLineText) return "";
+		const lines = multiLineText.split("\n");
+		const formattedLines = lines.map((line) => {
+			const trimmed = line.trim();
+			if (!trimmed || estimateTextWidthPx(trimmed) <= maxPx) {
+				return trimmed;
+			}
+			const lineMaxOffset = findMaxMarqueeOffset(trimmed, maxPx);
+			const effectiveOffset = Math.min(lineMaxOffset, Math.max(0, this.currentOffset));
+			return getFittingTextSlice(trimmed, effectiveOffset, maxPx);
+		});
+		return formattedLines.join("\n");
 	}
 }

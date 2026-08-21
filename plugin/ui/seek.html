@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Seek Settings</title>
+		<link rel="stylesheet" href="css/sdpi.css" />
+	</head>
+	<body>
+		<div class="sdpi-wrapper">
+			<div class="sdpi-heading" data-i18n="seek.heading">Seek Action Settings</div>
+
+			<div class="sdpi-item">
+				<div class="sdpi-item-label" data-i18n="seek.step.label">Seek Step</div>
+				<div class="sdpi-item-value sdpi-range-wrap">
+					<input type="range" id="seekStep" min="5" max="120" step="5" value="10" />
+					<span class="sdpi-range-value" id="seekStepVal">10s</span>
+				</div>
+			</div>
+			<div class="sdpi-hint" data-i18n="seek.step.hint">Seconds to seek per key press (5s – 120s, Default: 10s).</div>
+
+			<div class="sdpi-item">
+				<label class="sdpi-checkbox-wrap">
+					<input type="checkbox" id="showSeekTitle" checked />
+					<span data-i18n="seek.show_text.label">Show seek text on key</span>
+				</label>
+			</div>
+
+			<div class="sdpi-item" id="titleTemplateRow">
+				<div class="sdpi-item-label" data-i18n="seek.format.label">Title Format</div>
+				<div class="sdpi-item-value">
+					<input type="text" id="titleTemplate" placeholder="Auto (+{step}s / -{step}s)" value="" />
+				</div>
+			</div>
+			<div class="sdpi-hint" data-i18n="seek.format.hint">
+				Placeholders: <code>{step}</code>, <code>{sign}</code> (e.g. <code>+{step}s</code>, <code>-{step}s</code>,
+				<code>{sign}{step}s</code>)
+			</div>
+
+			<div class="sdpi-hint" style="margin-top: 6px; font-style: italic; color: #999" data-i18n="seek.tip.hint">
+				💡 Tip: To customize text position (Top, Middle, Bottom), font size, or text color, use the native Stream Deck
+				<b>"T" (Title Styler)</b> button directly above this settings pane.
+			</div>
+
+			<!-- Global Settings container dynamically rendered by global-settings.js -->
+			<div id="global-settings-container"></div>
+		</div>
+
+		<script src="i18n.js"></script>
+		<script src="streamdeck-client.js"></script>
+		<script src="global-settings.js"></script>
+		<script src="seek.js"></script>
+	</body>
+</html>

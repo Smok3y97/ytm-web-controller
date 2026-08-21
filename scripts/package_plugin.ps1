@@ -4,15 +4,20 @@ $rootDir = (Get-Item $PSScriptRoot).Parent.FullName
 $uuid = "com.smok3y97.ytmusicweb"
 $pluginDir = Join-Path $rootDir "plugin"
 $releaseDir = Join-Path $rootDir "release"
-$stageDir = Join-Path $releaseDir "$uuid.sdPlugin"
+$stageDir = Join-Path $rootDir ".build_stage\$uuid.sdPlugin"
+$releaseSdPlugin = Join-Path $releaseDir "$uuid.sdPlugin"
 
 Write-Output "Assembling Stream Deck Plugin: $uuid"
 
 if (Test-Path $releaseDir) {
     Remove-Item $releaseDir -Recurse -Force
 }
+if (Test-Path (Join-Path $rootDir ".build_stage")) {
+    Remove-Item (Join-Path $rootDir ".build_stage") -Recurse -Force
+}
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
+
 
 # 1. Copy Manifest, Package & Localization Files
 Copy-Item (Join-Path $pluginDir "manifest.json") $stageDir
@@ -85,6 +90,13 @@ if (Test-Path $archivePath) {
     Write-Output "Successfully created package: $archivePath"
 }
 
+# Preserve staged sdPlugin directory in release folder for validation
+if (Test-Path $releaseSdPlugin) {
+    Remove-Item $releaseSdPlugin -Recurse -Force
+}
+Copy-Item -Path $stageDir -Destination $releaseDir -Recurse -Force
+
+
 # 7. Package Extension into release folder as extension.zip
 $extDir = Join-Path $rootDir "extension"
 if (Test-Path $extDir) {
@@ -100,12 +112,8 @@ if ($env:APPDATA) {
     if (Test-Path $winPlugins) {
         $appDataPlugins = $winPlugins
     }
-} elseif ($IsMacOS -or ($PSVersionTable.OS -like "*Darwin*")) {
-    $macPlugins = [System.IO.Path]::Combine($env:HOME, "Library/Application Support/com.elgato.StreamDeck/Plugins")
-    if (Test-Path $macPlugins) {
-        $appDataPlugins = $macPlugins
-    }
 }
+
 
 if ($appDataPlugins) {
     $targetSdPlugin = Join-Path $appDataPlugins "$uuid.sdPlugin"
@@ -131,3 +139,8 @@ if ($appDataPlugins) {
         Write-Warning "Could not restart plugin via CLI (Stream Deck app might not be running)."
     }
 }
+
+if (Test-Path (Join-Path $rootDir ".build_stage")) {
+    Remove-Item (Join-Path $rootDir ".build_stage") -Recurse -Force -ErrorAction SilentlyContinue
+}
+

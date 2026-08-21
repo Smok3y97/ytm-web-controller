@@ -193,11 +193,16 @@ export class StateManager extends EventEmitter {
 	}
 
 	/**
-	 * Render custom track text with placeholders: {url}, {title}, {artist}, {album}, {duration}, {currentTime}
+	 * Render custom track text with placeholders: {url}, {title}, {artist}, {album}, {duration}, {currentTime}, {remaining}, {both}
 	 */
-	public formatTrackText(template: string = "{url}", targetState?: YTMPlaybackState): string {
+	public formatTrackText(template?: string, targetState?: YTMPlaybackState): string {
 		const state = targetState || this.currentState;
 		if (!state.title && !state.artist && !state.trackUrl) {
+			return "";
+		}
+
+		const rawTemplate = template !== undefined && template !== null ? template : "{url}";
+		if (!rawTemplate.trim()) {
 			return "";
 		}
 
@@ -207,23 +212,40 @@ export class StateManager extends EventEmitter {
 		const trackUrlStr = (state.trackUrl || "").trim();
 		const durationStr = this.formatTime(state.duration);
 		const currentStr = this.formatTime(state.currentTime);
+		const bothStr = `${currentStr} / ${durationStr}`;
 
-		let output = (template || "{url}")
+		let remainingStr = "-0:00";
+		if (state.duration > 0) {
+			const effectiveCurrent = Math.min(state.duration, Math.max(0, state.currentTime));
+			const remainingSeconds = Math.max(0, state.duration - effectiveCurrent);
+			remainingStr = "-" + this.formatTime(remainingSeconds);
+		} else if (state.currentTime > 0) {
+			remainingStr = currentStr;
+		}
+
+		let output = rawTemplate
+			.replace(/\\n/g, "\n")
+			.replace(/{(both|current_duration|current_and_duration|beides)}/gi, bothStr)
 			.replace(/{(title|titel|song|track)}/gi, titleStr)
 			.replace(/{(artist|kuenstler|künstler|interpret|author|channel)}/gi, artistStr)
 			.replace(/{(album)}/gi, albumStr)
 			.replace(/{(url|link|trackUrl|songUrl)}/gi, trackUrlStr)
-			.replace(/{(duration|total|length)}/gi, durationStr)
-			.replace(/{(currentTime|current|time)}/gi, currentStr);
+			.replace(/{(duration|total|totalTime|total_time|dauer|gesamt|length)}/gi, durationStr)
+			.replace(/{(currentTime|current|current_time|aktuell|zeit|elapsed|time)}/gi, currentStr)
+			.replace(/{(remaining|remainingTime|remaining_time|rest|restzeit|left)}/gi, remainingStr);
 
 		output = output.replace(/\(\s*\)/g, "").replace(/\[\s*\]/g, "");
-		output = output.replace(/\s+/g, " ").trim();
+		output = output
+			.split("\n")
+			.map((line) => line.replace(/[^\S\r\n]+/g, " ").trim())
+			.join("\n")
+			.trim();
 		output = output
 			.replace(/^[\s\-–—•|:]+/, "")
 			.replace(/[\s\-–—•|:]+$/, "")
 			.trim();
 
-		return output || trackUrlStr;
+		return output;
 	}
 
 	/**
@@ -242,6 +264,17 @@ export class StateManager extends EventEmitter {
 		}
 
 		return (template || "{volume}%").replace(/\{(volume|vol|lautstaerke|lautstärke)\}/gi, String(vol));
+	}
+
+	/**
+	 * Render custom seek button template with placeholders: {step}, {seconds}, {sign}
+	 */
+	public formatSeekButtonTemplate(template?: string, step: number = 10, isForward: boolean = true): string {
+		const sign = isForward ? "+" : "-";
+		const defaultTpl = isForward ? "+{step}s" : "-{step}s";
+		const tpl = template && template.trim() ? template : defaultTpl;
+
+		return tpl.replace(/\{(step|seconds|sekunden|sec|s)\}/gi, String(step)).replace(/\{(sign|vorzeichen)\}/gi, sign);
 	}
 
 	/**

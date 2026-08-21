@@ -40,7 +40,7 @@ Please help us maintain a friendly, welcoming, and inclusive community:
 
 ### Reporting Bugs
 Before submitting a new issue, please search existing issues to avoid duplicates. When filing a bug report, include:
-- **Environment**: OS (Windows 10/11, macOS), Browser (Chrome, Brave, Edge), Stream Deck Software Version.
+- **Environment**: OS (Windows 10/11), Browser (Chrome, Brave, Edge), Stream Deck Software Version.
 - **Hardware**: Stream Deck model (Keypad, Stream Deck +, Neo, etc.).
 - **Steps to Reproduce**: Clear, reproducible step-by-step instructions.
 - **Expected vs. Actual Behavior**: What happened vs. what you expected.

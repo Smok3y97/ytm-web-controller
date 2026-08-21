@@ -79,6 +79,14 @@
         "Name": "Song-URL kopieren",
         "Tooltip": "Aktuelle Song-URL in die Zwischenablage kopieren"
     },
+    "com.smok3y97.ytmusicweb.seekforward": {
+        "Name": "Vorwärts spulen",
+        "Tooltip": "Wiedergabe um eine konfigurierte Anzahl Sekunden vorspulen"
+    },
+    "com.smok3y97.ytmusicweb.seekbackward": {
+        "Name": "Rückwärts spulen",
+        "Tooltip": "Wiedergabe um eine konfigurierte Anzahl Sekunden zurückspulen"
+    },
     "Localization": {
         "info.heading": "Information",
         "info.default_title": "YouTube Music Web",
@@ -130,12 +138,18 @@
         "discord.client_id.label": "Discord Client-ID",
         "discord.client_id.placeholder": "Standard (Integrierte App-ID)",
         "discord.client_id.hint": "Benutzerdefinierte Discord-Anwendungs-ID. Leer lassen für Standard.",
+        "marquee.speed.label": "Laufschrift-Geschwindigkeit",
+        "marquee.speed.hint": "Scroll-Geschwindigkeit für Tasten & Dials (100ms – 600ms, Standard: 320ms / ~3,1 Hz). Maximal 10 Hz Hardwaredrossel.",
         "server.port.label": "Server-Port",
         "server.port.hint": "Einheitlicher WebSocket- & HTTP-Port. Standard: <code>39865</code>.",
         "warning.outdated_extension": "⚠️ Browser-Erweiterung veraltet! Bitte auf die neueste Version über GitHub Releases aktualisieren.",
         "playpause.heading": "Wiedergabe / Pause Einstellungen",
-        "playpause.cover_bg.label": "Albumcover als Tasten-Hintergrund",
-        "playpause.cover_bg.hint": "Zeigt das Albumcover des aktuellen Titels direkt als Hintergrund der Taste an.",
+        "playpause.cover_bg.label": "Songcover als Tasten-Hintergrund",
+        "playpause.cover_bg.hint": "Zeigt das Songcover des aktuellen Titels direkt als Hintergrund der Taste an.",
+        "playpause.show_title.label": "Song-Info / Zeit-Text auf Taste anzeigen",
+        "playpause.format.label": "Text-Format",
+        "playpause.format.hint": "Platzhalter: <code>{artist}</code>, <code>{song}</code>, <code>{title}</code>, <code>{album}</code>, <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>, <code>{both}</code> (Standard: <code>{artist}\\n\\n{song}\\n\\n{both}</code>)",
+        "playpause.tip.hint": "💡 Tipp: Um Textposition (Oben, Mitte, Unten), Schriftgröße oder Textfarbe anzupassen, verwenden Sie die native Stream Deck <b>\"T\" (Titelformatierung)</b>-Schaltfläche direkt über dieser Leiste.",
         "playpause.controls.hint": "• <strong>Kurzer Druck</strong>: Wiedergabe / Pause umschalten<br />• <strong>Langer Druck (Halten)</strong>: YouTube Music / PWA in den Vordergrund holen",
         "copyurl.heading": "Song-URL kopieren",
         "copyurl.format.label": "Kopierformat",
@@ -162,6 +176,13 @@
         "volume.show_text.label": "Lautstärke-Text auf Taste anzeigen",
         "volume.format.label": "Lautstärke-Format",
         "volume.format.hint": "Platzhalter: <code>{volume}</code> (z.B. <code>{volume}%</code>, <code>Vol: {volume}%</code>)",
-        "volume.tip.hint": "💡 Tipp: Um Textposition (Oben, Mitte, Unten), Schriftgröße oder Textfarbe anzupassen, verwenden Sie die native Stream Deck <b>\"T\" (Titelformatierung)</b>-Schaltfläche direkt über dieser Leiste."
+        "volume.tip.hint": "💡 Tipp: Um Textposition (Oben, Mitte, Unten), Schriftgröße oder Textfarbe anzupassen, verwenden Sie die native Stream Deck <b>\"T\" (Titelformatierung)</b>-Schaltfläche direkt über dieser Leiste.",
+        "seek.heading": "Spulen-Einstellungen",
+        "seek.step.label": "Schrittweite",
+        "seek.step.hint": "Sekunden pro Tastendruck für Vor-/Zurückspulen (5s – 120s, Standard: 10s).",
+        "seek.show_text.label": "Sprungweite auf Taste anzeigen",
+        "seek.format.label": "Titel-Format",
+        "seek.format.hint": "Platzhalter: <code>{step}</code>, <code>{sign}</code> (z.B. <code>+{step}s</code>, <code>-{step}s</code>, <code>{sign}{step}s</code>)",
+        "seek.tip.hint": "💡 Tipp: Um Textposition (Oben, Mitte, Unten), Schriftgröße oder Textfarbe anzupassen, verwenden Sie die native Stream Deck <b>\"T\" (Titelformatierung)</b>-Schaltfläche direkt über dieser Leiste."
     }
 }

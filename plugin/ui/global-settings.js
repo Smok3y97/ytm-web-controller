@@ -144,6 +144,18 @@ const GlobalSettingsComponent = (() => {
               Custom Discord Application ID. Leave blank to use the official default.
             </div>
 
+            <!-- Marquee Speed Slider -->
+            <div class="sdpi-item">
+              <div class="sdpi-item-label" data-i18n="marquee.speed.label">Marquee Speed</div>
+              <div class="sdpi-item-value sdpi-range-wrap">
+                <input type="range" id="marqueeSpeed" min="100" max="600" step="20" value="320">
+                <span class="sdpi-range-value" id="marqueeSpeedVal">320 ms (~3.1 Hz)</span>
+              </div>
+            </div>
+            <div class="sdpi-hint" data-i18n="marquee.speed.hint">
+              Text scroll speed for keys & dials (100ms – 600ms, Default: 320ms / ~3.1 Hz). Maximum 10 Hz rate limit.
+            </div>
+
             <!-- WebSocket / Server Port -->
             <div class="sdpi-item">
               <div class="sdpi-item-label" data-i18n="server.port.label">Server Port</div>
@@ -253,6 +265,26 @@ const GlobalSettingsComponent = (() => {
 						I18n.setLanguage(StreamDeckClient.getLanguage() || "en");
 					}
 				}
+				save();
+			});
+		}
+
+		const marqueeSpeedInput = document.getElementById("marqueeSpeed");
+		const marqueeSpeedVal = document.getElementById("marqueeSpeedVal");
+
+		function updateMarqueeUI(val) {
+			const ms = parseInt(val, 10) || 320;
+			const hz = (1000 / ms).toFixed(1);
+			if (marqueeSpeedVal) marqueeSpeedVal.textContent = `${ms} ms (~${hz} Hz)`;
+		}
+
+		if (marqueeSpeedInput) {
+			marqueeSpeedInput.addEventListener("input", () => {
+				updateMarqueeUI(marqueeSpeedInput.value);
+				save();
+			});
+			marqueeSpeedInput.addEventListener("change", () => {
+				updateMarqueeUI(marqueeSpeedInput.value);
 				save();
 			});
 		}
@@ -386,6 +418,16 @@ const GlobalSettingsComponent = (() => {
 		if (wsPortInput) wsPortInput.value = port;
 		updateDynamicUrls(port);
 
+		const marqueeSpeedInput = document.getElementById("marqueeSpeed");
+		const speed = gs?.marqueeSpeedMs || 320;
+		if (marqueeSpeedInput) {
+			marqueeSpeedInput.value = speed;
+			const marqueeSpeedVal = document.getElementById("marqueeSpeedVal");
+			const ms = parseInt(speed, 10) || 320;
+			const hz = (1000 / ms).toFixed(1);
+			if (marqueeSpeedVal) marqueeSpeedVal.textContent = `${ms} ms (~${hz} Hz)`;
+		}
+
 		if (enableDiscordCheckbox) enableDiscordCheckbox.checked = !!gs?.enableDiscordRPC;
 		if (discordClientIdInput) discordClientIdInput.value = gs?.discordClientId || "";
 
@@ -412,6 +454,7 @@ const GlobalSettingsComponent = (() => {
 		const enableDiscordCheckbox = document.getElementById("enableDiscordRPC");
 		const discordClientIdInput = document.getElementById("discordClientId");
 		const wsPortInput = document.getElementById("wsPort");
+		const marqueeSpeedInput = document.getElementById("marqueeSpeed");
 
 		const enableObsExportCheckbox = document.getElementById("enableObsExport");
 		const obsFilePathInput = document.getElementById("obsFilePath");
@@ -419,12 +462,14 @@ const GlobalSettingsComponent = (() => {
 		const obsClearOnPauseCheckbox = document.getElementById("obsClearOnPause");
 
 		const port = wsPortInput ? parseInt(wsPortInput.value, 10) || 39865 : 39865;
+		const marqueeSpeed = marqueeSpeedInput ? parseInt(marqueeSpeedInput.value, 10) || 320 : 320;
 
 		StreamDeckClient.saveGlobalSettings({
 			language: languageSelect ? languageSelect.value : "auto",
 			enableDiscordRPC: enableDiscordCheckbox ? enableDiscordCheckbox.checked : false,
 			discordClientId: discordClientIdInput ? discordClientIdInput.value.trim() || undefined : undefined,
 			wsPort: port,
+			marqueeSpeedMs: marqueeSpeed,
 			enableObsExport: enableObsExportCheckbox ? enableObsExportCheckbox.checked : false,
 			obsFilePath: obsFilePathInput ? obsFilePathInput.value.trim() || undefined : undefined,
 			obsFormatTemplate: obsFormatTemplateInput ? obsFormatTemplateInput.value.trim() || undefined : undefined,

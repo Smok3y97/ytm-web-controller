@@ -25,6 +25,7 @@ An ultra-lightweight, event-driven, resource-efficient open-source controller br
 - [📚 Documentation & Guides](#-documentation--guides)
 - [🤖 AI Collaboration & Transparency](#-ai-collaboration--transparency)
 - [🧪 Tested Environments & Hardware](#-tested-environments--hardware)
+- [🗺️ Roadmap & Future Ideas](#-roadmap--future-ideas)
 - [📄 License](#-license)
 
 ---
@@ -115,6 +116,23 @@ All releases and features are physically tested and validated by the maintainer 
 
 > [!TIP]
 > 🔍 **Detailed Specifications**: For exact software build numbers, testing methodology, and full verification policy, see the **[Verified Environments Reference in `docs/ai-disclosure.md`](docs/ai-disclosure.md#3-hardware-testing--verified-environments)**.
+
+---
+
+## [🗺️ Roadmap & Future Ideas](#top)
+
+We are continuously exploring new ways to enhance YouTube Music Web Controller. Here is an overview of planned platform releases and potential future features under consideration:
+
+### 🚀 Distribution & Platform Releases
+- 🏬 **Elgato Stream Deck Marketplace Release**: Official distribution on the Elgato Marketplace for seamless one-click installation and automatic plugin updates directly within the Stream Deck app.
+- 🌐 **Chrome Web Store Extension Release**: One-click browser companion installation via the official Chrome Web Store (and Firefox Add-ons).
+
+### 💡 Potential Future Features & Ideas
+- 🎬 **Song / Video Mode Toggle (`toggleSongVideo`)**: Keypad action to switch between pure audio playback and YouTube Music video mode.
+- 📜 **Lyrics Tab Toggle (`toggleLyrics`)**: Direct action to open or close the dedicated song lyrics drawer in the web player.
+- 📻 **Start Radio Station (`startRadio`)**: Action to instantly launch an endless dynamic radio mix based on the currently playing track.
+- ⏩ **Playback Speed Toggle (`playbackRate`)**: Cycle playback speeds (e.g. `1.0x` ➔ `1.25x` ➔ `1.5x` ➔ `2.0x`) for podcasts and audiobooks on YouTube Music.
+- 🎵 **Quick Playlist / Supermix Launcher**: Dedicated hotkeys to trigger custom playlist URLs or your personalized "My Supermix" directly in the web player.
 
 ---
 

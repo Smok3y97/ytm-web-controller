@@ -40,7 +40,7 @@ jobs:
         run: streamdeck validate --no-update-check release/com.smok3y97.ytmusicweb.sdPlugin
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             release/com.smok3y97.ytmusicweb.streamDeckPlugin

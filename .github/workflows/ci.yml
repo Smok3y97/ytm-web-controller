@@ -42,14 +42,14 @@ jobs:
         run: streamdeck validate --no-update-check release/com.smok3y97.ytmusicweb.sdPlugin
 
       - name: Upload Stream Deck Plugin Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: com.smok3y97.ytmusicweb.streamDeckPlugin
           path: release/com.smok3y97.ytmusicweb.streamDeckPlugin
           if-no-files-found: error
 
       - name: Upload Browser Extension Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: extension.zip
           path: release/extension.zip

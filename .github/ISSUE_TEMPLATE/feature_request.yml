@@ -1,0 +1,48 @@
+name: ✨ Feature / Action Request
+description: Propose a new Stream Deck action, dial function, setting, or enhancement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature or improvement for YouTube Music Web Controller!
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Target Category
+      description: Which area does your proposal target?
+      options:
+        - New Keypad Action
+        - New Stream Deck + Dial / Touchstrip Action
+        - Property Inspector Setting / UI Option
+        - OBS Studio / Streaming Overlay Feature
+        - Discord Rich Presence Feature
+        - Browser Companion Extension Feature
+        - Other Enhancement
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a specific limitation, streamer use case, or problem?
+      placeholder: "e.g., I'm always frustrated when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution & Hardware Feedback
+      description: Describe the solution you'd like to see, including key states, icons, dial rotations, or LCD visual feedback.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?

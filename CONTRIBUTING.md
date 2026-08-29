@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to **YouTube Music Web Controller**! 🎉
 
-Whether you are reporting a bug, proposing new features, improving documentation, or submitting pull requests, we welcome and appreciate your help in making this open-source controller even better.
+Whether you are reporting a bug, proposing new features, improving documentation, or submitting pull requests, any help in making this open-source controller even better is warmly appreciated.
 
 ---
 
@@ -30,32 +30,32 @@ Whether you are reporting a bug, proposing new features, improving documentation
 
 ## 🤝 Code of Conduct
 
-Please help us maintain a friendly, welcoming, and inclusive community:
-- Be respectful, constructive, and collaborative in discussions, issues, and PR reviews.
-- Focus on constructive feedback and clear technical reasoning.
+The project is dedicated to providing a welcoming, inclusive, and harassment-free community for everyone.
+
+All contributors and participants are expected to uphold the **[Code of Conduct](CODE_OF_CONDUCT.md)** (Contributor Covenant v2.1). Please review the full guidelines to understand community standards and enforcement responsibilities.
 
 ---
 
 ## 💡 How Can I Contribute?
 
 ### Reporting Bugs
-Before submitting a new issue, please search existing issues to avoid duplicates. When filing a bug report, include:
+Before filing a new report, please search [existing issues](https://github.com/Smok3y97/ytm-web-controller/issues) to avoid duplicates. When opening a bug report, use the **[Bug Report Template](https://github.com/Smok3y97/ytm-web-controller/issues/new?template=bug_report.yml)** to provide:
 - **Environment**: OS (Windows 10/11), Browser (Chrome, Brave, Edge), Stream Deck Software Version.
-- **Hardware**: Stream Deck model (Keypad, Stream Deck +, Neo, etc.).
+- **Hardware**: Stream Deck model (Stream Deck +, Keypad, Neo, Mini, XL, Mobile).
 - **Steps to Reproduce**: Clear, reproducible step-by-step instructions.
 - **Expected vs. Actual Behavior**: What happened vs. what you expected.
-- **Logs / Screenshots**: Stream Deck logs or browser console errors (`F12` on music.youtube.com).
+- **Logs / Screenshots**: Stream Deck plugin logs or browser console errors (`F12` on music.youtube.com).
 
 ### Suggesting Features & Actions
-Feature requests and action proposals are always welcome! When opening a feature request:
+Feature requests and action proposals are always welcome! Please use the **[Feature Request Template](https://github.com/Smok3y97/ytm-web-controller/issues/new?template=feature_request.yml)**:
 - Explain the use case and why it would benefit users or streamers.
 - Describe the proposed hardware interaction (e.g. Keypad press/hold, Dial rotation, LCD touch).
 
 ### Submitting Pull Requests
 1. **Fork & Branch**: Fork the repository and create a descriptive feature branch (e.g. `feature/new-dial-action` or `fix/obs-export-path`).
-2. **Follow Coding Standards**: Ensure your changes adhere to our architectural principles and pass all linting and validation checks.
+2. **Follow Coding Standards**: Ensure changes adhere to the project's architectural principles and pass all linting and validation checks.
 3. **Validate**: Always run `npm run validate` locally before submitting to guarantee compliance with the Elgato SDK schema.
-4. **Open a PR**: Submit a Pull Request with a clear title and description explaining what was changed and how you tested it. GitHub Actions CI will automatically run all lint, typecheck, build, and validation checks on your PR.
+4. **Open a PR**: Submit a Pull Request using the standard PR template. GitHub Actions CI will automatically run all lint, typecheck, build, and validation checks on your PR.
 
 ---
 
@@ -138,7 +138,7 @@ Contributors must adhere to the core architectural guidelines outlined in [`docs
 This project embraces transparent AI collaboration. If you use AI coding assistants (such as Google Antigravity, Gemini, GitHub Copilot, or Claude) when contributing:
 - Ensure all generated code is thoroughly tested, linted, and reviewed.
 - Verify changes against live hardware or staging builds.
-- See **[AI Collaboration & Transparency (`docs/ai-disclosure.md`)](docs/ai-disclosure.md)** for our quality assurance principles.
+- See **[AI Collaboration & Transparency (`docs/ai-disclosure.md`)](docs/ai-disclosure.md)** for quality assurance principles and verified hardware testing details.
 
 ---
 
@@ -150,4 +150,6 @@ This project embraces transparent AI collaboration. If you use AI coding assista
 - 🎥 **[OBS Studio & Chatbot Setup (`docs/obs-setup.md`)](docs/obs-setup.md)**
 - 🏗️ **[Development Guide (`docs/development.md`)](docs/development.md)**
 - 📋 **[Marketplace Guidelines (`docs/plugin-guideline.md`)](docs/plugin-guideline.md)**
+- 🤝 **[Code of Conduct (`CODE_OF_CONDUCT.md`)](CODE_OF_CONDUCT.md)**
+- 🔒 **[Security Policy (`SECURITY.md`)](SECURITY.md)**
 - 🤖 **[Agent Guidelines (`AGENTS.md`)](AGENTS.md)**

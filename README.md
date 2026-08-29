@@ -99,7 +99,7 @@ Most YouTube Music desktop solutions force you to install heavy, third-party des
 
 ## [📚 Documentation & Guides](#top)
 
-For detailed setup instructions, developer guidelines, and architectural specifications, check our dedicated documentation:
+For detailed setup instructions, developer guidelines, and architectural specifications, check the documentation:
 
 | Guide | Description |
 | :--- | :--- |
@@ -110,7 +110,9 @@ For detailed setup instructions, developer guidelines, and architectural specifi
 | 🏗️ **[Development & Contribution Guide](docs/development.md)** | Build commands, Rollup bundle setup, packaging pipeline, and versioning standards. |
 | 📋 **[Marketplace Guidelines Compliance](docs/plugin-guideline.md)** | Elgato Stream Deck Marketplace compliance rules and asset specifications. |
 | 🤖 **[AI Collaboration & Transparency](docs/ai-disclosure.md)** | Transparent breakdown of AI pair programming with Google Antigravity and quality assurance practices. |
-| 🤝 **[Community Contribution Guidelines](CONTRIBUTING.md)** | Code of conduct, bug reporting, PR workflow, and coding standards. |
+| 🤝 **[Community Contribution Guidelines](CONTRIBUTING.md)** | Contribution steps, bug reporting, PR workflow, and architectural principles. |
+| 📜 **[Code of Conduct](CODE_OF_CONDUCT.md)** | Contributor Covenant v2.1 community standards and pledge. |
+| 🔒 **[Security Policy](SECURITY.md)** | Local-first security architecture, privacy guarantee, and vulnerability reporting. |
 | 📋 **[Agent & Developer Guidelines](AGENTS.md)** | Persistent rules for human contributors and AI coding agents. |
 
 ---
@@ -144,7 +146,7 @@ All releases and features are physically tested and validated by the maintainer 
 
 ## [🗺️ Roadmap & Future Ideas](#top)
 
-We are continuously exploring new ways to enhance YouTube Music Web Controller. Here is an overview of planned platform releases and potential future features under consideration:
+Here is an overview of planned platform releases and potential future features under consideration for YouTube Music Web Controller:
 
 ### 🚀 Distribution & Platform Releases
 - 🏬 **Elgato Stream Deck Marketplace Release**: Official distribution on the Elgato Marketplace for seamless one-click installation and automatic plugin updates directly within the Stream Deck app.

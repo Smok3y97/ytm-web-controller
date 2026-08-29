@@ -1,0 +1,83 @@
+name: 🐛 Bug Report
+description: Report an issue or unexpected behavior in the Stream Deck plugin or browser extension.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please search existing issues first to avoid duplicates.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which part of the project is having issues?
+      options:
+        - Stream Deck Plugin (Keypad actions)
+        - Stream Deck + Dial / Touchstrip
+        - Browser Companion Extension
+        - OBS Text / Web Overlay
+        - Discord Rich Presence (RPC)
+        - Native Windows Window Focus Helper
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment & Versions
+      description: Please specify your setup details.
+      placeholder: "e.g., Windows 11 23H2, Chrome 128, Stream Deck App v7.5.0, Plugin v1.11.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: hardware
+    attributes:
+      label: Stream Deck Hardware Model
+      options:
+        - Stream Deck + (with Dials & LCD strip)
+        - Stream Deck Standard / MK.2 (15 keys)
+        - Stream Deck XL (32 keys)
+        - Stream Deck Mini (6 keys)
+        - Stream Deck Neo
+        - Stream Deck Mobile (iOS / Android)
+        - Other / Virtual
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what went wrong.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce the behavior?
+      placeholder: |
+        1. Open YouTube Music in Chrome
+        2. Press Play/Pause button on Stream Deck
+        3. See error icon / no reaction
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Console Output / Screenshots
+      description: Attach relevant browser console logs (F12 on music.youtube.com), Stream Deck plugin logs, or screenshots.
+      render: shell

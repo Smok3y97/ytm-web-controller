@@ -17,6 +17,8 @@ This document provides an in-depth technical overview of the **YouTube Music Web
 - [🔒 8. Version Handshake & Incompatibility Warning Protocol](#-8-version-handshake--incompatibility-warning-protocol)
 - [⚡ 9. Stream Deck + Dial & LCD Handling](#-9-stream-deck--dial--lcd-handling)
 - [🎥 10. OBS Overlay & Chatbot HTTP Architecture](#-10-obs-overlay--chatbot-http-architecture)
+- [🤖 11. CI/CD, Quality Assurance & Release Architecture](#-11-cicd-quality-assurance--release-architecture)
+- [📜 12. Community Standards, Security Policy & Governance](#-12-community-standards-security-policy--governance)
 
 ---
 
@@ -102,8 +104,20 @@ ytm-web-controller/
 ├── package.json                 # Monorepo root package configuration & npm scripts
 ├── AGENTS.md                    # Persistent Developer & AI Agent Guidelines
 ├── CONTRIBUTING.md              # Community contribution guidelines & coding standards
+├── CODE_OF_CONDUCT.md           # Contributor Covenant v2.1 community pledge
+├── SECURITY.md                  # Security architecture, local-first policy & disclosure
 ├── LICENSE                      # MIT License
 ├── README.md                    # User guide, installation walkthrough & setup documentation
+├── .github/                     # GitHub repository governance & CI/CD workflows
+│   ├── dependabot.yml           # Automated weekly dependency scan configuration
+│   ├── pull_request_template.md # Standard PR checklist & compliance template
+│   ├── workflows/               # Automated GitHub Actions pipelines
+│   │   ├── ci.yml               # Automated linting, typecheck, packaging & validation
+│   │   └── release.yml          # Automated release building, tagging & asset publishing
+│   └── ISSUE_TEMPLATE/          # Structured issue intake forms
+│       ├── bug_report.yml       # Standardized bug reporting form (OS, Browser, HW)
+│       ├── feature_request.yml  # Feature & action request form
+│       └── config.yml           # Contact links & blank issue policy
 ├── scripts/                     # Workspace automation & deployment scripts
 │   ├── bump-version.mjs         # Centralized version synchronization script
 │   ├── package_plugin.ps1       # Packaging, asset generation & Stream Deck deployment script
@@ -362,3 +376,87 @@ graph TD
 | :--- | :--- | :--- |
 | `/overlay` | `GET` | Serves the transparent, customizable OBS Browser Source widget. |
 | `/api/current` | `GET` | Returns currently playing song info formatted via `?format=...` for chat commands. |
+
+---
+
+## [🤖 11. CI/CD, Quality Assurance & Release Architecture](#top)
+
+The repository integrates an automated continuous quality assurance and release distribution pipeline utilizing **GitHub Actions**, **Dependabot**, and the official **Elgato Stream Deck CLI**.
+
+```mermaid
+graph TD
+    subgraph Triggers ["🚀 Automation Triggers"]
+        PUSH["Git Push / PR (main, master)"]
+        TAG["Git Tag Push (v*.*.*.*)"]
+        DEP["Weekly Dependabot Scan"]
+        DISPATCH["Manual Workflow Dispatch"]
+    end
+
+    subgraph CI ["🛡️ CI Pipeline (.github/workflows/ci.yml)"]
+        ENV["Setup Node.js 24\n(cache: plugin/package-lock.json)"]
+        LINT["Lint & Typecheck\n(tsc --noEmit && eslint)"]
+        PACK["Staging & Packaging\n(scripts/package_plugin.ps1)"]
+        VAL["Official Elgato Schema Validation\n(streamdeck validate)"]
+        ART["Upload Test Artifacts\n(.streamDeckPlugin & extension.zip)"]
+        
+        ENV --> LINT --> PACK --> VAL --> ART
+    end
+
+    subgraph ReleasePipeline ["📦 Release Pipeline (.github/workflows/release.yml)"]
+        RENV["Setup Node.js 24 Environment"]
+        RLINT["Full Typecheck, Lint & Build"]
+        RPACK["Staging & Production Packaging"]
+        RVAL["Elgato CLI Schema Validation"]
+        PUB["Publish GitHub Release\n(softprops/action-gh-release@v3)"]
+        ASSETS["Attach Binaries:\n1. com.smok3y97.ytmusicweb.streamDeckPlugin\n2. extension.zip"]
+        
+        RENV --> RLINT --> RPACK --> RVAL --> PUB --> ASSETS
+    end
+
+    PUSH --> CI
+    DEP --> CI
+    TAG --> ReleasePipeline
+    DISPATCH --> ReleasePipeline
+```
+
+### Pipeline Guarantees
+1. **Zero Broken Releases**: Every release is strictly gatekept by `npm run lint` and `streamdeck validate` before publication.
+2. **Deterministic Monorepo Builds**: Build caches explicitly resolve to `plugin/package-lock.json` and Node.js 24.
+3. **Automated Dual-Asset Distribution**: Both distribution packages (`.streamDeckPlugin` and `extension.zip`) are synchronized and uploaded simultaneously.
+
+---
+
+## [📜 12. Community Standards, Security Policy & Governance](#top)
+
+The repository adheres to open-source governance and security standards:
+
+```mermaid
+graph LR
+    subgraph Intake ["📥 Community & Issue Intake (.github/)"]
+        BUG["Bug Report Form\n(ISSUE_TEMPLATE/bug_report.yml)"]
+        FEAT["Feature Request Form\n(ISSUE_TEMPLATE/feature_request.yml)"]
+        PRT["Pull Request Checklist\n(pull_request_template.md)"]
+    end
+
+    subgraph Governance ["⚖️ Governance & Policies"]
+        COC["Code of Conduct\n(CODE_OF_CONDUCT.md)\nContributor Covenant v2.1"]
+        SEC["Security Policy\n(SECURITY.md)\nLocal Loopback & Zero Telemetry"]
+        CONTRIB["Contribution Standards\n(CONTRIBUTING.md)\nCoding Rules & Architecture"]
+    end
+
+    BUG --> CONTRIB
+    FEAT --> CONTRIB
+    PRT --> CONTRIB
+    CONTRIB --> COC
+    CONTRIB --> SEC
+```
+
+1. **Security Architecture (`SECURITY.md`)**:
+   - Explicitly documents the local-only loopback architecture (`127.0.0.1:39865`).
+   - Guarantees zero collection or transmission of user telemetry, passwords, or credentials.
+   - Provides private coordinated vulnerability reporting via GitHub Advisories.
+2. **Contributor Covenant (`CODE_OF_CONDUCT.md`)**:
+   - Adopts version 2.1 of the Contributor Covenant standard for community moderation and inclusivity.
+3. **Structured Issue Intake (`.github/ISSUE_TEMPLATE/`)**:
+   - Captures environment data (OS, Browser, Stream Deck model, and logs) upfront for faster triaging.
+

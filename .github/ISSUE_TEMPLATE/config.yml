@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation & Setup Guides
+    url: https://github.com/Smok3y97/ytm-web-controller/tree/main/docs
+    about: Read our comprehensive setup, configuration, OBS, and architecture documentation.
+  - name: 💬 GitHub Discussions / Questions
+    url: https://github.com/Smok3y97/ytm-web-controller/discussions
+    about: Ask questions, share your Stream Deck profiles, and discuss ideas with the community.

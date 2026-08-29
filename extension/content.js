@@ -16,7 +16,7 @@ let currentPort = DEFAULT_PORT;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
-let bridgeVersion = '1.11.0.0';
+let bridgeVersion = '1.11.1.0';
 
 let lastSentState = {
   title: '',

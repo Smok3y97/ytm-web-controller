@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-and-validate:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix plugin
+
+      - name: Install Stream Deck CLI
+        run: npm install -g @elgato/cli@latest
+
+      - name: Lint and Typecheck
+        run: npm run lint
+
+      - name: Package Plugin & Extension
+        shell: pwsh
+        run: ./scripts/package_plugin.ps1
+
+      - name: Validate Stream Deck Plugin
+        run: streamdeck validate --no-update-check release/com.smok3y97.ytmusicweb.sdPlugin
+
+      - name: Upload Stream Deck Plugin Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: com.smok3y97.ytmusicweb.streamDeckPlugin
+          path: release/com.smok3y97.ytmusicweb.streamDeckPlugin
+          if-no-files-found: error
+
+      - name: Upload Browser Extension Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension.zip
+          path: release/extension.zip
+          if-no-files-found: error

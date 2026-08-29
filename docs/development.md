@@ -12,6 +12,7 @@ This document outlines the local development setup, build scripts, testing proce
 - [✨ Elgato SDK Linting & Code Style Guide](#-elgato-sdk-linting--code-style-guide)
 - [📦 Packaging Pipeline (`scripts/package_plugin.ps1`)](#-packaging-pipeline-scriptspackage_pluginps1)
 - [🏷️ Versioning Scheme](#-versioning-scheme)
+- [🤖 CI/CD & Automated GitHub Releases](#-cicd--automated-github-releases)
 
 ---
 
@@ -105,3 +106,84 @@ $$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
 - **Minor** (`{Minor}`): Substantial new user features or hardware integrations (e.g., adding dial actions, new background services, or handshake systems).
 - **Patch** (`{Patch}`): Bug fixes, icon styling adjustments, code refactoring, and string corrections.
 - **Build** (`{Build}`): Internal marketplace submission counter. Allows resubmissions without changing the public release version.
+
+---
+
+## [🤖 CI/CD & Automated GitHub Releases](#top)
+
+The repository utilizes GitHub Actions and Dependabot to automate testing, quality validation, release distribution, and dependency management.
+
+### 1. Continuous Integration (`.github/workflows/ci.yml`)
+- **Triggers**: On every `push` and `pull_request` against `main` and `master`.
+- **Pipeline Tasks**:
+  1. Installs monorepo and plugin dependencies (`npm ci`).
+  2. Runs TypeScript typechecking and ESLint checks (`npm run lint`).
+  3. Executes the full packaging pipeline (`scripts/package_plugin.ps1`).
+  4. Validates the generated `.sdPlugin` using the official Elgato CLI (`streamdeck validate`).
+  5. Uploads both generated distribution packages (`.streamDeckPlugin` and `extension.zip`) as workflow artifacts for immediate testing.
+
+### 2. Automated GitHub Releases (`.github/workflows/release.yml`)
+- **Triggers**: On tag push matching `v*` (e.g. `v1.11.0.0`) or manually via `workflow_dispatch`.
+- **Pipeline Tasks**:
+  1. Runs full linting, building, and Elgato CLI validation.
+  2. Creates or updates the official GitHub Release with auto-generated release notes.
+  3. Attaches both release assets:
+     - `com.smok3y97.ytmusicweb.streamDeckPlugin`
+     - `extension.zip`
+
+#### 🚀 Step-by-Step Guide: How to Publish a New Release
+
+Follow these 4 simple steps in your terminal (PowerShell / Terminal in VS Code / Antigravity) whenever you want to release a new version:
+
+##### Step 1: Decide on your new version number
+The version follows the 4-digit Elgato format: `Major.Minor.Patch.Build` (e.g. `1.12.0.0`).
+- **New Feature / Action**: Increase the second number (e.g., `1.11.0.0` ➔ `1.12.0.0`).
+- **Bugfix / Small adjustment**: Increase the third number (e.g., `1.11.0.0` ➔ `1.11.1.0`).
+
+##### Step 2: Run the automated version bump command
+This updates all 5 manifest, package, and configuration files automatically with a single command:
+```bash
+npm run bump 1.12.0.0
+```
+
+##### Step 3: Commit and Tag the release
+Commit the modified files and create a Git version tag starting with `v`:
+```bash
+git commit -am "chore: release 1.12.0.0"
+git tag v1.12.0.0
+```
+
+##### Step 4: Push to GitHub
+Push your commits and tags to GitHub:
+```bash
+git push origin master --follow-tags
+```
+*(If your default branch is `main`, use `git push origin main --follow-tags`).*
+
+---
+
+> [!TIP]
+> **What happens next automatically?**
+> 1. GitHub Actions detects the new `v1.12.0.0` tag.
+> 2. It builds, lints, and validates the plugin on a clean machine.
+> 3. It generates the GitHub Release with changelog notes and attaches both `com.smok3y97.ytmusicweb.streamDeckPlugin` and `extension.zip` as downloadable assets.
+> 4. You can monitor the live progress under the **Actions** tab in your GitHub repository!
+
+---
+
+#### 🖱️ Alternative: Manual Trigger via GitHub Web UI
+If you prefer not to push tags via the command line:
+1. Navigate to your repository on GitHub.
+2. Click on the **Actions** tab at the top.
+3. In the left sidebar, click on **Release**.
+4. Click the **Run workflow** dropdown button on the right and click **Run workflow**.
+5. The pipeline will automatically build and publish the release based on the current [`version.json`](../version.json).
+
+### 3. Automated Dependency Management (`.github/dependabot.yml`)
+- **Schedule**: Weekly automated scans.
+- **Scope**:
+  - Root `package.json` dependencies
+  - Plugin `plugin/package.json` dependencies
+  - GitHub Actions workflow versions
+- Automatically triggers CI checks on every Dependabot PR to ensure compatibility.
+

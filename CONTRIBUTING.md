@@ -54,8 +54,8 @@ Feature requests and action proposals are always welcome! When opening a feature
 ### Submitting Pull Requests
 1. **Fork & Branch**: Fork the repository and create a descriptive feature branch (e.g. `feature/new-dial-action` or `fix/obs-export-path`).
 2. **Follow Coding Standards**: Ensure your changes adhere to our architectural principles and pass all linting and validation checks.
-3. **Validate**: Always run `npm run validate` before submitting to guarantee compliance with the Elgato SDK schema.
-4. **Open a PR**: Submit a Pull Request with a clear title and description explaining what was changed and how you tested it.
+3. **Validate**: Always run `npm run validate` locally before submitting to guarantee compliance with the Elgato SDK schema.
+4. **Open a PR**: Submit a Pull Request with a clear title and description explaining what was changed and how you tested it. GitHub Actions CI will automatically run all lint, typecheck, build, and validation checks on your PR.
 
 ---
 

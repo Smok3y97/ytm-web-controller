@@ -8,6 +8,7 @@
 
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://github.com/smok3y97/ytm-web-controller/actions/workflows/ci.yml"><img src="https://github.com/smok3y97/ytm-web-controller/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/smok3y97/ytm-web-controller/releases"><img src="https://img.shields.io/github/v/release/smok3y97/ytm-web-controller?include_prereleases&label=Release&color=blue" alt="Latest Release"></a>
   <a href="https://www.elgato.com/stream-deck"><img src="https://img.shields.io/badge/Stream%20Deck-v7.1%2B-red.svg" alt="Stream Deck"></a>
   <a href="https://developer.chrome.com/docs/extensions/mv3/intro/"><img src="https://img.shields.io/badge/Extension-Manifest%20V3-green.svg" alt="Manifest V3"></a>

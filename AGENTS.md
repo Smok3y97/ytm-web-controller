@@ -170,6 +170,11 @@ The packaging script automates:
 6. Deploying the staged `.sdPlugin` directly to `%APPDATA%\Elgato\StreamDeck\Plugins\com.smok3y97.ytmusicweb.sdPlugin`.
 7. Hot-restarting the live plugin process in Stream Deck via `streamdeck restart` for instant live testing.
 
+### CI/CD & Automated GitHub Releases:
+- **CI Pipeline (`.github/workflows/ci.yml`)**: Automatically triggered on pushes and PRs (`main`/`master`) on `windows-latest`. Validates types (`tsc`), linting (`eslint`), builds the plugin bundle, validates via `streamdeck validate`, and uploads test build artifacts (`.streamDeckPlugin` and `extension.zip`).
+- **Release Pipeline (`.github/workflows/release.yml`)**: Triggered upon pushing a version tag (e.g. `v1.12.0.0` following `npm run bump <version>`). Packages, validates, and automatically publishes the official GitHub Release with attached `.streamDeckPlugin` and `extension.zip` binaries.
+- **Dependency Automation (`.github/dependabot.yml`)**: Scans weekly for dependency and GitHub Actions security/version updates.
+
 ---
 
 ## ⚠️ 6. Critical Guidelines for AI Agents

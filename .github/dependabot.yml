@@ -6,6 +6,16 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    ignore:
+      # Keep TypeScript on 5.x for Elgato SDK & Rollup compatibility
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # Keep ESLint on 9.x for @elgato/eslint-config peer dependency compatibility
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      # Keep Node types aligned with Stream Deck Node.js 24 runtime
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions workflows
   - package-ecosystem: "github-actions"
@@ -13,3 +23,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    ignore:
+      # Keep actions/setup-node on stable v4
+      - dependency-name: "actions/setup-node"
+        update-types: ["version-update:semver-major"]
+

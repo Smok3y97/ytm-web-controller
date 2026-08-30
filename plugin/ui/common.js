@@ -16,8 +16,8 @@
 		const descKey = `action.${actionUuid}.description`;
 
 		if (typeof I18n !== "undefined") {
-			titleElem.innerHTML = I18n.t(titleKey, titleElem.innerHTML);
-			descElem.innerHTML = I18n.t(descKey, descElem.innerHTML);
+			titleElem.textContent = I18n.t(titleKey, titleElem.textContent || "");
+			descElem.textContent = I18n.t(descKey, descElem.textContent || "");
 		}
 	}
 

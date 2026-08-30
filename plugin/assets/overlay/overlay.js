@@ -366,7 +366,39 @@
 		});
 	}
 
-	// 7. State Renderer
+	// 7. URL Safety Sanitizer (Prevents XSS / Unvalidated Redirections)
+	function sanitizeImageUrl(url) {
+		if (typeof url !== "string" || !url) return "";
+		const trimmed = url.trim();
+
+		// Safe Base64 raster & vector image data URLs
+		if (
+			trimmed.startsWith("data:image/jpeg;base64,") ||
+			trimmed.startsWith("data:image/png;base64,") ||
+			trimmed.startsWith("data:image/webp;base64,") ||
+			trimmed.startsWith("data:image/svg+xml;base64,") ||
+			trimmed.startsWith("data:image/gif;base64,")
+		) {
+			return trimmed;
+		}
+
+		// Safe absolute HTTP/HTTPS URLs (returns newly parsed safe href)
+		try {
+			const parsed = new URL(trimmed, window.location.origin);
+			if (
+				parsed.protocol === "https:" ||
+				(parsed.protocol === "http:" && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1"))
+			) {
+				return parsed.href;
+			}
+		} catch {
+			return "";
+		}
+
+		return "";
+	}
+
+	// 8. State Renderer
 	function updateOverlay(state) {
 		if (!state || (!state.title && !state.artist)) {
 			widget.classList.add("is-hidden");
@@ -428,7 +460,11 @@
 
 		// Cover Image
 		if (config.showCover) {
-			const coverSource = state.coverBase64 || state.coverUrl || "";
+			const rawCover =
+				(typeof state.coverBase64 === "string" && state.coverBase64) ||
+				(typeof state.coverUrl === "string" && state.coverUrl) ||
+				"";
+			const coverSource = sanitizeImageUrl(rawCover);
 			if (coverSource) {
 				if (coverArt.src !== coverSource) {
 					coverArt.src = coverSource;

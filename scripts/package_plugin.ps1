@@ -74,7 +74,13 @@ if (Test-Path (Join-Path $pluginDir "layouts")) {
     Copy-Item (Join-Path $pluginDir "layouts") $stageDir -Recurse
 }
 
-# 6. Create .streamDeckPlugin Archive using official Elgato Stream Deck CLI
+# 6. Preserve staged sdPlugin directory in release folder for validation
+if (Test-Path $releaseSdPlugin) {
+    Remove-Item $releaseSdPlugin -Recurse -Force
+}
+Copy-Item -Path $stageDir -Destination $releaseSdPlugin -Recurse -Force
+
+# 7. Create .streamDeckPlugin Archive using official Elgato Stream Deck CLI
 $archivePath = Join-Path $releaseDir "$uuid.streamDeckPlugin"
 Write-Output "Packaging plugin with official Elgato CLI (streamdeck pack)..."
 try {
@@ -82,7 +88,7 @@ try {
 } catch {
     Write-Warning "Elgato CLI pack failed, falling back to Compress-Archive..."
     $archiveZip = Join-Path $releaseDir "$uuid.zip"
-    Compress-Archive -Path $stageDir -DestinationPath $archiveZip -Force
+    Compress-Archive -Path $releaseSdPlugin -DestinationPath $archiveZip -Force
     Rename-Item -Path $archiveZip -NewName "$uuid.streamDeckPlugin" -Force
 }
 
@@ -90,14 +96,7 @@ if (Test-Path $archivePath) {
     Write-Output "Successfully created package: $archivePath"
 }
 
-# Preserve staged sdPlugin directory in release folder for validation
-if (Test-Path $releaseSdPlugin) {
-    Remove-Item $releaseSdPlugin -Recurse -Force
-}
-Copy-Item -Path $stageDir -Destination $releaseDir -Recurse -Force
-
-
-# 7. Package Extension into release folder as extension.zip
+# 8. Package Extension into release folder as extension.zip
 $extDir = Join-Path $rootDir "extension"
 if (Test-Path $extDir) {
     $extZip = Join-Path $releaseDir "extension.zip"
@@ -105,7 +104,7 @@ if (Test-Path $extDir) {
     Compress-Archive -Path "$extDir\*" -DestinationPath $extZip -Force
 }
 
-# 8. Optionally install/update local Stream Deck plugin if Stream Deck is installed
+# 9. Optionally install/update local Stream Deck plugin if Stream Deck is installed
 $appDataPlugins = $null
 if ($env:APPDATA) {
     $winPlugins = Join-Path $env:APPDATA "Elgato\StreamDeck\Plugins"
@@ -113,7 +112,6 @@ if ($env:APPDATA) {
         $appDataPlugins = $winPlugins
     }
 }
-
 
 if ($appDataPlugins) {
     $targetSdPlugin = Join-Path $appDataPlugins "$uuid.sdPlugin"
@@ -123,15 +121,15 @@ if ($appDataPlugins) {
     }
     # Clean orphaned action asset folders
     $targetActionDir = Join-Path $targetSdPlugin "assets\actions"
-    $stageActionDir = Join-Path $stageDir "assets\actions"
+    $stageActionDir = Join-Path $releaseSdPlugin "assets\actions"
     if ((Test-Path $targetActionDir) -and (Test-Path $stageActionDir)) {
         $validActions = (Get-ChildItem $stageActionDir -Directory).Name
         Get-ChildItem $targetActionDir -Directory | Where-Object { $_.Name -notin $validActions } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     }
-    Copy-Item -Path "$stageDir\*" -Destination $targetSdPlugin -Recurse -Force
+    Copy-Item -Path "$releaseSdPlugin\*" -Destination $targetSdPlugin -Recurse -Force
     Write-Output "Plugin successfully updated in Stream Deck plugins directory!"
 
-    # 9. Hot-restart plugin via Stream Deck CLI so changes apply instantly
+    # 10. Hot-restart plugin via Stream Deck CLI so changes apply instantly
     Write-Output "Hot-restarting plugin via Elgato CLI (streamdeck restart)..."
     try {
         npx streamdeck restart $uuid

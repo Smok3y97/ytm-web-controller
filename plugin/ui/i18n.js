@@ -102,8 +102,14 @@ const I18n = (() => {
 	function translateDOM(root = document) {
 		root.querySelectorAll("[data-i18n]").forEach((elem) => {
 			const key = elem.getAttribute("data-i18n");
-			if (key) {
-				elem.innerHTML = t(key, elem.innerHTML);
+			if (!key) return;
+			const translated = t(key);
+			if (!translated) return;
+
+			if (translated.includes("<") && translated.includes(">")) {
+				elem.innerHTML = translated;
+			} else {
+				elem.textContent = translated;
 			}
 		});
 

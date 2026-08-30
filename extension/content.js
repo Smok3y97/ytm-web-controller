@@ -16,7 +16,7 @@ let currentPort = DEFAULT_PORT;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
-let bridgeVersion = '1.11.1.0';
+let bridgeVersion = '1.11.2.0';
 
 let lastSentState = {
   title: '',
@@ -104,7 +104,7 @@ function handleCommand(message) {
     const payload = (typeof message === 'object' && message ? message.payload : {}) || {};
     if (!command) return;
 
-    console.log(`[YTM Controller] Executing command: ${command}`, payload);
+    console.log('[YTM Controller] Executing command:', command, payload);
     switch (command) {
       case 'playPause': {
         togglePlayPause();
@@ -344,15 +344,15 @@ function connectWebSocket(port) {
         if (data.type === 'handshake_ack') {
           const comp = compareVersions(bridgeVersion, data.version);
           if (comp === 0) {
-            console.log(`[YTM Controller] 🟢 Handshake ACK received (Plugin v${data.version})`);
+            console.log('[YTM Controller] 🟢 Handshake ACK received (Plugin v%s)', data.version);
             reportMismatchStatus(false);
             sendState(true);
             scheduleStateUpdates([50, 200]);
           } else if (comp > 0) {
-            console.warn(`[YTM Controller] ⚠️ Plugin v${data.version} is older than Extension v${bridgeVersion}`);
+            console.warn('[YTM Controller] ⚠️ Plugin is older than Extension (Plugin v%s, Extension v%s)', data.version, bridgeVersion);
             reportMismatchStatus(true, bridgeVersion, data.version, `Stream Deck Plugin (v${data.version}) is outdated!`);
           } else {
-            console.warn(`[YTM Controller] ⚠️ Extension v${bridgeVersion} is older than Plugin v${data.version}`);
+            console.warn('[YTM Controller] ⚠️ Extension is older than Plugin (Extension v%s, Plugin v%s)', bridgeVersion, data.version);
             reportMismatchStatus(true, data.version, data.version, `Browser Extension (v${bridgeVersion}) is outdated!`);
           }
           return;
@@ -419,7 +419,7 @@ function init() {
     } else if (event.data.type === 'YTM_BRIDGE_PORT_UPDATE') {
       const targetPort = event.data.wsPort || DEFAULT_PORT;
       if (targetPort !== currentPort) {
-        console.log(`[YTM Controller] Switching WebSocket port to ${targetPort}`);
+        console.log('[YTM Controller] Switching WebSocket port to', targetPort);
         connectWebSocket(targetPort);
       }
     }

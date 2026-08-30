@@ -24,6 +24,9 @@ on:
       - '.github/pull_request_template.md'
       - 'LICENSE'
 
+permissions:
+  contents: read
+
 jobs:
   build-and-validate:
     name: Lint, Build, Validate & Package

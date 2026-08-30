@@ -391,7 +391,19 @@ const GlobalSettingsComponent = (() => {
 						? I18n.t("warning.outdated_extension")
 						: "⚠️ Browser Extension outdated! Please update to the latest version via GitHub Releases.");
 				const releaseText = typeof I18n !== "undefined" ? I18n.t("releases") : "Releases";
-				warningBanner.innerHTML = `<span>${rawMsg}</span> <a href="https://github.com/Smok3y97/ytm-web-controller/releases" target="_blank">${releaseText}</a>`;
+
+				warningBanner.textContent = "";
+				const spanElem = document.createElement("span");
+				spanElem.textContent = rawMsg;
+				const aElem = document.createElement("a");
+				aElem.href = "https://github.com/Smok3y97/ytm-web-controller/releases";
+				aElem.target = "_blank";
+				aElem.rel = "noopener noreferrer";
+				aElem.textContent = releaseText;
+
+				warningBanner.appendChild(spanElem);
+				warningBanner.appendChild(document.createTextNode(" "));
+				warningBanner.appendChild(aElem);
 				warningBanner.classList.remove("hidden");
 			} else {
 				warningBanner.classList.add("hidden");

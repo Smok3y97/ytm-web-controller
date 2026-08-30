@@ -99,17 +99,47 @@ const I18n = (() => {
 		}
 	}
 
+	const ALLOWED_TAGS = new Set(["B", "STRONG", "CODE", "BR", "EM", "I", "SPAN"]);
+
+	function setLocalizedContent(elem, text) {
+		elem.textContent = "";
+		if (!text) return;
+		if (!text.includes("<")) {
+			elem.textContent = text;
+			return;
+		}
+
+		try {
+			const parser = new DOMParser();
+			const doc = parser.parseFromString(text, "text/html");
+
+			function appendSanitized(parent, sourceNode) {
+				sourceNode.childNodes.forEach((child) => {
+					if (child.nodeType === Node.TEXT_NODE) {
+						parent.appendChild(document.createTextNode(child.textContent || ""));
+					} else if (child.nodeType === Node.ELEMENT_NODE && ALLOWED_TAGS.has(child.nodeName)) {
+						const safeElem = document.createElement(child.nodeName.toLowerCase());
+						appendSanitized(safeElem, child);
+						parent.appendChild(safeElem);
+					} else if (child.textContent) {
+						parent.appendChild(document.createTextNode(child.textContent));
+					}
+				});
+			}
+
+			appendSanitized(elem, doc.body);
+		} catch {
+			elem.textContent = text;
+		}
+	}
+
 	function translateDOM(root = document) {
 		root.querySelectorAll("[data-i18n]").forEach((elem) => {
 			const key = elem.getAttribute("data-i18n");
 			if (!key) return;
 			const translated = t(key);
-			if (!translated) return;
-
-			if (translated.includes("<") && translated.includes(">")) {
-				elem.innerHTML = translated;
-			} else {
-				elem.textContent = translated;
+			if (translated) {
+				setLocalizedContent(elem, translated);
 			}
 		});
 

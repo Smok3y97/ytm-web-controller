@@ -11,13 +11,14 @@ permissions:
 
 jobs:
   build-and-release:
+    name: Build, Validate & Publish Release
     runs-on: windows-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: 'npm'
@@ -29,16 +30,20 @@ jobs:
       - name: Install Stream Deck CLI
         run: npm install -g @elgato/cli@latest
 
+      # 1. Linting & Typecheck (fails fast on syntax/type issues before packaging)
       - name: Lint and Typecheck
         run: npm run lint
 
+      # 2. Assembling & Packaging (Rollup build, C# focus helper, icons & staging)
       - name: Package Plugin & Extension
         shell: pwsh
         run: ./scripts/package_plugin.ps1
 
+      # 3. Official Elgato Stream Deck Plugin Validation
       - name: Validate Stream Deck Plugin
         run: streamdeck validate --no-update-check release/com.smok3y97.ytmusicweb.sdPlugin
 
+      # 4. Publish Release with Binaries
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         with:

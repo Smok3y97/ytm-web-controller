@@ -24,10 +24,13 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     ignore:
-      # Keep actions/checkout on stable v4
+      # Keep actions/checkout on stable v7
       - dependency-name: "actions/checkout"
         update-types: ["version-update:semver-major"]
-      # Keep actions/setup-node on stable v4
+      # Keep actions/setup-node on stable v7
       - dependency-name: "actions/setup-node"
+        update-types: ["version-update:semver-major"]
+      # Keep actions/upload-artifact on stable v7
+      - dependency-name: "actions/upload-artifact"
         update-types: ["version-update:semver-major"]
 

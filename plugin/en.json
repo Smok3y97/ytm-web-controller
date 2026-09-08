@@ -1,7 +1,7 @@
 {
-    "Name": "YouTube Music Web",
-    "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence.",
-    "Category": "YouTube Music Web",
+    "Name": "Controller for YouTube Music Web",
+    "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. YouTube Music is a trademark of Google LLC. This project is an independent open-source tool and is not affiliated with, sponsored, or endorsed by Google LLC.",
+    "Category": "Controller for YouTube Music Web",
     "com.smok3y97.ytmusicweb.playpause": {
         "Name": "Play / Pause",
         "Tooltip": "Toggle Play / Pause (Hold to bring YouTube Music to foreground)"
@@ -89,7 +89,7 @@
     },
     "Localization": {
         "info.heading": "Information",
-        "info.default_title": "YouTube Music Web",
+        "info.default_title": "Controller for YouTube Music Web",
         "info.default_description": "Controls active playback directly via local WebSocket.",
         "action.settings": "Action Settings",
         "controls.heading": "Controls",

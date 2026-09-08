@@ -1,4 +1,4 @@
-# Packaging script for YouTube Music Web Controller Stream Deck Plugin
+# Packaging script for Controller for YouTube Music Web Stream Deck Plugin
 
 $rootDir = (Get-Item $PSScriptRoot).Parent.FullName
 $uuid = "com.smok3y97.ytmusicweb"
@@ -56,10 +56,11 @@ if (Test-Path $focusExe) {
     Copy-Item $focusExe $binTarget
 }
 
-# 3. Generate & Copy Assets (excluding script files)
-if (Test-Path (Join-Path $pluginDir "assets\generate_assets.ps1")) {
+# 3. Generate & Copy Assets
+$genScript = Join-Path $PSScriptRoot "generate_assets.ps1"
+if (Test-Path $genScript) {
     Write-Output "Generating plugin and action assets..."
-    & (Join-Path $pluginDir "assets\generate_assets.ps1")
+    & $genScript
 }
 
 $assetsTarget = Join-Path $stageDir "assets"

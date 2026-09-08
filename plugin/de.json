@@ -1,7 +1,7 @@
 {
-    "Name": "YouTube Music Web",
-    "Description": "Steuern Sie YouTube Music Web über Ihr Elgato Stream Deck mit Echtzeit-Feedback, Drehregler-Unterstützung und Discord Rich Presence.",
-    "Category": "YouTube Music Web",
+    "Name": "Controller for YouTube Music Web",
+    "Description": "Steuern Sie YouTube Music Web über Ihr Elgato Stream Deck mit Echtzeit-Feedback, Drehregler-Unterstützung und Discord Rich Presence. YouTube Music ist eine Marke von Google LLC. Dieses Projekt ist ein unabhängiges Open-Source-Tool und steht in keiner Verbindung zu Google LLC und wird nicht von Google LLC gesponsert oder unterstützt.",
+    "Category": "Controller for YouTube Music Web",
     "com.smok3y97.ytmusicweb.playpause": {
         "Name": "Wiedergabe / Pause",
         "Tooltip": "Wiedergabe / Pause umschalten (Gedrückt halten, um YouTube Music in den Vordergrund zu holen)"
@@ -89,7 +89,7 @@
     },
     "Localization": {
         "info.heading": "Information",
-        "info.default_title": "YouTube Music Web",
+        "info.default_title": "Controller for YouTube Music Web",
         "info.default_description": "Steuert die Wiedergabe direkt über ein lokales WebSocket.",
         "action.settings": "Aktions-Einstellungen",
         "controls.heading": "Steuerung",

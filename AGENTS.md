@@ -87,13 +87,13 @@ Refer to [`docs/plugin-guideline.md`](docs/plugin-guideline.md) (and the officia
 1. **Main Plugin Icon (`Icon`)**:
    - Location: `plugin/assets/plugin-icon.png` (256×256 px) and `plugin/assets/plugin-icon@2x.png` (512×512 px).
    - Format: **PNG** (Strict requirement by Stream Deck preferences detail pane).
-   - Design: **Official Full-Color YouTube Music Badge** (`#FF0033` red circular background with white inner ring and play triangle).
+   - Design: **Brand-Compliant Circular Badge** (Transparent background with `#FF0033` red circular disc and crisp white stylized audio-controller headphones + play glyph).
 
 2. **Category & Sidebar Icon (`CategoryIcon`)**:
    - Location: `plugin/assets/category-icon.svg` (and referenced as `"CategoryIcon": "assets/category-icon"` in `manifest.json`).
    - Dimensions: 28×28 px (Standard DPI) / 56×56 px (`@2x` High DPI).
    - Format: **SVG** (Vector) or PNG.
-   - Design: **Monochromatic White (`#FFFFFF`)** stroke on transparent background. No solid background fill.
+   - Design: **Monochromatic White (`#FFFFFF`)** glyph on transparent background (stylized minimalist headphones with embedded play triangle). No solid background fill.
 
 3. **Action Key & Dial Icons (`Actions[].Icon` & `Actions[].States[].Image`)**:
    - Location: `plugin/assets/actions/<action-name>/...`
@@ -106,7 +106,7 @@ Refer to [`docs/plugin-guideline.md`](docs/plugin-guideline.md) (and the officia
    - Interactive touch targets must be at least **`35 × 35 px`**. All elements must stay strictly within bounds.
 
 5. **Asset Generation**:
-   - Run `powershell -ExecutionPolicy Bypass -File plugin/assets/generate_assets.ps1` to re-generate all SVG and PNG assets.
+   - Run `npm run assets` (or `powershell -ExecutionPolicy Bypass -File scripts/generate_assets.ps1`) to re-generate all SVG and PNG assets.
 
 ---
 
@@ -164,7 +164,7 @@ npx streamdeck restart com.smok3y97.ytmusicweb
 The packaging script automates:
 1. Running Prettier formatting and ESLint checks (`npm run lint:fix`).
 2. Building plugin JS bundle with Rollup (`npm run build`).
-3. Invoking `generate_assets.ps1` to ensure all vector and raster assets are up to date.
+3. Invoking `scripts/generate_assets.ps1` to ensure all vector and raster assets are up to date.
 4. Staging and packaging `release/com.smok3y97.ytmusicweb.streamDeckPlugin` via `streamdeck pack`.
 5. Packaging `release/extension.zip` for browser deployment.
 6. Deploying the staged `.sdPlugin` directly to `%APPDATA%\Elgato\StreamDeck\Plugins\com.smok3y97.ytmusicweb.sdPlugin`.

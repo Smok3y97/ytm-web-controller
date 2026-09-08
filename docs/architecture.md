@@ -2,7 +2,7 @@
 
 # System Architecture & Technical Specifications (`docs/architecture.md`)
 
-This document provides an in-depth technical overview of the **YouTube Music Web Controller** monorepo architecture, design principles, and component interactions.
+This document provides an in-depth technical overview of the **Controller for YouTube Music Web** monorepo architecture, design principles, and component interactions.
 
 ---
 
@@ -106,6 +106,7 @@ ytm-web-controller/
 ├── CONTRIBUTING.md              # Community contribution guidelines & coding standards
 ├── CODE_OF_CONDUCT.md           # Contributor Covenant v2.1 community pledge
 ├── SECURITY.md                  # Security architecture, local-first policy & disclosure
+├── PRIVACY.md                   # Privacy policy & Chrome Web Store single-purpose disclosure
 ├── LICENSE                      # MIT License
 ├── README.md                    # User guide, installation walkthrough & setup documentation
 ├── .github/                     # GitHub repository governance & CI/CD workflows
@@ -120,6 +121,8 @@ ytm-web-controller/
 │       └── config.yml           # Contact links & blank issue policy
 ├── scripts/                     # Workspace automation & deployment scripts
 │   ├── bump-version.mjs         # Centralized version synchronization script
+│   ├── generate_assets.ps1      # Automated asset generator script (PNG & invokes SVG generator)
+│   ├── generate_svgs.mjs        # SVG vector icons generator
 │   ├── package_plugin.ps1       # Packaging, asset generation & Stream Deck deployment script
 │   └── ytm-focus.cs             # Standalone C# source for native Win32 window focus binary
 ├── docs/                        # Technical specifications & developer documentation
@@ -161,10 +164,9 @@ ytm-web-controller/
 │   │   └── ytm-focus.exe        # Native 7 KB Win32 foreground activation binary
 │   ├── assets/                  # High-resolution vector & raster assets
 │   │   ├── category-icon.svg    # Monochromatic category icon (28x28 / 56x56)
-│   │   ├── plugin-icon.png      # Official Full-Color YouTube Music badge (256x256)
-│   │   ├── plugin-icon@2x.png   # High-DPI YouTube Music badge (512x512)
-│   │   ├── generate_assets.ps1  # Automated asset generator script (PNG & invokes SVG generator)
-│   │   ├── generate_official_svgs.mjs # Official SVG vector icons generator
+│   │   ├── plugin-icon.png      # Brand-compliant circular badge (256x256)
+│   │   ├── plugin-icon@2x.png   # High-DPI circular badge (512x512)
+│   │   ├── plugin-icon.svg      # Vector source for plugin badge
 │   │   ├── overlay/             # OBS Studio Browser Source overlay assets (/overlay)
 │   │   │   ├── index.html       # Transparent overlay widget DOM structure
 │   │   │   ├── style.css        # Responsive frosted dark theme & animation styles

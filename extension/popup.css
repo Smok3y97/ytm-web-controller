@@ -303,3 +303,12 @@ input[type="number"]::-webkit-outer-spin-button {
   color: var(--text-primary);
   text-decoration: underline;
 }
+
+.legal-disclaimer {
+  font-size: 9.5px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.35;
+  opacity: 0.65;
+  padding: 0 4px;
+}

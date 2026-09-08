@@ -1,9 +1,9 @@
 <a id="top"></a>
 
-# YouTube Music Web Controller (`ytm-web-controller`)
+# Controller for YouTube Music Web (`ytm-web-controller`)
 
 <p align="center">
-  <img src="screenshots/Banner.png" alt="YouTube Music Web Controller" width="100%">
+  <img src="screenshots/Banner.png" alt="Controller for YouTube Music Web" width="100%">
 </p>
 
 <p align="center">
@@ -16,6 +16,9 @@
 
 An ultra-lightweight, event-driven, resource-efficient open-source controller bridge connecting the official [YouTube Music Web App](https://music.youtube.com) directly to your **Elgato Stream Deck** (including **Stream Deck + Dials & LCD Touchstrips**).
 
+> [!NOTE]
+> **Legal Disclaimer**: YouTube Music is a trademark of Google LLC. This project is an independent open-source tool and is not affiliated with, sponsored, or endorsed by Google LLC.
+
 ---
 
 ## 📑 Table of Contents
@@ -27,6 +30,8 @@ An ultra-lightweight, event-driven, resource-efficient open-source controller br
 - [🤖 AI Collaboration & Transparency](#ai-collaboration--transparency)
 - [🧪 Tested Environments & Hardware](#tested-environments--hardware)
 - [🗺️ Roadmap & Future Ideas](#roadmap)
+- [⚖️ Legal & Trademark Disclaimer](#disclaimer)
+- [🔒 Privacy Policy](PRIVACY.md)
 - [📄 License](#license)
 
 ---
@@ -37,7 +42,7 @@ An ultra-lightweight, event-driven, resource-efficient open-source controller br
 
 Most YouTube Music desktop solutions force you to install heavy, third-party desktop apps that drain your PC's memory and run sluggish background tasks while you are gaming, streaming, or working.
 
-**YouTube Music Web Controller** lets you keep using the official YouTube Music web player or PWA you already love — seamlessly connected to your **Elgato Stream Deck**:
+**Controller for YouTube Music Web** lets you keep using the official YouTube Music web player or PWA you already love — seamlessly connected to your **Elgato Stream Deck**:
 
 - 🚀 **Keep Using the Official Web Player**: Works directly with YouTube Music in your favorite browser (Chrome, Brave, Edge, etc.) with all your playlists, recommendations, and full official audio quality.
 - ⚡ **Zero-Overhead & Local-First**: Event-driven WebSocket communication with zero DOM polling, and 100% in-memory RAM rendering without temporary cache files on disk (file export for OBS `.txt` is strictly opt-in).
@@ -158,6 +163,22 @@ Here is an overview of planned platform releases and potential future features u
 - 📻 **Start Radio Station (`startRadio`)**: Action to instantly launch an endless dynamic radio mix based on the currently playing track.
 - ⏩ **Playback Speed Toggle (`playbackRate`)**: Cycle playback speeds (e.g. `1.0x` ➔ `1.25x` ➔ `1.5x` ➔ `2.0x`) for podcasts and audiobooks on YouTube Music.
 - 🎵 **Quick Playlist / Supermix Launcher**: Dedicated hotkeys to trigger custom playlist URLs or your personalized "My Supermix" directly in the web player.
+
+---
+
+<a id="disclaimer"></a>
+
+## [⚖️ Legal & Trademark Disclaimer](#top)
+
+YouTube Music is a trademark of Google LLC. This project is an independent open-source tool developed by Smok3y97 and is not affiliated with, sponsored, or endorsed by Google LLC. All trademarks, service marks, and company names are the property of their respective owners.
+
+---
+
+<a id="privacy"></a>
+
+## [🔒 Privacy Policy](#top)
+
+I believe in privacy by design. The extension and plugin operate with **zero external tracking, zero telemetry, and 100% local-first communication**. For full details and Chrome Web Store permission disclosures, see **[Privacy Policy (`PRIVACY.md`)](PRIVACY.md)**.
 
 ---
 

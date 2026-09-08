@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Music Web Controller",
-  "version": "1.11.2.0",
-  "version_name": "1.11.2",
-  "description": "Ultra-lightweight bridge connecting music.youtube.com directly to Elgato Stream Deck and Discord RPC.",
+  "name": "Controller Companion for YouTube Music Web",
+  "version": "1.11.3.0",
+  "version_name": "1.11.3",
+  "description": "Ultra-lightweight companion bridge connecting music.youtube.com to Elgato Stream Deck and Discord RPC.",
   "author": "Smok3y97",
   "permissions": [
     "storage",
@@ -44,7 +44,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "YTM Web Controller Settings",
+    "default_title": "Controller for YouTube Music Web Settings",
     "default_icon": {
       "16": "icons/icon-16.png",
       "48": "icons/icon-48.png",

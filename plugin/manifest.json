@@ -1,17 +1,17 @@
 {
     "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
     "UUID": "com.smok3y97.ytmusicweb",
-    "Name": "YouTube Music Web",
-    "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence.",
+    "Name": "Controller for YouTube Music Web",
+    "Description": "Control YouTube Music Web from your Elgato Stream Deck with real-time feedback, Dial support, and Discord Rich Presence. YouTube Music is a trademark of Google LLC. This project is an independent open-source tool and is not affiliated with, sponsored, or endorsed by Google LLC.",
     "Author": "Smok3y97",
     "URL": "https://github.com/Smok3y97/ytm-web-controller",
-    "Version": "1.11.2.0",
+    "Version": "1.11.3.0",
     "SDKVersion": 3,
     "Software": {
         "MinimumVersion": "7.1"
     },
     "Icon": "assets/plugin-icon",
-    "Category": "YouTube Music Web",
+    "Category": "Controller for YouTube Music Web",
     "CategoryIcon": "assets/category-icon",
     "CodePath": "bin/plugin.js",
     "Nodejs": {

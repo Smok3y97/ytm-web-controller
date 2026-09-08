@@ -77,7 +77,7 @@ The codebase strictly adheres to the official [Elgato Stream Deck Style Guide fo
 The automated packaging script executes a complete quality assurance and deployment pipeline:
 1. **Automated Formatting & Linting**: Runs `npm run lint:fix` (Prettier code formatting and ESLint auto-fix) on the codebase.
 2. **Bundle Compilation**: Compiles the plugin bundle with Rollup to `plugin/bin/plugin.js`.
-3. **Asset Generation**: Generates all vector SVGs and PNG raster badges using `plugin/assets/generate_assets.ps1`.
+3. **Asset Generation**: Generates all vector SVGs and PNG raster badges using `scripts/generate_assets.ps1` (or `npm run assets`).
 4. **Staging**: Stages the `.sdPlugin` directory under `release/com.smok3y97.ytmusicweb.sdPlugin` (including localized language files `de.json`, `en.json`).
 5. **Plugin Distribution Package**: Creates `release/com.smok3y97.ytmusicweb.streamDeckPlugin` release archive via `streamdeck pack`.
 6. **Browser Extension Package**: Archives the companion browser extension into `release/extension.zip`.

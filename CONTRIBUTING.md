@@ -1,6 +1,6 @@
-# Contributing to YouTube Music Web Controller (`CONTRIBUTING.md`)
+# Contributing to Controller for YouTube Music Web (`CONTRIBUTING.md`)
 
-Thank you for your interest in contributing to **YouTube Music Web Controller**! 🎉
+Thank you for your interest in contributing to **Controller for YouTube Music Web**! 🎉
 
 Whether you are reporting a bug, proposing new features, improving documentation, or submitting pull requests, any help in making this open-source controller even better is warmly appreciated.
 

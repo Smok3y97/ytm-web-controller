@@ -2,7 +2,7 @@
 
 # AI Collaboration & Transparency Disclosure (`docs/ai-disclosure.md`)
 
-Full transparency and open-source honesty are core principles of the **YouTube Music Web Controller** project. This document transparently explains the development methodology, the extent of AI-generated code, and the hardware verification process.
+Full transparency and open-source honesty are core principles of the **Controller for YouTube Music Web** project. This document transparently explains the development methodology, the extent of AI-generated code, and the hardware verification process.
 
 ---
 

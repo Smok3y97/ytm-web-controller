@@ -1,12 +1,13 @@
 {
   "name": "ytm-web-controller",
-  "version": "1.11.2.0",
+  "version": "1.11.3.0",
   "description": "High-performance, event-driven Elgato Stream Deck integration for YouTube Music Web with Discord RPC",
   "private": true,
   "scripts": {
     "build": "npm run build --prefix plugin",
     "watch": "npm run watch --prefix plugin",
     "bump": "node scripts/bump-version.mjs",
+    "assets": "powershell -ExecutionPolicy Bypass -File ./scripts/generate_assets.ps1",
     "package": "powershell -ExecutionPolicy Bypass -File ./scripts/package_plugin.ps1",
     "validate": "streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin",
     "restart": "streamdeck restart com.smok3y97.ytmusicweb",

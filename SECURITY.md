@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Security fixes and maintenance updates are actively applied to the latest release of YouTube Music Web Controller.
+Security fixes and maintenance updates are actively applied to the latest release of Controller for YouTube Music Web.
 
 | Version | Supported          |
 | :--- | :--- |
@@ -13,7 +13,7 @@ Security fixes and maintenance updates are actively applied to the latest releas
 
 ## 🛡️ Security Architecture & Privacy Guarantee
 
-YouTube Music Web Controller is designed with a strict **local-first and privacy-conscious** architecture:
+Controller for YouTube Music Web is designed with a strict **local-first and privacy-conscious** architecture:
 
 - **Local Loopback Only**: The WebSocket bridge between the Browser Extension and Stream Deck plugin listens strictly on `127.0.0.1:39865` (localhost). It does not bind to external interfaces or expose any ports across local networks or the internet.
 - **Zero External Telemetry**: The plugin and extension do not collect, track, or transmit any user activity, telemetry, passwords, Google account credentials, or listening habits.

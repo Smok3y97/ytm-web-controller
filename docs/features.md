@@ -2,7 +2,7 @@
 
 # Feature Matrix & Action Reference (`docs/features.md`)
 
-This document provides a comprehensive technical breakdown of all available actions, hardware controllers, dynamic visual feedbacks, and background integrations in **YouTube Music Web Controller**.
+This document provides a comprehensive technical breakdown of all available actions, hardware controllers, dynamic visual feedbacks, and background integrations in **Controller for YouTube Music Web**.
 
 ---
 

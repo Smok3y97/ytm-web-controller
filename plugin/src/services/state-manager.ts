@@ -6,6 +6,7 @@
 import { EventEmitter } from "events";
 
 import { YTMPlaybackState } from "../types/index.js";
+import { ImageRenderer } from "./image-renderer.js";
 
 export class StateManager extends EventEmitter {
 	private static instance: StateManager;
@@ -21,6 +22,8 @@ export class StateManager extends EventEmitter {
 		duration: 0,
 		volume: 1,
 		paused: true,
+		playbackRate: 1,
+		timestamp: Date.now(),
 		muted: false,
 		isLiked: false,
 		isDisliked: false,
@@ -53,14 +56,64 @@ export class StateManager extends EventEmitter {
 
 		const sanitizedAlbum = state.album && !this.isNonAlbumText(state.album) ? state.album.trim() : "";
 
+		// Retain existing in-RAM coverBase64 if coverUrl is identical and incoming snapshot has no coverBase64
+		let coverBase64 = state.coverBase64;
+		if (!coverBase64 && state.coverUrl && state.coverUrl === this.currentState.coverUrl) {
+			coverBase64 = this.currentState.coverBase64;
+		}
+
+		let currentTime = typeof state.currentTime === "number" && !isNaN(state.currentTime) ? state.currentTime : 0;
+		const duration = typeof state.duration === "number" && !isNaN(state.duration) ? state.duration : 0;
+
+		// Detect track transition
+		const isTrackChange = Boolean(
+			prevState.title &&
+			state.title &&
+			(prevState.title !== state.title ||
+				(prevState.trackUrl && state.trackUrl && prevState.trackUrl !== state.trackUrl)),
+		);
+
+		if (isTrackChange) {
+			const hasTimestampInUrl = Boolean(state.trackUrl && /[?&]t=(\d+)/.test(state.trackUrl));
+			// If a new track starts without an explicit timestamp query param, reset to 0
+			// This prevents continuous MSE playback offsets or stale video.currentTime from carrying over
+			if (!hasTimestampInUrl && currentTime > 3) {
+				currentTime = 0;
+			}
+		}
+
+		// Ensure sanity: currentTime can never exceed or equal duration upon start
+		if (duration > 0 && currentTime >= duration) {
+			currentTime = 0;
+		}
+
+		const timestamp = state.timestamp && Math.abs(Date.now() - state.timestamp) < 60000 ? state.timestamp : Date.now();
+
 		this.currentState = {
 			...state,
+			currentTime,
+			duration,
+			timestamp,
+			coverBase64,
 			album: sanitizedAlbum,
 			isVersionMismatch: isMismatch,
 			extensionVersion: extVer,
 		};
 
 		this.emit("stateChanged", this.currentState, prevState);
+
+		// Asynchronously fetch cover in RAM if not yet available in Base64
+		if (state.coverUrl && !this.currentState.coverBase64) {
+			ImageRenderer.getInstance()
+				.getCoverAsBase64(state.coverUrl)
+				.then((base64) => {
+					if (base64 && this.currentState.coverUrl === state.coverUrl) {
+						this.currentState.coverBase64 = base64;
+						this.emit("stateChanged", this.currentState, prevState);
+					}
+				})
+				.catch(() => {});
+		}
 	}
 
 	public setVersionMismatch(isMismatch: boolean, extensionVersion?: string): void {
@@ -110,8 +163,27 @@ export class StateManager extends EventEmitter {
 		this.emit("stateChanged", this.currentState, prevState);
 	}
 
+	/**
+	 * Computes interpolated playback position in seconds based on snapshot timestamp and playback rate
+	 */
+	public getInterpolatedCurrentTime(): number {
+		const state = this.currentState;
+		if (state.paused || !state.timestamp) {
+			return Math.min(state.duration || 0, Math.max(0, state.currentTime || 0));
+		}
+		const elapsedSec = ((Date.now() - state.timestamp) * (state.playbackRate || 1)) / 1000;
+		const interpolated = (state.currentTime || 0) + elapsedSec;
+		if (state.duration > 0 && interpolated > state.duration) {
+			return state.duration;
+		}
+		return Math.max(0, interpolated);
+	}
+
 	public getState(): YTMPlaybackState {
-		return { ...this.currentState };
+		return {
+			...this.currentState,
+			currentTime: Math.floor(this.getInterpolatedCurrentTime()),
+		};
 	}
 
 	/**
@@ -169,7 +241,7 @@ export class StateManager extends EventEmitter {
 	 */
 	public formatTimeTemplate(template: string = "{both}", currentTime?: number, duration?: number): string {
 		const state = this.currentState;
-		const cur = typeof currentTime === "number" ? currentTime : state.currentTime;
+		const cur = typeof currentTime === "number" ? currentTime : this.getInterpolatedCurrentTime();
 		const dur = typeof duration === "number" ? duration : state.duration;
 
 		const currentStr = this.formatTime(cur);
@@ -210,16 +282,17 @@ export class StateManager extends EventEmitter {
 		const artistStr = (state.artist || "Unknown Artist").trim();
 		const albumStr = (state.album || "").trim();
 		const trackUrlStr = (state.trackUrl || "").trim();
+		const curSeconds = targetState ? targetState.currentTime : this.getInterpolatedCurrentTime();
 		const durationStr = this.formatTime(state.duration);
-		const currentStr = this.formatTime(state.currentTime);
+		const currentStr = this.formatTime(curSeconds);
 		const bothStr = `${currentStr} / ${durationStr}`;
 
 		let remainingStr = "-0:00";
 		if (state.duration > 0) {
-			const effectiveCurrent = Math.min(state.duration, Math.max(0, state.currentTime));
+			const effectiveCurrent = Math.min(state.duration, Math.max(0, curSeconds));
 			const remainingSeconds = Math.max(0, state.duration - effectiveCurrent);
 			remainingStr = "-" + this.formatTime(remainingSeconds);
-		} else if (state.currentTime > 0) {
+		} else if (curSeconds > 0) {
 			remainingStr = currentStr;
 		}
 

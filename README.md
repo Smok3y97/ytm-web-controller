@@ -14,7 +14,7 @@
   <a href="https://developer.chrome.com/docs/extensions/mv3/intro/"><img src="https://img.shields.io/badge/Extension-Manifest%20V3-green.svg" alt="Manifest V3"></a>
 </p>
 
-An ultra-lightweight, event-driven, resource-efficient open-source controller bridge connecting the official [YouTube Music Web App](https://music.youtube.com) directly to your **Elgato Stream Deck** (including **Stream Deck + Dials & LCD Touchstrips**).
+A lightweight, event-driven open-source controller bridge connecting the official [YouTube Music Web App](https://music.youtube.com) directly to your **Elgato Stream Deck** (including **Stream Deck + Dials & LCD Touchstrips**).
 
 > [!NOTE]
 > **Legal Disclaimer**: YouTube Music is a trademark of Google LLC. This project is an independent open-source tool and is not affiliated with, sponsored, or endorsed by Google LLC.
@@ -40,13 +40,13 @@ An ultra-lightweight, event-driven, resource-efficient open-source controller br
 
 ## [🌟 Why This Exists](#top)
 
-Most YouTube Music desktop solutions force you to install heavy, third-party desktop apps that drain your PC's memory and run sluggish background tasks while you are gaming, streaming, or working.
+Most YouTube Music desktop solutions require third-party desktop wrappers that use extra memory and background processes.
 
-**Controller for YouTube Music Web** lets you keep using the official YouTube Music web player or PWA you already love — seamlessly connected to your **Elgato Stream Deck**:
+**Controller for YouTube Music Web** lets you keep using the official YouTube Music web player or PWA directly with your **Elgato Stream Deck**:
 
-- 🚀 **Keep Using the Official Web Player**: Works directly with YouTube Music in your favorite browser (Chrome, Brave, Edge, etc.) with all your playlists, recommendations, and full official audio quality.
-- ⚡ **Zero-Overhead & Local-First**: Event-driven WebSocket communication with zero DOM polling, and 100% in-memory RAM rendering without temporary cache files on disk (file export for OBS `.txt` is strictly opt-in).
-- 🛡️ **Ultra-Lightweight & Private**: Completely invisible to your system — running locally with zero external telemetry, zero open firewall ports, and no impact on game performance or stream bitrates.
+- 🚀 **Official Web Player**: Works directly with YouTube Music in your browser (Chrome, Brave, Edge, etc.) with all your playlists, recommendations, and official audio quality.
+- ⚡ **Event-Driven & Local-First**: WebSocket communication without periodic DOM polling or continuous timeupdate traffic (client-side interpolation), using in-memory RAM rendering without temporary cache files on disk (file export for OBS `.txt` is opt-in).
+- 🛡️ **Lightweight & Private**: Runs locally on your machine with zero external telemetry and zero open firewall ports.
 
 ---
 

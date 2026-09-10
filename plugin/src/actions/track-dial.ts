@@ -81,6 +81,22 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 		}
 	}
 
+	protected override getAdditionalMarqueeFeedback(
+		settings: TrackDialSettings,
+		state: YTMPlaybackState,
+	): { value?: string; indicator?: number } | null {
+		if (state.paused || state.duration <= 0) return null;
+		const curTime = StateManager.getInstance().getInterpolatedCurrentTime();
+		const clampedTime = Math.min(curTime, state.duration);
+		const indicator = Math.min(100, Math.max(0, Math.round((clampedTime / state.duration) * 100)));
+		const value = StateManager.getInstance().formatTimeTemplate(
+			settings.timeTemplate || "{both}",
+			curTime,
+			state.duration,
+		);
+		return { value, indicator };
+	}
+
 	protected async updateDialDisplay(
 		dialAction: WillAppearEvent<TrackDialSettings>["action"],
 		state: YTMPlaybackState,
@@ -93,17 +109,26 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 				}
 
 				let progressPercent = 0;
-				if (state.duration > 0 && state.currentTime >= 0) {
-					const clampedTime = Math.min(state.currentTime, state.duration);
+				const curTime = StateManager.getInstance().getInterpolatedCurrentTime();
+				if (state.duration > 0 && curTime >= 0) {
+					const clampedTime = Math.min(curTime, state.duration);
 					progressPercent = Math.min(100, Math.max(0, Math.round((clampedTime / state.duration) * 100)));
 				}
 				const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
-				const timeText = StateManager.getInstance().formatTimeTemplate(settings.timeTemplate || "{both}");
+				const timeText = StateManager.getInstance().formatTimeTemplate(
+					settings.timeTemplate || "{both}",
+					curTime,
+					state.duration,
+				);
 
 				const coverImage =
 					settings.showCover !== false && state.coverBase64
 						? ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
 						: "assets/actions/trackdial/icon.svg";
+
+				this.lastRenderedTitle.set(dialAction.id, titleText);
+				this.lastRenderedValue.set(dialAction.id, timeText);
+				this.lastRenderedIndicator.set(dialAction.id, progressPercent);
 
 				await dialAction.setFeedback({
 					title: titleText,

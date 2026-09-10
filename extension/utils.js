@@ -51,6 +51,11 @@ function clickElement(selector, parent = document) {
  * Locate the YouTube Music main playback video element
  */
 function findVideoElement() {
+  const sel = window.YTM.selectors?.player?.video;
+  if (sel) {
+    const v = $(sel);
+    if (v) return v;
+  }
   return $('.html5-main-video') ||
     $('#movie_player video') ||
     $('ytmusic-player video') ||
@@ -62,13 +67,18 @@ function findVideoElement() {
  * Locate the YouTube Music player API instance
  */
 function getPlayerApi() {
-  const playerBar = $('ytmusic-player-bar');
+  if (window.YTM.playerApi?.getPlayerApi) {
+    return window.YTM.playerApi.getPlayerApi();
+  }
+
+  const selectors = window.YTM.selectors?.player || {};
+  const playerBar = $(selectors.playerBar || 'ytmusic-player-bar');
   if (playerBar?.playerApi_) return playerBar.playerApi_;
 
-  const moviePlayer = $('#movie_player') || $('#player') || $('.html5-video-player');
+  const moviePlayer = $(selectors.moviePlayer || '#movie_player') || $('#player') || $('.html5-video-player');
   if (moviePlayer && typeof moviePlayer.setVolume === 'function') return moviePlayer;
 
-  const ytPlayer = $('ytmusic-player');
+  const ytPlayer = $(selectors.ytPlayer || 'ytmusic-player');
   if (ytPlayer?.playerApi_) return ytPlayer.playerApi_;
   if (ytPlayer?.getPlayer && typeof ytPlayer.getPlayer === 'function') {
     try {
@@ -187,199 +197,30 @@ function isNonAlbumText(text) {
   return false;
 }
 
-/**
- * Parse mm:ss or hh:mm:ss string to integer seconds
- */
-function parseTimeString(str) {
-  if (!str) return 0;
-  const clean = str.replace(/[^\d:]/g, '');
-  if (!clean) return 0;
-  const parts = clean.split(':').map(val => parseInt(val, 10));
-  if (parts.length === 0 || parts.some(isNaN)) return 0;
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  if (parts.length === 1) return parts[0] || 0;
-  return 0;
-}
 
-/**
- * Extract accurate track-relative timing & duration
- * Prioritizes canonical DOM time-info string over MSE chunk buffers to prevent truncated durations
- */
-function extractTrackTiming(video) {
-  let currentTime = 0;
-  let duration = 0;
-  let hasDefinitiveDuration = false;
-
-  // 1. Primary: Extract accurate formatted duration from DOM .time-info (e.g. "0:19 / 3:33")
-  const timeInfoElem = $('ytmusic-player-bar .time-info, ytmusic-player-bar span.time-info, #time-info, .time-info');
-  if (timeInfoElem && timeInfoElem.textContent) {
-    const text = cleanWhitespace(timeInfoElem.textContent);
-    const timeMatches = text.match(/(\d+:\d+(?::\d+)?)/g);
-    if (timeMatches && timeMatches.length >= 2) {
-      const parsedCur = parseTimeString(timeMatches[0]);
-      const parsedDur = parseTimeString(timeMatches[1]);
-      if (parsedDur > 0) {
-        duration = parsedDur;
-        currentTime = Math.min(duration, parsedCur);
-        hasDefinitiveDuration = true;
-      }
-    }
-  }
-
-  // 2. Extract from separate current-time and total-time or ytp-time elements
-  if (!hasDefinitiveDuration) {
-    const totalElem = $('ytmusic-player-bar .total-time, .ytp-time-duration, #time-info .total, ytmusic-player-bar span#duration');
-    const curElem = $('ytmusic-player-bar .current-time, .ytp-time-current, #time-info .current');
-    if (totalElem && totalElem.textContent) {
-      const parsedDur = parseTimeString(totalElem.textContent);
-      if (parsedDur > 0) {
-        duration = parsedDur;
-        if (curElem && curElem.textContent) {
-          currentTime = Math.min(duration, parseTimeString(curElem.textContent));
-        }
-        hasDefinitiveDuration = true;
-      }
-    }
-  }
-
-  // 3. YouTube Music Polymer PlayerBar internal duration properties
-  const playerBar = $('ytmusic-player-bar');
-  if (playerBar && !hasDefinitiveDuration) {
-    const pDataDur = playerBar.__data?.duration || playerBar.duration_;
-    if (typeof pDataDur === 'number' && !isNaN(pDataDur) && pDataDur > 0) {
-      duration = Math.floor(pDataDur);
-      hasDefinitiveDuration = true;
-    }
-  }
-
-  // 4. Progress bar slider attributes
-  if (!hasDefinitiveDuration) {
-    const progressBar = $('ytmusic-player-bar #progress-bar, tp-yt-paper-slider#progress-bar, #progress-bar');
-    if (progressBar) {
-      const maxAttr = progressBar.getAttribute('aria-valuemax') ?? progressBar.getAttribute('max') ?? progressBar.value;
-      const nowAttr = progressBar.getAttribute('aria-valuenow') ?? progressBar.getAttribute('value') ?? progressBar.value;
-      const valMax = typeof maxAttr === 'number' ? maxAttr : parseInt(maxAttr, 10);
-      const valNow = typeof nowAttr === 'number' ? nowAttr : parseInt(nowAttr, 10);
-      if (!isNaN(valMax) && valMax > 0) {
-        duration = valMax;
-        if (!isNaN(valNow) && valNow >= 0) {
-          currentTime = Math.min(duration, valNow);
-        }
-        hasDefinitiveDuration = true;
-      }
-    }
-  }
-
-  // 5. Player API (use for real-time sub-second currentTime, and fallback/maximum duration)
-  const playerApi = getPlayerApi();
-  if (playerApi) {
-    try {
-      const pCur = typeof playerApi.getCurrentTime === 'function' ? playerApi.getCurrentTime() : 0;
-      const pDur = typeof playerApi.getDuration === 'function' ? playerApi.getDuration() : 0;
-
-      if (typeof pCur === 'number' && !isNaN(pCur) && isFinite(pCur) && pCur >= 0) {
-        currentTime = Math.floor(pCur);
-      }
-
-      if (typeof pDur === 'number' && !isNaN(pDur) && isFinite(pDur) && pDur > 0) {
-        const flooredDur = Math.floor(pDur);
-        if (!hasDefinitiveDuration || flooredDur > duration) {
-          duration = flooredDur;
-          hasDefinitiveDuration = true;
-        }
-      }
-    } catch (e) { }
-  }
-
-  // 6. HTML5 Video Element (fallback)
-  if (video) {
-    if (currentTime === 0 && !isNaN(video.currentTime) && isFinite(video.currentTime)) {
-      currentTime = Math.floor(video.currentTime);
-    }
-    if (!hasDefinitiveDuration && !isNaN(video.duration) && isFinite(video.duration) && video.duration > 0) {
-      const flooredDur = Math.floor(video.duration);
-      if (flooredDur > duration) {
-        duration = flooredDur;
-      }
-    }
-  }
-
-  if (duration > 0 && currentTime > duration) {
-    currentTime = duration;
-  }
-
-  return { currentTime, duration };
-}
 
 
 /**
- * Cached Cover Art Data
+ * Extract best artwork URL from MediaSession metadata (prefers 226x226 for LCD/Keys)
  */
-let cachedCoverUrl = '';
-let cachedCoverBase64 = '';
-
-function getCachedCover() {
-  return {
-    url: cachedCoverUrl,
-    base64: cachedCoverBase64
-  };
-}
-
-/**
- * Convert an image URL to a clean Base64 Data URL in RAM
- */
-function processCoverImage(url, onStateCallback) {
-  if (!url) {
-    cachedCoverUrl = '';
-    cachedCoverBase64 = '';
-    if (typeof onStateCallback === 'function') onStateCallback(true);
-    return;
+function extractArtworkUrl(mediaSession) {
+  const artworks = mediaSession?.artwork;
+  if (!artworks || !Array.isArray(artworks) || artworks.length === 0) {
+    return '';
   }
 
-  if (url === cachedCoverUrl && cachedCoverBase64) {
-    return;
-  }
+  // Prefer 226x226 (optimal resolution for Stream Deck LCD touchstrips and keypad keys)
+  const preferred = artworks.find(a => a && a.sizes === '226x226');
+  if (preferred?.src) return preferred.src;
 
-  cachedCoverUrl = url;
+  // Otherwise sort by resolution descending
+  const sorted = [...artworks].sort((a, b) => {
+    const sizeA = parseInt(a?.sizes?.split('x')[0] || '0', 10);
+    const sizeB = parseInt(b?.sizes?.split('x')[0] || '0', 10);
+    return sizeB - sizeA;
+  });
 
-  // 1. Fast Canvas Capture from DOM image
-  const domImg = $('ytmusic-player-bar img#img') ||
-    $('ytmusic-player-bar .thumbnail img') ||
-    $('ytmusic-player-bar .image') ||
-    $('#layout ytmusic-player-bar img');
-
-  if (domImg && domImg.complete && domImg.naturalWidth > 0) {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 144;
-      canvas.height = 144;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(domImg, 0, 0, 144, 144);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      if (dataUrl && dataUrl.length > 100) {
-        cachedCoverBase64 = dataUrl;
-        if (typeof onStateCallback === 'function') onStateCallback(true);
-        return;
-      }
-    } catch (e) { }
-  }
-
-  // 2. Fetch binary blob
-  fetch(url)
-    .then(res => {
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-      return res.blob();
-    })
-    .then(blob => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        cachedCoverBase64 = reader.result || '';
-        if (typeof onStateCallback === 'function') onStateCallback(true);
-      };
-      reader.readAsDataURL(blob);
-    })
-    .catch(() => { });
+  return sorted[0]?.src || artworks[artworks.length - 1]?.src || '';
 }
 
 /**
@@ -440,10 +281,7 @@ window.YTM.utils = {
   notifyState,
   cleanWhitespace,
   isNonAlbumText,
-  parseTimeString,
-  extractTrackTiming,
-  getCachedCover,
-  processCoverImage,
+  extractArtworkUrl,
   detectBrowserPlatform,
   compareVersions,
   reportMismatchStatus

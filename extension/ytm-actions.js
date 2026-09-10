@@ -1,59 +1,89 @@
 /**
- * YouTube Music Web Controller - Player Actions
+ * YouTube Music Web Controller - Action Orchestrator
  * 
- * Direct player manipulation (play/pause, volume, mute, seek).
+ * Streamlined 2-tier action dispatcher.
+ * - Playback (Play, Pause, Next, Prev, Seek): MediaSession (Tier 1) -> Native Player API (Tier 2).
+ *   Completely DOM-immune and free of brittle button selectors.
+ * - Volume & Mute: Native Player API -> HTML5 <video> element.
+ * - UI Toggles (Like, Dislike, Shuffle, Repeat): Direct UI clicks.
  */
 
 'use strict';
 
 window.YTM = window.YTM || {};
 
+function triggerStateNotification(delays = [50, 150]) {
+  const notify = (typeof notifyState === 'function')
+    ? notifyState
+    : window.YTM.utils?.notifyState;
+  if (typeof notify === 'function') {
+    notify(true, delays);
+  }
+}
+
 /**
- * Bulletproof Play / Pause Toggle
+ * Toggle playback state (play / pause)
  */
 function togglePlayPause() {
-  const video = findVideoElement();
-  if (video) {
-    if (video.paused) {
-      video.play().catch(() => {
-        clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button');
-      });
-    } else {
-      video.pause();
-    }
-  } else {
-    clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button');
-  }
+  const ms = window.YTM.mediaSession;
+  const api = window.YTM.playerApi;
 
-  notifyState(true, [50, 150, 350]);
+  if (!ms?.togglePlayPause()) {
+    api?.togglePlayPause();
+  }
+  triggerStateNotification([50, 150, 350]);
 }
 
 /**
- * Explicit Play
+ * Start playback
  */
 function playVideo() {
-  const video = findVideoElement();
-  if (video && video.paused) {
-    video.play().catch(() => {
-      clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button');
-    });
-  } else if (!video) {
-    clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button');
+  const ms = window.YTM.mediaSession;
+  const api = window.YTM.playerApi;
+
+  if (!ms?.play()) {
+    api?.playVideo();
   }
-  notifyState(true, [50, 150]);
+  triggerStateNotification([50, 150]);
 }
 
 /**
- * Explicit Pause
+ * Pause playback
  */
 function pauseVideo() {
-  const video = findVideoElement();
-  if (video && !video.paused) {
-    if (!clickElement('#play-pause-button, ytmusic-player-bar #play-pause-button, tp-yt-paper-icon-button#play-pause-button, .play-pause-button')) {
-      video.pause();
-    }
+  const ms = window.YTM.mediaSession;
+  const api = window.YTM.playerApi;
+
+  if (!ms?.pause()) {
+    api?.pauseVideo();
   }
-  notifyState(true, [50, 150]);
+  triggerStateNotification([50, 150]);
+}
+
+/**
+ * Skip to next track
+ */
+function nextTrack() {
+  const ms = window.YTM.mediaSession;
+  const api = window.YTM.playerApi;
+
+  if (!ms?.nextTrack()) {
+    api?.nextVideo();
+  }
+  triggerStateNotification([60, 200, 450]);
+}
+
+/**
+ * Skip to previous track
+ */
+function previousTrack() {
+  const ms = window.YTM.mediaSession;
+  const api = window.YTM.playerApi;
+
+  if (!ms?.previousTrack()) {
+    api?.previousVideo();
+  }
+  triggerStateNotification([60, 200, 450]);
 }
 
 /**
@@ -63,20 +93,11 @@ function setPlayerVolume(targetPercent) {
   const clamped = Math.min(100, Math.max(0, Math.round(targetPercent)));
 
   // 1. YouTube Music Player API
-  const playerApi = getPlayerApi();
-  if (playerApi) {
-    try {
-      if (typeof playerApi.setVolume === 'function') {
-        playerApi.setVolume(clamped);
-      }
-      if (clamped > 0 && typeof playerApi.isMuted === 'function' && playerApi.isMuted() && typeof playerApi.unMute === 'function') {
-        playerApi.unMute();
-      }
-    } catch (e) { }
-  }
+  const api = window.YTM.playerApi;
+  api?.setVolume(clamped);
 
-  // 2. Polymer playerBar
-  const playerBar = $('ytmusic-player-bar');
+  // 2. Polymer playerBar component UI properties
+  const playerBar = document.querySelector('ytmusic-player-bar');
   if (playerBar) {
     try {
       if (typeof playerBar.setVolume_ === 'function') playerBar.setVolume_(clamped);
@@ -85,12 +106,12 @@ function setPlayerVolume(targetPercent) {
     } catch (e) { }
   }
 
-  // 3. Update DOM slider element
+  // 3. Update visual DOM slider element
   try {
-    const slider = $('ytmusic-player-bar #volume-slider') ||
-      $('tp-yt-paper-slider#volume-slider') ||
-      $('#volume-slider') ||
-      $('.volume-slider');
+    const slider = document.querySelector('ytmusic-player-bar #volume-slider') ||
+      document.querySelector('tp-yt-paper-slider#volume-slider') ||
+      document.querySelector('#volume-slider') ||
+      document.querySelector('.volume-slider');
     if (slider) {
       slider.value = clamped;
       slider.setAttribute('value', String(clamped));
@@ -99,86 +120,135 @@ function setPlayerVolume(targetPercent) {
   } catch (e) { }
 
   // 4. HTML5 video fallback
-  const video = findVideoElement();
-  if (video) {
-    video.volume = clamped / 100;
-    if (clamped > 0 && video.muted) {
-      video.muted = false;
-    }
-  }
+  const fb = window.YTM.fallback;
+  fb?.setPlayerVolume(clamped);
 
-  notifyState(true, [50, 150]);
+  triggerStateNotification([50, 150]);
 }
 
 /**
- * Adjust volume by relative delta
+ * Adjust volume by relative delta (-100 to +100)
  */
 function adjustPlayerVolume(delta) {
-  const current = typeof getPlayerVolume === 'function' ? getPlayerVolume() : 100;
+  const api = window.YTM.playerApi;
+  let current = api?.getVolume();
+
+  if (typeof current !== 'number') {
+    current = (typeof getPlayerVolume === 'function') ? getPlayerVolume() : 100;
+  }
+
   const target = Math.min(100, Math.max(0, Math.round(current + delta)));
   setPlayerVolume(target);
 }
 
 /**
- * Toggle mute / unmute
+ * Toggle player mute state and sync UI
  */
 function togglePlayerMute() {
-  const muteBtnSelector = 'ytmusic-player-bar #volume-slider-volume-button, ytmusic-player-bar .volume, ytmusic-player-bar tp-yt-paper-icon-button.volume, #volume-slider-volume-button';
-  if (!clickElement(muteBtnSelector)) {
-    const playerApi = getPlayerApi();
-    if (playerApi && typeof playerApi.isMuted === 'function') {
-      try {
-        if (playerApi.isMuted()) {
-          if (typeof playerApi.unMute === 'function') playerApi.unMute();
-        } else {
-          if (typeof playerApi.mute === 'function') playerApi.mute();
-        }
-      } catch (e) { }
-    } else {
-      const video = findVideoElement();
-      if (video) video.muted = !video.muted;
+  const muteBtnSelector = window.YTM.selectors?.player?.volumeMuteButton || 'ytmusic-player-bar #volume-slider-volume-button, ytmusic-player-bar .volume, ytmusic-player-bar tp-yt-paper-icon-button.volume, #volume-slider-volume-button';
+  const clickFn = typeof clickElement === 'function' ? clickElement : window.YTM.utils?.clickElement;
+
+  // 1. Click UI button to trigger YouTube Music's visual state & audio toggle
+  let clicked = false;
+  if (typeof clickFn === 'function') {
+    clicked = clickFn(muteBtnSelector);
+  } else {
+    const btn = document.querySelector(muteBtnSelector);
+    if (btn) {
+      const b = btn.querySelector('button') || btn;
+      b.click();
+      clicked = true;
     }
   }
 
-  notifyState(true, [60, 200]);
+  // 2. Fallback to Player API and video element if button was not clickable
+  if (!clicked) {
+    const api = window.YTM.playerApi;
+    const fb = window.YTM.fallback;
+    if (!api?.toggleMute()) {
+      fb?.togglePlayerMute();
+    }
+  }
+
+  triggerStateNotification([60, 200]);
 }
 
 /**
- * Seek playback to absolute position in seconds
+ * Seek to absolute position in seconds
  */
 function seekTo(targetSeconds) {
-  const playerApi = getPlayerApi();
-  if (playerApi && typeof playerApi.seekTo === 'function') {
-    try {
-      playerApi.seekTo(targetSeconds, true);
-    } catch (e) { }
-  }
+  const api = window.YTM.playerApi;
+  const ms = window.YTM.mediaSession;
 
-  const video = findVideoElement();
-  if (video) {
-    try {
-      video.currentTime = targetSeconds;
-    } catch (e) { }
+  if (!api?.seekTo(targetSeconds)) {
+    ms?.seekTo(targetSeconds);
   }
-
-  notifyState(true, [50, 150]);
+  triggerStateNotification([50, 150]);
 }
 
 /**
- * Seek playback by relative delta in seconds
+ * Seek relative delta in seconds
  */
 function seekRelative(deltaSeconds) {
-  const video = findVideoElement();
-  const timing = (typeof extractTrackTiming === 'function')
-    ? extractTrackTiming(video)
-    : { currentTime: video ? video.currentTime : 0, duration: video ? video.duration : 0 };
-  const currentTime = timing.currentTime || 0;
-  const duration = timing.duration || 0;
+  const api = window.YTM.playerApi;
+  const current = api?.getCurrentTime();
+  const duration = api?.getDuration();
 
-  const target = duration > 0
-    ? Math.min(duration, Math.max(0, currentTime + deltaSeconds))
-    : Math.max(0, currentTime + deltaSeconds);
-  seekTo(target);
+  if (typeof current === 'number' && !isNaN(current) && isFinite(current)) {
+    const target = (typeof duration === 'number' && duration > 0)
+      ? Math.min(duration, Math.max(0, current + deltaSeconds))
+      : Math.max(0, current + deltaSeconds);
+    seekTo(target);
+    return;
+  }
+
+  const ms = window.YTM.mediaSession;
+  if (ms?.seekRelative(deltaSeconds)) {
+    triggerStateNotification([50, 150]);
+    return;
+  }
+
+  const video = window.YTM.selectors?.findVideo?.() || document.querySelector('video');
+  if (video && typeof video.currentTime === 'number') {
+    video.currentTime = Math.max(0, video.currentTime + deltaSeconds);
+    triggerStateNotification([50, 150]);
+  }
+}
+
+/**
+ * Toggle Like
+ */
+function toggleLike() {
+  const fb = window.YTM.fallback;
+  fb?.toggleLike();
+  triggerStateNotification([60, 200, 450]);
+}
+
+/**
+ * Toggle Dislike
+ */
+function toggleDislike() {
+  const fb = window.YTM.fallback;
+  fb?.toggleDislike();
+  triggerStateNotification([60, 200, 450]);
+}
+
+/**
+ * Toggle Shuffle
+ */
+function toggleShuffle() {
+  const fb = window.YTM.fallback;
+  fb?.toggleShuffle();
+  triggerStateNotification([60, 200, 450]);
+}
+
+/**
+ * Toggle Repeat
+ */
+function toggleRepeat() {
+  const fb = window.YTM.fallback;
+  fb?.toggleRepeat();
+  triggerStateNotification([60, 200, 450]);
 }
 
 // Export actions to YTM namespace
@@ -186,9 +256,15 @@ window.YTM.actions = {
   togglePlayPause,
   playVideo,
   pauseVideo,
+  nextTrack,
+  previousTrack,
   setPlayerVolume,
   adjustPlayerVolume,
   togglePlayerMute,
   seekTo,
-  seekRelative
+  seekRelative,
+  toggleLike,
+  toggleDislike,
+  toggleShuffle,
+  toggleRepeat
 };

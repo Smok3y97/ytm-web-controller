@@ -41,15 +41,6 @@
 
     <main class="content">
       <div class="card">
-        <label for="ws-port" class="field-label">WebSocket Server Port</label>
-        <div class="input-row">
-          <input type="number" id="ws-port" min="1024" max="65535" value="39865" placeholder="39865">
-          <button id="save-port-btn" class="btn btn-primary">Save</button>
-        </div>
-        <p class="field-hint">Must match the port configured in Stream Deck Property Inspector.</p>
-      </div>
-
-      <div class="card">
         <div class="action-buttons">
           <button id="test-connection-btn" class="btn btn-secondary">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -63,11 +54,28 @@
         </div>
       </div>
 
+      <details class="card advanced-card">
+        <summary class="advanced-summary">
+          <span>Advanced Settings</span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </summary>
+        <div class="advanced-body">
+          <label for="ws-port" class="field-label">WebSocket Server Port</label>
+          <div class="input-row">
+            <input type="number" id="ws-port" min="1024" max="65535" value="39865" placeholder="39865">
+            <button id="save-port-btn" class="btn btn-primary">Save</button>
+          </div>
+          <p class="field-hint">Default: 39865. Must match the port configured in Stream Deck Property Inspector.</p>
+        </div>
+      </details>
+
       <div id="toast-message" class="toast hidden"></div>
     </main>
 
     <footer class="footer">
-      <span id="version-text">v1.11.3 • Open Source</span>
+      <span id="version-text">v1.11.4 • Open Source</span>
       <a href="https://github.com/smok3y97/ytm-web-controller" target="_blank">GitHub</a>
     </footer>
     <div class="legal-disclaimer">

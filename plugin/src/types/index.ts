@@ -21,6 +21,8 @@ export interface YTMPlaybackState {
 	isDisliked: boolean;
 	shuffleActive: boolean;
 	repeatMode: "ALL" | "OFF" | "ONE";
+	playbackRate?: number;
+	timestamp?: number;
 	isVersionMismatch?: boolean;
 	extensionVersion?: string;
 }
@@ -29,6 +31,7 @@ export interface HandshakePayload {
 	type: "handshake";
 	version: string;
 	platform?: string;
+	tabId?: string;
 }
 
 export interface HandshakeAckPayload {
@@ -55,6 +58,8 @@ export interface WSMessage<T = unknown> {
 	url?: string;
 	version?: string;
 	platform?: string;
+	tabId?: string;
+	isPlaying?: boolean;
 }
 
 export interface GlobalSettings extends JsonObject {

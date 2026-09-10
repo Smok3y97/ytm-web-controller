@@ -10,20 +10,20 @@
 window.YTM = window.YTM || {};
 
 const DEFAULT_PORT = 39865;
+const tabId = 'tab_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
 
 let ws = null;
 let currentPort = DEFAULT_PORT;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
-let bridgeVersion = '1.11.3.0';
+let bridgeVersion = '1.11.4.0';
 
 let lastSentState = {
   title: '',
   artist: '',
   album: '',
   coverUrl: '',
-  coverBase64: '',
   trackUrl: '',
   artistUrl: '',
   albumUrl: '',
@@ -45,6 +45,20 @@ function scheduleStateUpdates(delays = [50, 150, 350]) {
   delays.forEach(d => setTimeout(() => sendState(true), d));
 }
 window.YTM.scheduleStateUpdates = scheduleStateUpdates;
+
+/**
+ * Notify server when tab is closing
+ */
+function notifyTabClosed() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    try {
+      ws.send(JSON.stringify({
+        type: 'TAB_CLOSED',
+        tabId: tabId
+      }));
+    } catch { }
+  }
+}
 
 /**
  * Broadcast state payload over WebSocket
@@ -69,11 +83,11 @@ function sendState(force = false) {
         state.isDisliked === lastSentState.isDisliked &&
         state.shuffleActive === lastSentState.shuffleActive &&
         state.repeatMode === lastSentState.repeatMode &&
-        state.coverBase64 === lastSentState.coverBase64 &&
+        state.coverUrl === lastSentState.coverUrl &&
         state.trackUrl === lastSentState.trackUrl &&
         state.artistUrl === lastSentState.artistUrl &&
         state.albumUrl === lastSentState.albumUrl &&
-        Math.abs(state.currentTime - (lastSentState.currentTime || 0)) < 1
+        Math.abs(state.currentTime - (lastSentState.currentTime || 0)) < 1.5
       );
 
       if (isIdentical) return;
@@ -81,9 +95,14 @@ function sendState(force = false) {
 
     lastSentState = { ...state };
 
+    const timestamp = state.timestamp || Date.now();
+    const isPlaying = !state.paused;
     ws.send(JSON.stringify({
       type: 'STATE_UPDATE',
-      timestamp: Date.now(),
+      event: 'STATE_UPDATE',
+      timestamp,
+      tabId: tabId,
+      isPlaying: isPlaying,
       data: state,
       state: state
     }));
@@ -105,154 +124,92 @@ function handleCommand(message) {
     if (!command) return;
 
     console.log('[YTM Controller] Executing command:', command, payload);
+    const actions = window.YTM.actions || {};
+
     switch (command) {
       case 'playPause': {
-        togglePlayPause();
+        actions.togglePlayPause?.();
         break;
       }
 
       case 'play': {
-        if (typeof playVideo === 'function') {
-          playVideo();
-        } else {
-          togglePlayPause();
-        }
+        actions.playVideo?.();
         break;
       }
 
       case 'pause': {
-        if (typeof pauseVideo === 'function') {
-          pauseVideo();
-        } else {
-          togglePlayPause();
-        }
+        actions.pauseVideo?.();
         break;
       }
 
       case 'next': {
-        const pb = $('ytmusic-player-bar');
-        if (pb) {
-          clickElement('.next-button, tp-yt-paper-icon-button.next-button, #next-button', pb);
-        } else {
-          clickElement('.next-button, tp-yt-paper-icon-button.next-button, #next-button');
-        }
-        scheduleStateUpdates([150]);
+        actions.nextTrack?.();
         break;
       }
 
       case 'previous': {
-        const pb = $('ytmusic-player-bar');
-        if (pb) {
-          clickElement('.previous-button, tp-yt-paper-icon-button.previous-button, #previous-button', pb);
-        } else {
-          clickElement('.previous-button, tp-yt-paper-icon-button.previous-button, #previous-button');
-        }
-        scheduleStateUpdates([150]);
+        actions.previousTrack?.();
         break;
       }
 
       case 'like': {
-        const pb = $('ytmusic-player-bar');
-        if (pb) {
-          const likeRenderer = $('ytmusic-like-button-renderer, #like-button-renderer, .middle-controls ytmusic-like-button-renderer', pb) || pb;
-          const likeBtn = $(
-            '#button-shape-like button, #button-shape-like, tp-yt-paper-icon-button#like-button, tp-yt-paper-icon-button.like, #like-button, [aria-label*="mag ich" i]:not([aria-label*="nicht" i]), [aria-label*="like" i]:not([aria-label*="dislike" i])',
-            likeRenderer
-          );
-          if (likeBtn) {
-            const btn = likeBtn.querySelector('button') || likeBtn;
-            try { btn.click(); } catch (e) { }
-          }
-        }
-        scheduleStateUpdates([60, 200, 450]);
+        actions.toggleLike?.();
         break;
       }
 
       case 'dislike': {
-        const pb = $('ytmusic-player-bar');
-        if (pb) {
-          const likeRenderer = $('ytmusic-like-button-renderer, #like-button-renderer, .middle-controls ytmusic-like-button-renderer', pb) || pb;
-          const dislikeBtn = $(
-            '#button-shape-dislike button, #button-shape-dislike, tp-yt-paper-icon-button#dislike-button, tp-yt-paper-icon-button.dislike, #dislike-button, [aria-label*="mag ich nicht" i], [aria-label*="dislike" i]',
-            likeRenderer
-          );
-          if (dislikeBtn) {
-            const btn = dislikeBtn.querySelector('button') || dislikeBtn;
-            try { btn.click(); } catch (e) { }
-          }
-        }
-        scheduleStateUpdates([60, 200, 450]);
+        actions.toggleDislike?.();
         break;
       }
 
       case 'shuffle': {
-        const shuffleSelectors = [
-          'ytmusic-player-bar tp-yt-paper-icon-button.shuffle',
-          'ytmusic-player-bar .shuffle',
-          'ytmusic-player-bar #shuffle-button',
-          'ytmusic-player-bar [aria-label*="zufall" i]',
-          'ytmusic-player-bar [aria-label*="shuffle" i]'
-        ];
-        for (const sel of shuffleSelectors) {
-          if (clickElement(sel)) break;
-        }
-        scheduleStateUpdates([60, 200, 450]);
+        actions.toggleShuffle?.();
         break;
       }
 
       case 'repeat': {
-        const repeatSelectors = [
-          'ytmusic-player-bar tp-yt-paper-icon-button.repeat',
-          'ytmusic-player-bar .repeat',
-          'ytmusic-player-bar #repeat-button',
-          'ytmusic-player-bar [aria-label*="wiederhol" i]',
-          'ytmusic-player-bar [aria-label*="repeat" i]'
-        ];
-        for (const sel of repeatSelectors) {
-          if (clickElement(sel)) break;
-        }
-        scheduleStateUpdates([60, 200, 450]);
+        actions.toggleRepeat?.();
         break;
       }
 
       case 'volumeUp': {
-        adjustPlayerVolume(payload.step || 5);
+        actions.adjustPlayerVolume?.(payload.step || 5);
         break;
       }
 
       case 'volumeDown': {
-        adjustPlayerVolume(-(payload.step || 5));
+        actions.adjustPlayerVolume?.(-(payload.step || 5));
         break;
       }
 
       case 'adjustVolume': {
-        adjustPlayerVolume(payload.delta || 0);
+        actions.adjustPlayerVolume?.(payload.delta || 0);
         break;
       }
 
       case 'setVolume': {
         if (typeof payload.volume === 'number') {
-          setPlayerVolume(payload.volume);
+          actions.setPlayerVolume?.(payload.volume);
         }
         break;
       }
 
       case 'toggleMute':
       case 'volumeMute': {
-        togglePlayerMute();
+        actions.togglePlayerMute?.();
         break;
       }
 
       case 'seek':
       case 'seekRelative': {
         const delta = typeof payload.seconds === 'number' ? payload.seconds : (typeof payload.delta === 'number' ? payload.delta : 0);
-        seekRelative(delta);
+        actions.seekRelative?.(delta);
         break;
       }
 
       case 'seekTo': {
         const time = typeof payload.time === 'number' ? payload.time : (typeof payload.seconds === 'number' ? payload.seconds : 0);
-        seekTo(time);
+        actions.seekTo?.(time);
         break;
       }
 
@@ -318,18 +275,24 @@ function connectWebSocket(port) {
         ws.send(JSON.stringify({
           type: 'handshake',
           version: extVersion,
-          platform: platform
+          platform: platform,
+          tabId: tabId
         }));
       } catch (e) { }
 
       // 2. Register client info
       try {
+        const msPlaying = window.YTM.mediaSession?.getPlaybackState?.() === 'playing';
+        const video = typeof findVideoElement === 'function' ? findVideoElement() : null;
+        const isPlaying = msPlaying || (video ? !video.paused : false);
         ws.send(JSON.stringify({
           type: 'REGISTER_CLIENT',
           client: 'ytm-extension',
           version: extVersion,
           platform: platform,
-          url: window.location.href
+          url: window.location.href,
+          tabId: tabId,
+          isPlaying: isPlaying
         }));
       } catch (e) { }
 
@@ -407,6 +370,17 @@ function init() {
   if (typeof setupGlobalMediaListeners === 'function') {
     setupGlobalMediaListeners();
   }
+
+  // Deregister tab on close or navigation
+  window.addEventListener('beforeunload', notifyTabClosed);
+  window.addEventListener('pagehide', notifyTabClosed);
+
+  // Sync state when tab becomes visible
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      sendState(true);
+    }
+  });
 
   // Listen for configuration from bridge script (ISOLATED world)
   window.addEventListener('message', (event) => {

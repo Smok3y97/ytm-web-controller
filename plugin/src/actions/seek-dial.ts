@@ -101,6 +101,22 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		WebSocketService.getInstance().sendCommand("seekRelative", { seconds: deltaSeconds });
 	}
 
+	protected override getAdditionalMarqueeFeedback(
+		settings: SeekDialSettings,
+		state: YTMPlaybackState,
+	): { value?: string; indicator?: number } | null {
+		if (state.paused || state.duration <= 0) return null;
+		const curTime = StateManager.getInstance().getInterpolatedCurrentTime();
+		const clamped = Math.min(curTime, state.duration);
+		const indicator = Math.min(100, Math.max(0, Math.round((clamped / state.duration) * 100)));
+		const value = StateManager.getInstance().formatTimeTemplate(
+			settings.timeTemplate || "{both}",
+			curTime,
+			state.duration,
+		);
+		return { value, indicator };
+	}
+
 	protected async updateDialDisplay(
 		dialAction: WillAppearEvent<SeekDialSettings>["action"],
 		state: YTMPlaybackState,
@@ -114,9 +130,10 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 
 				const marqueeTitle = this.getFormattedMarqueeTitle(settings, dialAction.id);
 				const timeTemplate = settings.timeTemplate || "{both}";
-				const timeText = StateManager.getInstance().formatTimeTemplate(timeTemplate, state.currentTime, state.duration);
+				const curTime = StateManager.getInstance().getInterpolatedCurrentTime();
+				const timeText = StateManager.getInstance().formatTimeTemplate(timeTemplate, curTime, state.duration);
 				const indicatorValue =
-					state.duration > 0 ? Math.min(100, Math.max(0, Math.round((state.currentTime / state.duration) * 100))) : 0;
+					state.duration > 0 ? Math.min(100, Math.max(0, Math.round((curTime / state.duration) * 100))) : 0;
 
 				const coverImage =
 					settings.showCover !== false && state.coverBase64
@@ -124,6 +141,10 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 						: state.paused
 							? "assets/actions/playpause/play.svg"
 							: "assets/actions/seekdial/icon.svg";
+
+				this.lastRenderedTitle.set(dialAction.id, marqueeTitle);
+				this.lastRenderedValue.set(dialAction.id, timeText);
+				this.lastRenderedIndicator.set(dialAction.id, indicatorValue);
 
 				await dialAction.setFeedback({
 					title: marqueeTitle,

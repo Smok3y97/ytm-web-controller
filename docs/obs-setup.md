@@ -88,7 +88,7 @@ http://localhost:39865/overlay
 ```
 
 #### 2. Pure Floating Overlay (Zero Background over Gameplay)
-Completely transparent card background without borders or shadows for floating seamlessly over gaming streams:
+Completely transparent card background without borders or shadows for floating over gameplay in streams:
 ```text
 http://localhost:39865/overlay?bg=transparent&border=none&shadow=false
 ```

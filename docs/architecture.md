@@ -77,13 +77,15 @@ graph LR
 
 ## [🧩 2. Core Architectural Principles](#top)
 
-1. **Zero-Polling (`setInterval == 0`)**:
-   - The browser extension never polls the DOM on a periodic interval.
-   - All state extractions are reactive, triggered strictly by native HTML5 `<video>` events (`play`, `pause`, `timeupdate`, `seeking`, `seeked`, `ratechange`, `volumechange`) and scoped `MutationObserver` callbacks on music metadata nodes.
-   - When music is stopped or paused, CPU and network overhead drop to zero.
+1. **Zero-Polling & Zero-Timeupdate Traffic (`setInterval == 0`)**:
+   - The browser extension never polls the DOM on a periodic interval and sends **zero periodic `timeupdate` events** over WebSocket.
+   - All state extractions are reactive, triggered strictly by native HTML5 `<video>` status events (`play`, `pause`, `seeking`, `seeked`, `durationchange`, `loadedmetadata`, `ratechange`, `volumechange`) and scoped `MutationObserver` callbacks for like, dislike, shuffle, and repeat states.
+   - Playback timing is interpolated locally on client endpoints (Stream Deck LCD dials via `StateManager.getInterpolatedCurrentTime()` and OBS Browser Overlay via `requestAnimationFrame`) using snapshot timestamps, eliminating WebSocket traffic floods during playback.
+   - When music is stopped or paused, CPU and network overhead drop to absolute zero.
 
-2. **Zero Disk Footprint (Standard Mode)**:
+2. **Zero Disk Footprint & In-Memory Pipeline (Standard Mode)**:
    - Dynamic LCD touchstrip layouts, animated dials, and album cover thumbnails are computed entirely in memory (RAM) and encoded as Base64 Data URLs.
+   - The browser extension transmits lightweight cover URLs (`extractArtworkUrl` prioritizing 226×226 px for Stream Deck displays); the Node.js plugin fetches the image directly into a binary RAM `Buffer` with zero intermediate disk writes.
    - No temporary cache or image files are ever written to disk (file writes for OBS text export are strictly opt-in).
 
 3. **Single Responsibility Principle (SRP) & Decoupling**:
@@ -143,8 +145,12 @@ ytm-web-controller/
 │   ├── manifest.json            # MV3 Manifest with sequential MAIN-world scripts & Gecko compatibility
 │   ├── background.js            # MV3 service worker for tab and window foreground activation
 │   ├── bridge.js                # ISOLATED world bridge for chrome.storage & manifest version
+│   ├── ytm-selectors.js         # Single Source of Truth for all YouTube Music DOM element selectors
+│   ├── ytm-media-session.js     # Tier 1 W3C Media Session API hooks (setActionHandler / setPositionState)
 │   ├── utils.js                 # DOM helpers, text/time parsers & in-memory cover canvas processor
-│   ├── ytm-actions.js           # Player controls & seek/volume actions
+│   ├── ytm-player-api.js        # Direct, zero-DOM interaction with native #movie_player Player API
+│   ├── ytm-fallback.js          # UI toggles (Like/Dislike/Shuffle/Repeat) & <video> volume fallbacks
+│   ├── ytm-actions.js           # Action dispatcher: 2-Tier Playback (MediaSession -> Player API) + UI controls
 │   ├── ytm-state.js             # High-precision metadata parser, state collector & reactive media observers
 │   ├── content.js               # WebSocket client orchestrator, command router & initialization
 │   ├── popup.html               # Extension status, version diagnostics & port configuration UI
@@ -236,38 +242,65 @@ The browser companion extension runs in the context of `https://music.youtube.co
 1. **Manifest Configuration ([`extension/manifest.json`](../extension/manifest.json))**:
    - Built on **Manifest V3**.
    - Fully compatible with **Chromium** and **Gecko** (Mozilla Firefox).
-   - Sequentially loads modular scripts in page `"world": "MAIN"` context (`utils.js` → `ytm-actions.js` → `ytm-state.js` → `content.js`) at `document_idle`.
+   - Sequentially loads modular scripts in page `"world": "MAIN"` context (`ytm-selectors.js` → `ytm-media-session.js` → `utils.js` → `ytm-player-api.js` → `ytm-fallback.js` → `ytm-actions.js` → `ytm-state.js` → `content.js`) at `document_start` to intercept MediaSession handlers before YouTube Music scripts initialize.
 
 2. **Isolated World Bridge ([`extension/bridge.js`](../extension/bridge.js))**:
    - Injected into `music.youtube.com` with default `ISOLATED` world execution at `document_start`.
    - Bridges manifest version, custom WebSocket port, and version mismatch status bidirectionally to `content.js` via `window.postMessage`.
 
-3. **Core Utilities & Helpers ([`extension/utils.js`](../extension/utils.js))**:
+3. **Centralized DOM Selectors ([`extension/ytm-selectors.js`](../extension/ytm-selectors.js))**:
+   - **Single Source of Truth** for all YouTube Music DOM element selectors (player container, interactive buttons, metadata).
+   - Shields the rest of the codebase from UI mutations: when YouTube updates markup or CSS classes, only this single registry requires adjustments.
+
+4. **Tier 1: W3C Media Session API Integration ([`extension/ytm-media-session.js`](../extension/ytm-media-session.js))**:
+   - Intercepts `navigator.mediaSession.setActionHandler` and `navigator.mediaSession.setPositionState` at `document_start`.
+   - Captures YouTube Music's internal action callbacks (`play`, `pause`, `nexttrack`, `previoustrack`, `seekto`).
+   - Implements **W3C § 4.5 Position State** monitoring: synchronizes track position, duration, and playback rate (0 on pause, 1 on play) with the active media engine to produce drift-free snapshots for Stream Deck client-side interpolation.
+
+5. **Core Utilities & Helpers ([`extension/utils.js`](../extension/utils.js))**:
    - Fast DOM query helpers (`$`, `$$`, `clickElement`).
-   - `cleanWhitespace`, `isNonAlbumText`, and `parseTimeString` to sanitize multi-lingual YouTube metadata.
-   - Robust `extractTrackTiming` prioritizing canonical DOM time strings to avoid MSE chunk buffer truncation.
-   - In-memory cover art canvas converter (`processCoverImage`).
+   - Text sanitizers (`cleanWhitespace`, `isNonAlbumText`) to filter multi-lingual YouTube metadata.
+   - High-resolution artwork URL extractor (`extractArtworkUrl` preferring `226x226` for Stream Deck keys and touchstrips).
 
-4. **Player Actions ([`extension/ytm-actions.js`](../extension/ytm-actions.js))**:
-   - Controls for `togglePlayPause`, `setPlayerVolume`, `adjustPlayerVolume`, `togglePlayerMute`, `seekTo`, and `seekRelative`.
+6. **Native Player API ([`extension/ytm-player-api.js`](../extension/ytm-player-api.js))**:
+   - Primary playback & seeking controller: executes commands directly through the internal YouTube Music Player API (`#movie_player` / `playerBar.playerApi_`: `playVideo()`, `pauseVideo()`, `nextVideo()`, `previousVideo()`, `setVolume()`, `isMuted()`, `mute()`, `unMute()`, `seekTo()`, `getCurrentTime()`, `getDuration()`).
+   - Zero DOM dependencies; unaffected by CSS/HTML changes.
 
-5. **State Extraction & Observers ([`extension/ytm-state.js`](../extension/ytm-state.js))**:
-   - Zero-polling HTML5 `<video>` listeners (`play`, `pause`, `timeupdate`, `seeking`, `seeked`, `ratechange`, `volumechange`).
-   - Scoped `MutationObserver` on player bar elements for immediate state broadcast on track transition.
+7. **DOM & UI Fallbacks ([`extension/ytm-fallback.js`](../extension/ytm-fallback.js))**:
+   - Handles controls not exposed via official JavaScript APIs (Like, Dislike, Shuffle, Repeat) and provides hardware `<video>` volume/mute fallbacks.
+   - Strictly references `window.YTM.selectors` for all DOM queries.
 
-6. **WebSocket Orchestrator ([`extension/content.js`](../extension/content.js))**:
-   - Handles auto-reconnect, bidirectional version handshake, and command dispatching.
+8. **Action Orchestrator ([`extension/ytm-actions.js`](../extension/ytm-actions.js))**:
+   - **Playback Control**: Tier 1 Media Session API → Tier 2 Native Player API.
+   - **Seeking**: Direct native `playerApi.seekTo(target, true)` execution with Media Session fallback for reliable scrubbing.
+   - **Volume & Mute**: Native Player API execution coupled with Polymer UI component synchronization (`playerBar.setVolume_`, `tp-yt-paper-slider#volume-slider`, and UI mute button click) so that in-browser icons and sliders stay synchronized with Stream Deck hardware.
+   - Triggers staggered state notifications (`notifyState`).
+
+9. **State Extraction & Observers ([`extension/ytm-state.js`](../extension/ytm-state.js))**:
+   - Primary metadata extraction via `navigator.mediaSession.metadata` (title, artist, album, artwork).
+   - High-precision timing snapshot via `window.YTM.mediaSession.getPositionState()`.
+   - Event-driven snapshot broadcasting on state transitions (`play`, `pause`, `seeking`, `seeked`, `durationchange`, `loadedmetadata`, `ratechange`, `volumechange`, `ended`) with zero periodic `timeupdate` WebSocket flood.
+   - Scoped `MutationObserver` on player bar elements for immediate state broadcast on like, dislike, shuffle, and repeat clicks.
+
+10. **WebSocket Orchestrator ([`extension/content.js`](../extension/content.js))**:
+    - Generates unique session `tabId` to participate in multi-tab arbitration.
+    - Dispatches `TAB_CLOSED` on `beforeunload` and `pagehide` to cleanly deregister tabs.
+    - Automatically synchronizes playback state on `visibilitychange` when returning to background tabs.
+    - Handles auto-reconnect, bidirectional version handshake, and routes Stream Deck commands to `window.YTM.actions`.
 
 ---
 
 ## [🔌 5. Backend Services Layer (`plugin/src/services/`)](#top)
 
-- **`WebSocketService`**: Hosts local WebSocket & HTTP server on port `39865`. Broadcasts state to connected clients (Stream Deck, OBS overlays).
+- **`WebSocketService`**: Hosts local WebSocket & HTTP server on configurable port (default `39865`).
+  - **CSWSH Origin Security (`verifyClient`)**: Strictly validates incoming connection origins (`https://music.youtube.com`, `http://127.0.0.1:${port}`, `http://localhost:${port}`, `chrome-extension://*`, `moz-extension://*`, and local tools), rejecting unauthorized web origins with HTTP 403.
+  - **Multi-Tab Orchestration**: Tracks connected tabs by `tabId` and active playback state. Automatically routes hardware commands exclusively to the tab actively playing audio (`!isPaused`), preventing ghost commands to idle tabs and ignoring stale pause events from background tabs.
+  - **Broadcast State**: Dispatches state updates to all connected external listeners (e.g. OBS overlay).
 - **`HttpApiService`**: Serves read-only GET `/overlay` (OBS Browser Source) and GET `/api/current` (Chatbot plaintext metadata).
-- **`StateManager`**: Stores active playback state, formatters, and client connectivity status.
+- **`StateManager`**: Stores active playback state, performs local timestamp-based time interpolation (`getInterpolatedCurrentTime()`), handles formatters, and tracks client connectivity status.
 - **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs.
-- **`ImageRenderer`**: Generates volume bars, mute states, and album thumbnails in RAM.
-- **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop.
+- **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs.
+- **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with client-side timeline calculations.
 - **`ObsExporterService`**: Debounced safe writer for OBS Text (GDI+) file sources (`.txt`).
 - **`VersionControlService`**: Dynamic manifest reader and version compatibility validator.
 
@@ -302,7 +335,7 @@ The Property Inspector frontend uses a modular architecture with centralized int
 │  ┌───────────────────────┐       ┌───────────────────────┐  │
 │  │   streamdeck-client   │       │     i18n.js Loader    │  │
 │  │  (WebSocket SDK Bridge│ ◄───► │ (Loads de.json/en.json│  │
-│  │  & App Language Parser│       │  & DOM Auto-Translate│  │
+│  │  & App Language Parser│       │  & DOM Auto-Translate │  │
 │  └───────────┬───────────┘       └───────────┬───────────┘  │
 │              │                               │              │
 │  ┌───────────▼───────────┐       ┌───────────▼───────────┐  │

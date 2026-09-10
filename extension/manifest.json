@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Controller Companion for YouTube Music Web",
-  "version": "1.11.3.0",
-  "version_name": "1.11.3",
+  "version": "1.11.4.0",
+  "version_name": "1.11.4",
   "description": "Ultra-lightweight companion bridge connecting music.youtube.com to Elgato Stream Deck and Discord RPC.",
   "author": "Smok3y97",
   "permissions": [
@@ -33,12 +33,16 @@
         "https://music.youtube.com/*"
       ],
       "js": [
+        "ytm-selectors.js",
+        "ytm-media-session.js",
         "utils.js",
+        "ytm-player-api.js",
+        "ytm-fallback.js",
         "ytm-actions.js",
         "ytm-state.js",
         "content.js"
       ],
-      "run_at": "document_idle",
+      "run_at": "document_start",
       "world": "MAIN"
     }
   ],

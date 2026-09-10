@@ -94,7 +94,7 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔘 **Short Press**: Toggle Play / Pause state.
   - ⏳ **Long Press (Hold ~450ms)**: Bring the YouTube Music browser tab or PWA window directly to the foreground and focus it.
 - **Song cover as button background**: When enabled, renders the high-resolution song cover art directly as the key background in memory (RAM). When disabled, uses official vector Play/Pause states.
-- **Show song info / time text on key**: When enabled, renders real-time track info or playback time directly over the button (works seamlessly whether song cover background is enabled or disabled).
+- **Show song info / time text on key**: When enabled, renders real-time track info or playback time directly over the button (works whether song cover background is enabled or disabled).
 - **Text Format**: Multi-line `<textarea>` format template (`{artist}`, `{title}`, `{album}`, `{current}`, `{duration}`, `{remaining}`, `{both}`). Press Enter to insert newlines (e.g. Line 1: `{artist}`, Line 2: `{title}`, Line 3: `{both}`). If left empty, it automatically defaults to `{artist}\n\n{song}\n\n{both}`.
 - **Automatic Marquee Scrolling**: Any line exceeding key width smoothly scrolls back-and-forth using the global marquee service while keeping shorter lines static.
 - **Native Title Styler ("T")**: Use Stream Deck's native **"T" (Title Styler)** button above the Property Inspector to customize font family, size, text color, and alignment (Top, Middle, Bottom).

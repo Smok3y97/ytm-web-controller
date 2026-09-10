@@ -9,28 +9,24 @@
 
 window.YTM = window.YTM || {};
 
-const TIMEUPDATE_THROTTLE_MS = 250;
-let lastTimeUpdate = 0;
 let hasInitializedMediaListeners = false;
 
 /**
  * Get current player volume (0 - 100)
  */
 function getPlayerVolume() {
-  const playerApi = getPlayerApi();
-  if (playerApi && typeof playerApi.getVolume === 'function') {
-    try {
-      const v = playerApi.getVolume();
-      if (typeof v === 'number' && !isNaN(v)) return Math.round(v);
-    } catch (e) { }
+  const apiVol = window.YTM.playerApi?.getVolume?.();
+  if (typeof apiVol === 'number' && !isNaN(apiVol)) {
+    return Math.round(apiVol);
   }
 
-  const playerBar = $('ytmusic-player-bar');
+  const selectors = window.YTM.selectors?.player || {};
+  const playerBar = $(selectors.playerBar || 'ytmusic-player-bar');
   if (playerBar && typeof playerBar.volume_ === 'number') {
     return Math.round(playerBar.volume_);
   }
 
-  const slider = $('ytmusic-player-bar #volume-slider') || $('tp-yt-paper-slider#volume-slider') || $('#volume-slider');
+  const slider = $(selectors.volumeSlider || 'ytmusic-player-bar #volume-slider');
   if (slider) {
     const val = slider.getAttribute('aria-valuenow') ?? slider.getAttribute('value') ?? slider.value;
     const parsed = parseInt(val, 10);
@@ -51,21 +47,18 @@ function getPlayerVolume() {
  * Get current player muted status
  */
 function getPlayerMuted() {
-  const playerApi = getPlayerApi();
-  if (playerApi && typeof playerApi.isMuted === 'function') {
-    try {
-      return playerApi.isMuted();
-    } catch (e) { }
+  const apiMuted = window.YTM.playerApi?.isMuted?.();
+  if (typeof apiMuted === 'boolean') {
+    return apiMuted;
   }
 
-  const playerBar = $('ytmusic-player-bar');
+  const selectors = window.YTM.selectors?.player || {};
+  const playerBar = $(selectors.playerBar || 'ytmusic-player-bar');
   if (playerBar && typeof playerBar.muted_ === 'boolean') {
     return playerBar.muted_;
   }
 
-  const muteBtn = $('ytmusic-player-bar #volume-slider-volume-button') ||
-    $('ytmusic-player-bar .volume') ||
-    $('ytmusic-player-bar tp-yt-paper-icon-button.volume');
+  const muteBtn = $(selectors.volumeMuteButton || 'ytmusic-player-bar #volume-slider-volume-button');
   if (muteBtn) {
     const label = (muteBtn.getAttribute('aria-label') || muteBtn.querySelector('button')?.getAttribute('aria-label') || '').toLowerCase();
     const title = (muteBtn.getAttribute('title') || muteBtn.querySelector('button')?.getAttribute('title') || '').toLowerCase();
@@ -88,17 +81,23 @@ function collectPlaybackState() {
   const mediaSession = navigator.mediaSession?.metadata;
   const playerBar = $('ytmusic-player-bar');
 
-  let title = '';
-  let artist = '';
-  let album = '';
+  // Primary metadata extraction via MediaSession API
+  let title = mediaSession?.title?.trim() || '';
+  let artist = mediaSession?.artist?.trim() || '';
+  let album = mediaSession?.album?.trim() || '';
   let coverUrl = '';
   let trackUrl = '';
   let artistUrl = '';
   let albumUrl = '';
-
   let videoId = '';
 
-  // 1. Extract from YouTube Music Internal Player API & Polymer Data
+  if (typeof extractArtworkUrl === 'function') {
+    coverUrl = extractArtworkUrl(mediaSession);
+  } else if (window.YTM?.utils?.extractArtworkUrl) {
+    coverUrl = window.YTM.utils.extractArtworkUrl(mediaSession);
+  }
+
+  // Fallback metadata extraction from Polymer API & PlayerBar if missing
   try {
     const moviePlayer = $('#movie_player') || $('#player');
     const playerApi = playerBar?.playerApi_ || (moviePlayer?.getVideoData ? moviePlayer : null);
@@ -287,13 +286,12 @@ function collectPlaybackState() {
     }
   } catch { }
 
-  if (mediaSession?.artwork && mediaSession.artwork.length > 0) {
-    const sortedArtworks = [...mediaSession.artwork].sort((a, b) => {
-      const sizeA = parseInt(a.sizes?.split('x')[0] || '0', 10);
-      const sizeB = parseInt(b.sizes?.split('x')[0] || '0', 10);
-      return sizeB - sizeA;
-    });
-    coverUrl = sortedArtworks[0]?.src || '';
+  if (!coverUrl && mediaSession?.artwork && mediaSession.artwork.length > 0) {
+    if (typeof extractArtworkUrl === 'function') {
+      coverUrl = extractArtworkUrl(mediaSession);
+    } else if (window.YTM?.utils?.extractArtworkUrl) {
+      coverUrl = window.YTM.utils.extractArtworkUrl(mediaSession);
+    }
   }
   if (!coverUrl) {
     const imgElem = $('ytmusic-player-bar img#img') ||
@@ -302,22 +300,27 @@ function collectPlaybackState() {
     coverUrl = imgElem?.src || '';
   }
 
-  const cached = getCachedCover();
-  if (coverUrl && coverUrl !== cached.url) {
-    processCoverImage(coverUrl, (force) => {
-      notifyState(force);
-    });
-  }
-
-  let paused = true;
-  const volPercent = getPlayerVolume();
+  const volume = getPlayerVolume();
   const muted = getPlayerMuted();
 
-  if (video) {
-    paused = video.paused;
-  }
-  const playerApi = getPlayerApi();
-  if (playerApi && typeof playerApi.getPlayerState === 'function') {
+  // Extract accurate track-relative duration & currentTime according to W3C § 4.5 Position State
+  const ms = window.YTM.mediaSession;
+  const pos = ms?.getPositionState?.(video);
+  const currentTime = typeof pos?.currentTime === 'number' ? pos.currentTime : (video && !isNaN(video.currentTime) ? Math.floor(video.currentTime) : 0);
+  const duration = typeof pos?.duration === 'number' ? pos.duration : (video && !isNaN(video.duration) ? Math.floor(video.duration) : 0);
+  const playerApi = typeof getPlayerApi === 'function' ? getPlayerApi() : window.YTM?.playerApi?.getPlayerApi?.();
+
+  let paused = video ? video.paused : true;
+  const playbackRate = video && typeof video.playbackRate === 'number' && !isNaN(video.playbackRate) ? video.playbackRate : 1;
+  const timestamp = Date.now();
+
+  // Evaluate playback state: MediaSession (Tier 1) -> Player API (Tier 2) -> Video (Tier 3)
+  const msPlayback = ms?.getPlaybackState?.();
+  if (msPlayback === 'playing') {
+    paused = false;
+  } else if (msPlayback === 'paused') {
+    paused = true;
+  } else if (playerApi && typeof playerApi.getPlayerState === 'function') {
     try {
       const pState = playerApi.getPlayerState();
       // 1 = PLAYING, 3 = BUFFERING
@@ -326,23 +329,16 @@ function collectPlaybackState() {
       } else if (pState === 2) {
         paused = true;
       }
-    } catch (e) { }
+    } catch { }
   }
-
-  const timing = (typeof extractTrackTiming === 'function')
-    ? extractTrackTiming(video)
-    : (window.YTM?.utils?.extractTrackTiming ? window.YTM.utils.extractTrackTiming(video) : { currentTime: video?.currentTime || 0, duration: video?.duration || 0 });
-  const currentTime = timing.currentTime || 0;
-  const duration = timing.duration || 0;
-  const volume = volPercent;
 
   // Like & Dislike Status (Strictly scoped to bottom player bar)
   let isLiked = false;
   let isDisliked = false;
 
-  const playerBarElem = $('ytmusic-player-bar');
+  const playerBarElem = $(window.YTM.selectors?.player?.playerBar || 'ytmusic-player-bar');
   const likeRenderer = playerBarElem
-    ? $('ytmusic-like-button-renderer, #like-button-renderer, .like-button-renderer', playerBarElem)
+    ? $(window.YTM.selectors?.controls?.likeRenderer || 'ytmusic-like-button-renderer, #like-button-renderer, .like-button-renderer', playerBarElem)
     : null;
   const likeStatusAttr = likeRenderer?.getAttribute('like-status')?.toUpperCase();
 
@@ -360,19 +356,8 @@ function collectPlaybackState() {
     isLiked = ls === 'LIKE';
     isDisliked = ls === 'DISLIKE';
   } else if (playerBarElem) {
-    const likeButton = $('#like-button-renderer tp-yt-paper-icon-button#like-button', playerBarElem) ||
-      $('#button-shape-like button', playerBarElem) ||
-      $('ytmusic-like-button-renderer #button-shape-like button', playerBarElem) ||
-      $('ytmusic-like-button-renderer #button-shape-like', playerBarElem) ||
-      $('[aria-label*="mag ich" i]:not([aria-label*="nicht" i])', playerBarElem) ||
-      $('[aria-label*="like" i]:not([aria-label*="dislike" i])', playerBarElem);
-
-    const dislikeButton = $('#like-button-renderer tp-yt-paper-icon-button#dislike-button', playerBarElem) ||
-      $('#button-shape-dislike button', playerBarElem) ||
-      $('ytmusic-like-button-renderer #button-shape-dislike button', playerBarElem) ||
-      $('ytmusic-like-button-renderer #button-shape-dislike', playerBarElem) ||
-      $('[aria-label*="mag ich nicht" i]', playerBarElem) ||
-      $('[aria-label*="dislike" i]', playerBarElem);
+    const likeButton = $(window.YTM.selectors?.controls?.likeButton, playerBarElem);
+    const dislikeButton = $(window.YTM.selectors?.controls?.dislikeButton, playerBarElem);
 
     isLiked = isButtonActive(likeButton);
     isDisliked = isButtonActive(dislikeButton);
@@ -388,9 +373,8 @@ function collectPlaybackState() {
   if (typeof rawShuffle === 'boolean') {
     shuffleActive = rawShuffle;
   } else {
-    const shuffleButton = $('tp-yt-paper-icon-button.shuffle, .shuffle, #shuffle-button', playerBar) ||
-      $('ytmusic-player-bar tp-yt-paper-icon-button.shuffle') ||
-      $('ytmusic-player-bar .shuffle');
+    const shuffleButton = $(window.YTM.selectors?.controls?.shuffleButton, playerBar) ||
+      $(window.YTM.selectors?.controls?.shuffleButton);
 
     if (shuffleButton) {
       shuffleActive = isButtonActive(shuffleButton, ['deaktivieren', 'ausschalten', 'turn off', 'is on']);
@@ -484,14 +468,12 @@ function collectPlaybackState() {
     }
   }
 
-  const latestCover = getCachedCover();
-
   return {
-    title,
-    artist,
-    album,
+    title: title || 'Unbekannter Titel',
+    artist: artist || 'Unbekannter Interpret',
+    album: album || '',
     coverUrl,
-    coverBase64: latestCover.base64,
+    coverBase64: '',
     trackUrl,
     artistUrl,
     albumUrl,
@@ -499,6 +481,9 @@ function collectPlaybackState() {
     duration,
     volume,
     paused,
+    isPaused: paused,
+    playbackRate,
+    timestamp,
     muted,
     isLiked,
     isDisliked,
@@ -508,35 +493,36 @@ function collectPlaybackState() {
 }
 
 /**
- * Throttled timeupdate listener
- */
-function onTimeUpdate() {
-  const now = performance.now();
-  if (now - lastTimeUpdate >= TIMEUPDATE_THROTTLE_MS) {
-    lastTimeUpdate = now;
-    notifyState(false);
-  }
-}
-
-/**
- * Setup Global DOM, HTML5 Media, and MutationObserver listeners (Zero Polling)
+ * Setup Global DOM, HTML5 Media, and MutationObserver listeners (Zero Polling, Zero Timeupdate)
  */
 function setupGlobalMediaListeners() {
   if (hasInitializedMediaListeners) return;
   hasInitializedMediaListeners = true;
 
-  document.addEventListener('play', () => notifyState(true), true);
-  document.addEventListener('playing', () => notifyState(true), true);
-  document.addEventListener('pause', () => notifyState(true), true);
-  document.addEventListener('volumechange', () => notifyState(true), true);
-  document.addEventListener('timeupdate', onTimeUpdate, true);
-  document.addEventListener('seeking', () => notifyState(true), true);
-  document.addEventListener('seeked', () => notifyState(true), true);
-  document.addEventListener('ratechange', () => notifyState(true), true);
-  document.addEventListener('loadedmetadata', () => notifyState(true), true);
-  document.addEventListener('durationchange', () => notifyState(true), true);
-  document.addEventListener('ended', () => notifyState(true), true);
+  const sendSnapshot = (force = true) => {
+    notifyState(force);
+  };
 
+  // When track duration or metadata changes, notify immediately and re-check after 150ms
+  // to reliably capture late-arriving navigator.mediaSession.metadata updates from YouTube
+  const onTrackTransition = () => {
+    sendSnapshot(true);
+    setTimeout(() => sendSnapshot(false), 150);
+  };
+
+  // Video playback status events (Strictly event-driven, zero timeupdate overhead)
+  document.addEventListener('play', () => sendSnapshot(true), true);
+  document.addEventListener('playing', () => sendSnapshot(true), true);
+  document.addEventListener('pause', () => sendSnapshot(true), true);
+  document.addEventListener('seeking', () => sendSnapshot(true), true);
+  document.addEventListener('seeked', () => sendSnapshot(true), true);
+  document.addEventListener('durationchange', onTrackTransition, true);
+  document.addEventListener('loadedmetadata', onTrackTransition, true);
+  document.addEventListener('ratechange', () => sendSnapshot(true), true);
+  document.addEventListener('volumechange', () => sendSnapshot(true), true);
+  document.addEventListener('ended', () => sendSnapshot(true), true);
+
+  // Slim MutationObserver for Like, Dislike, Shuffle, Repeat button states
   const targetNode = $('ytmusic-player-bar') || document.body;
   const observer = new MutationObserver(() => {
     notifyState(false);
@@ -544,9 +530,8 @@ function setupGlobalMediaListeners() {
   observer.observe(targetNode, {
     childList: true,
     subtree: true,
-    characterData: true,
     attributes: true,
-    attributeFilter: ['aria-pressed', 'aria-checked', 'aria-label', 'aria-valuenow', 'aria-valuemax', 'value', 'src', 'title', 'class', 'icon']
+    attributeFilter: ['aria-pressed', 'aria-checked', 'like-status', 'active', 'icon']
   });
 }
 
@@ -555,6 +540,5 @@ window.YTM.state = {
   getPlayerVolume,
   getPlayerMuted,
   collectPlaybackState,
-  onTimeUpdate,
   setupGlobalMediaListeners
 };

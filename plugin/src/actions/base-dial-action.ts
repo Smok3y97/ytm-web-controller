@@ -28,6 +28,10 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	protected lastDialPressTime: number = 0;
 	protected rotationTimer: NodeJS.Timeout | null = null;
 	protected pendingTicks: number = 0;
+	protected playbackTimer: NodeJS.Timeout | null = null;
+	protected lastRenderedValue: Map<string, string> = new Map();
+	protected lastRenderedIndicator: Map<string, number> = new Map();
+	protected lastRenderedTitle: Map<string, string> = new Map();
 
 	constructor() {
 		super();
@@ -54,14 +58,19 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		}
 		const state = StateManager.getInstance().getState();
 		await this.updateDialDisplay(ev.action, state, ev.payload.settings);
+		this.checkPlaybackTimer();
 
 		// Request instantaneous state sync from browser
 		WebSocketService.getInstance().sendCommand("requestState");
 	}
 
 	override async onWillDisappear(ev: WillDisappearEvent<TSettings>): Promise<void> {
+		this.lastRenderedValue.delete(ev.action.id);
+		this.lastRenderedIndicator.delete(ev.action.id);
+		this.lastRenderedTitle.delete(ev.action.id);
 		this.removeActiveDial(ev.action.id);
 		MarqueeService.getInstance().unregisterConsumer();
+		this.checkPlaybackTimer();
 	}
 
 	protected removeActiveDial(actionId: string): void {
@@ -192,6 +201,73 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		settings: TSettings,
 	): Promise<void>;
 
+	/**
+	 * Hook for derived dial classes to optionally provide live feedback (e.g. time/progress) on marquee tick
+	 */
+	protected getAdditionalMarqueeFeedback(
+		_settings: TSettings,
+		_state: YTMPlaybackState,
+	): { value?: string; indicator?: number } | null {
+		return null;
+	}
+
+	protected checkPlaybackTimer(): void {
+		const state = StateManager.getInstance().getState();
+		const shouldRun = this.activeDials.size > 0 && !state.paused && !state.isVersionMismatch;
+
+		if (shouldRun) {
+			if (!this.playbackTimer) {
+				this.playbackTimer = setInterval(() => {
+					this.updatePlaybackTime();
+				}, 500);
+			}
+		} else if (this.playbackTimer) {
+			clearInterval(this.playbackTimer);
+			this.playbackTimer = null;
+		}
+	}
+
+	protected async updatePlaybackTime(): Promise<void> {
+		if (StateManager.getInstance().isVersionMismatch() || this.pendingTicks !== 0 || this.rotationTimer) {
+			return;
+		}
+
+		const state = StateManager.getInstance().getState();
+		if (state.paused) {
+			this.checkPlaybackTimer();
+			return;
+		}
+
+		for (const dialAction of this.activeDials) {
+			try {
+				if (dialAction.isDial()) {
+					const settings = await dialAction.getSettings();
+					const extra = this.getAdditionalMarqueeFeedback(settings, state);
+					if (extra) {
+						const prevValue = this.lastRenderedValue.get(dialAction.id);
+						const prevIndicator = this.lastRenderedIndicator.get(dialAction.id);
+
+						const valueChanged = extra.value !== undefined && extra.value !== prevValue;
+						const indicatorChanged = extra.indicator !== undefined && extra.indicator !== prevIndicator;
+
+						if (valueChanged || indicatorChanged) {
+							const feedback: { value?: string; indicator?: number } = {};
+							if (extra.value !== undefined) {
+								feedback.value = extra.value;
+								this.lastRenderedValue.set(dialAction.id, extra.value);
+							}
+							if (extra.indicator !== undefined) {
+								feedback.indicator = extra.indicator;
+								this.lastRenderedIndicator.set(dialAction.id, extra.indicator);
+							}
+							await dialAction.setFeedback(feedback);
+						}
+					}
+				}
+			} catch {}
+		}
+	}
+
 	protected async updateMarqueeTitles(): Promise<void> {
 		if (StateManager.getInstance().isVersionMismatch()) {
 			return;
@@ -204,13 +280,18 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 					const rawTitle = this.getTitleTemplate(settings, dialAction.id);
 					const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
 					const currentText = MarqueeService.getInstance().getDisplayText(fullTitle);
-					await dialAction.setFeedback({ title: currentText });
+
+					if (currentText !== this.lastRenderedTitle.get(dialAction.id)) {
+						this.lastRenderedTitle.set(dialAction.id, currentText);
+						await dialAction.setFeedback({ title: currentText });
+					}
 				}
 			} catch {}
 		}
 	}
 
 	protected async updateAllDials(state: YTMPlaybackState): Promise<void> {
+		this.checkPlaybackTimer();
 		for (const dialAction of this.activeDials) {
 			try {
 				const settings = await dialAction.getSettings();

@@ -477,17 +477,54 @@
 			}
 		}
 
-		// Progress & Time
-		if (config.showProgress) {
-			const duration = typeof state.duration === "number" ? state.duration : 0;
-			const current = typeof state.currentTime === "number" ? state.currentTime : 0;
-			const percent = duration > 0 ? Math.min(100, Math.max(0, (current / duration) * 100)) : 0;
+		// Progress & Time via smooth local interpolation loop
+		currentPlaybackState = state;
+		syncProgressLoop();
+	}
 
-			progressBar.style.width = `${percent}%`;
+	let currentPlaybackState = null;
+	let progressAnimFrame = null;
+	let lastRenderedSecond = -1;
 
-			if (config.timeMode !== "none") {
-				timeDisplay.textContent = formatTimeReadout(config.timeMode, current, duration);
-			}
+	function renderProgress() {
+		if (!config.showProgress || !currentPlaybackState) return;
+
+		const state = currentPlaybackState;
+		const duration = typeof state.duration === "number" ? state.duration : 0;
+		let current = typeof state.currentTime === "number" ? state.currentTime : 0;
+
+		if (!state.paused && state.timestamp && duration > 0) {
+			const elapsed = ((Date.now() - state.timestamp) * (state.playbackRate || 1)) / 1000;
+			current = Math.min(duration, Math.max(0, current + elapsed));
+		}
+
+		const percent = duration > 0 ? Math.min(100, Math.max(0, (current / duration) * 100)) : 0;
+		progressBar.style.width = `${percent}%`;
+
+		const wholeSecond = Math.floor(current);
+		if (config.timeMode !== "none" && wholeSecond !== lastRenderedSecond) {
+			lastRenderedSecond = wholeSecond;
+			timeDisplay.textContent = formatTimeReadout(config.timeMode, wholeSecond, duration);
+		}
+	}
+
+	function progressTickLoop() {
+		renderProgress();
+		if (currentPlaybackState && !currentPlaybackState.paused) {
+			progressAnimFrame = requestAnimationFrame(progressTickLoop);
+		} else {
+			progressAnimFrame = null;
+		}
+	}
+
+	function syncProgressLoop() {
+		if (progressAnimFrame) {
+			cancelAnimationFrame(progressAnimFrame);
+			progressAnimFrame = null;
+		}
+		renderProgress();
+		if (currentPlaybackState && !currentPlaybackState.paused) {
+			progressAnimFrame = requestAnimationFrame(progressTickLoop);
 		}
 	}
 

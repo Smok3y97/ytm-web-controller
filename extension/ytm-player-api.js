@@ -240,23 +240,42 @@ function getCurrentTime() {
   const player = getPlayerApi();
   if (player && typeof player.getCurrentTime === 'function') {
     try {
-      return player.getCurrentTime();
+      const cur = player.getCurrentTime();
+      if (typeof cur === 'number' && !isNaN(cur) && isFinite(cur)) return cur;
     } catch { }
   }
-  return null;
+
+  // 1 Fallback: HTML5 Video element
+  const video = typeof findVideoElement === 'function' ? findVideoElement() : document.querySelector('video');
+  return (video && !isNaN(video.currentTime) && isFinite(video.currentTime)) ? video.currentTime : 0;
 }
 
 /**
  * Get total track duration in seconds
  */
 function getDuration() {
+  // Primary: YouTube Music UI time display (.time-info)
+  const sel = window.YTM.selectors?.player?.timeInfo || 'ytmusic-player-bar .time-info, .time-info';
+  const timeInfo = document.querySelector(sel);
+  if (timeInfo) {
+    const parts = (timeInfo.textContent || '').split('/');
+    if (parts.length >= 2) {
+      const parseFn = window.YTM.utils?.parseTimeToSeconds || parseTimeToSeconds;
+      const sec = typeof parseFn === 'function' ? parseFn(parts[parts.length - 1]) : 0;
+      if (sec > 0) return sec;
+    }
+  }
+
+  // 1 Fallback: Native Player API / Video duration
   const player = getPlayerApi();
   if (player && typeof player.getDuration === 'function') {
     try {
-      return player.getDuration();
+      const d = player.getDuration();
+      if (typeof d === 'number' && !isNaN(d) && isFinite(d) && d > 0) return Math.floor(d);
     } catch { }
   }
-  return null;
+  const video = typeof findVideoElement === 'function' ? findVideoElement() : document.querySelector('video');
+  return (video && !isNaN(video.duration) && isFinite(video.duration) && video.duration > 0) ? Math.floor(video.duration) : 0;
 }
 
 // Export Native Player API

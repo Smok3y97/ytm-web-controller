@@ -270,6 +270,24 @@ function reportMismatchStatus(isMismatch, requiredPluginVersion, currentPluginVe
   } catch (e) { }
 }
 
+/**
+ * Convert time string (e.g. "3:45", "03:45", "1:15:30") to total seconds
+ */
+function parseTimeToSeconds(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return 0;
+  const parts = cleanWhitespace(timeStr).split(':').map(p => parseInt(p, 10));
+  if (parts.some(p => isNaN(p) || p < 0)) return 0;
+
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  } else if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 1) {
+    return parts[0];
+  }
+  return 0;
+}
+
 // Export utilities to YTM namespace
 window.YTM.utils = {
   $,
@@ -284,5 +302,6 @@ window.YTM.utils = {
   extractArtworkUrl,
   detectBrowserPlatform,
   compareVersions,
-  reportMismatchStatus
+  reportMismatchStatus,
+  parseTimeToSeconds
 };

@@ -13,16 +13,10 @@ window.YTM = window.YTM || {};
 (function () {
   const isSupported = Boolean(typeof navigator !== 'undefined' && 'mediaSession' in navigator);
   const capturedHandlers = {};
-  const positionState = {
-    duration: 0,
-    playbackRate: 1,
-    position: 0,
-    lastUpdatedTime: 0
-  };
 
   if (isSupported) {
     try {
-      // 1. Intercept setActionHandler to capture YouTube Music's internal callbacks
+      // Intercept setActionHandler to capture YouTube Music's internal callbacks
       const originalSetActionHandler = navigator.mediaSession.setActionHandler?.bind(navigator.mediaSession);
       if (typeof originalSetActionHandler === 'function') {
         navigator.mediaSession.setActionHandler = function (action, handler) {
@@ -32,26 +26,6 @@ window.YTM = window.YTM || {};
             delete capturedHandlers[action];
           }
           return originalSetActionHandler(action, handler);
-        };
-      }
-
-      // 2. Intercept setPositionState to capture exact track-relative position & duration
-      const originalSetPositionState = navigator.mediaSession.setPositionState?.bind(navigator.mediaSession);
-      if (typeof originalSetPositionState === 'function') {
-        navigator.mediaSession.setPositionState = function (state) {
-          if (state && typeof state === 'object') {
-            if (typeof state.duration === 'number' && !isNaN(state.duration) && state.duration > 0) {
-              positionState.duration = state.duration;
-            }
-            if (typeof state.playbackRate === 'number' && !isNaN(state.playbackRate)) {
-              positionState.playbackRate = state.playbackRate;
-            }
-            if (typeof state.position === 'number' && !isNaN(state.position) && state.position >= 0) {
-              positionState.position = state.position;
-            }
-            positionState.lastUpdatedTime = Date.now();
-          }
-          return originalSetPositionState(state);
         };
       }
     } catch (err) {
@@ -134,11 +108,10 @@ window.YTM = window.YTM || {};
 
     // 1. If seekto is available and we know current position, calculate absolute target
     if (hasHandler('seekto')) {
-      const pos = getPositionState();
-      const cur = pos.currentTime;
-      const dur = pos.duration;
-      if (typeof cur === 'number') {
-        const target = (dur > 0)
+      const cur = window.YTM.playerApi?.getCurrentTime?.();
+      const dur = window.YTM.playerApi?.getDuration?.();
+      if (typeof cur === 'number' && !isNaN(cur)) {
+        const target = (typeof dur === 'number' && dur > 0)
           ? Math.min(dur, Math.max(0, cur + deltaSeconds))
           : Math.max(0, cur + deltaSeconds);
         return seekTo(target);
@@ -179,56 +152,6 @@ window.YTM = window.YTM || {};
     return navigator.mediaSession?.metadata || null;
   }
 
-  /**
-   * Synchronize position state with active media element according to W3C § 4.5
-   * ("The RECOMMENDED way to determine the position state is to monitor the media elements")
-   */
-  function syncMediaElement(video) {
-    const api = window.YTM.playerApi;
-    const apiCur = api?.getCurrentTime?.();
-    const apiDur = api?.getDuration?.();
-
-    const v = video || (typeof window.YTM.utils?.findVideoElement === 'function' ? window.YTM.utils.findVideoElement() : document.querySelector('video'));
-    const isPaused = navigator.mediaSession?.playbackState === 'paused' || (v?.paused ?? true);
-
-    // Duration: prefer playerApi > positionState (captured from setPositionState) > video.duration
-    let dur = positionState.duration;
-    if (typeof apiDur === 'number' && !isNaN(apiDur) && isFinite(apiDur) && apiDur > 0) {
-      dur = apiDur;
-    } else if (v && !isNaN(v.duration) && isFinite(v.duration) && v.duration > 0) {
-      dur = v.duration;
-    }
-
-    // Current position: prefer playerApi > video.currentTime > positionState.position
-    let cur = positionState.position;
-    if (typeof apiCur === 'number' && !isNaN(apiCur) && isFinite(apiCur) && apiCur >= 0) {
-      cur = (dur > 0) ? Math.min(dur, apiCur) : apiCur;
-    } else if (v && !isNaN(v.currentTime) && isFinite(v.currentTime) && v.currentTime >= 0) {
-      cur = (dur > 0 && v.currentTime >= dur) ? 0 : v.currentTime;
-    }
-
-    positionState.position = cur;
-    if (dur > 0) positionState.duration = dur;
-    positionState.playbackRate = isPaused ? 0 : 1;
-    positionState.lastUpdatedTime = Date.now();
-  }
-
-  /**
-   * Get W3C § 4.5 Position State snapshot.
-   * Provides current position, duration, and timestamp for the Stream Deck plugin,
-   * which then performs local interpolation to avoid unnecessary WebSocket calls.
-   */
-  function getPositionState(video) {
-    syncMediaElement(video);
-
-    return {
-      currentTime: Math.floor(positionState.position),
-      duration: Math.floor(positionState.duration),
-      playbackRate: positionState.playbackRate,
-      timestamp: positionState.lastUpdatedTime || Date.now()
-    };
-  }
-
   // Export MediaSession API layer
   window.YTM.mediaSession = {
     isSupported,
@@ -241,7 +164,6 @@ window.YTM = window.YTM || {};
     seekTo,
     seekRelative,
     getPlaybackState,
-    getMetadata,
-    getPositionState
+    getMetadata
   };
 })();

@@ -303,11 +303,10 @@ function collectPlaybackState() {
   const volume = getPlayerVolume();
   const muted = getPlayerMuted();
 
-  // Extract accurate track-relative duration & currentTime according to W3C § 4.5 Position State
-  const ms = window.YTM.mediaSession;
-  const pos = ms?.getPositionState?.(video);
-  const currentTime = typeof pos?.currentTime === 'number' ? pos.currentTime : (video && !isNaN(video.currentTime) ? Math.floor(video.currentTime) : 0);
-  const duration = typeof pos?.duration === 'number' ? pos.duration : (video && !isNaN(video.duration) ? Math.floor(video.duration) : 0);
+  // Extract accurate track-relative duration & currentTime
+  const api = window.YTM.playerApi;
+  const currentTime = Math.floor(api?.getCurrentTime?.() ?? (video && !isNaN(video.currentTime) ? video.currentTime : 0));
+  const duration = Math.floor(api?.getDuration?.() ?? (video && !isNaN(video.duration) ? video.duration : 0));
   const playerApi = typeof getPlayerApi === 'function' ? getPlayerApi() : window.YTM?.playerApi?.getPlayerApi?.();
 
   let paused = video ? video.paused : true;
@@ -315,7 +314,7 @@ function collectPlaybackState() {
   const timestamp = Date.now();
 
   // Evaluate playback state: MediaSession (Tier 1) -> Player API (Tier 2) -> Video (Tier 3)
-  const msPlayback = ms?.getPlaybackState?.();
+  const msPlayback = navigator.mediaSession?.playbackState;
   if (msPlayback === 'playing') {
     paused = false;
   } else if (msPlayback === 'paused') {

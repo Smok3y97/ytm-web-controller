@@ -17,7 +17,8 @@ window.YTM.selectors = {
     ytPlayer: 'ytmusic-player',
     video: '.html5-main-video, #movie_player video, ytmusic-player video, ytmusic-player-bar video, video',
     volumeSlider: 'ytmusic-player-bar #volume-slider, tp-yt-paper-slider#volume-slider, #volume-slider, .volume-slider',
-    volumeMuteButton: 'ytmusic-player-bar #volume-slider-volume-button, ytmusic-player-bar .volume, ytmusic-player-bar tp-yt-paper-icon-button.volume, #volume-slider-volume-button'
+    volumeMuteButton: 'ytmusic-player-bar #volume-slider-volume-button, ytmusic-player-bar .volume, ytmusic-player-bar tp-yt-paper-icon-button.volume, #volume-slider-volume-button',
+    timeInfo: 'ytmusic-player-bar .time-info, .time-info'
   },
 
   // Interactive Control Buttons

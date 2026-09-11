@@ -122,11 +122,14 @@ export class WebSocketService extends EventEmitter {
 					streamDeck.logger.info(
 						`[WebSocket] Client connected from ${clientIp}. Total clients: ${this.clients.size + 1}`,
 					);
+					const origin = req.headers.origin || "";
+					const isOverlay =
+						origin.includes("127.0.0.1") || origin.includes("localhost") || Boolean(req.url?.includes("overlay"));
 					this.clients.add(ws);
 					this.clientTabs.set(ws, {
 						isPlaying: false,
 						lastActive: Date.now(),
-						isOverlay: false,
+						isOverlay,
 					});
 					this.emit("clientConnected", ws);
 
@@ -160,6 +163,11 @@ export class WebSocketService extends EventEmitter {
 								streamDeck.logger.info(`[WebSocket] Tab closed notification (tabId: ${payload.tabId || "unknown"})`);
 								if (tabInfo) {
 									tabInfo.isPlaying = false;
+								}
+								this.clients.delete(ws);
+								this.clientTabs.delete(ws);
+								if (!this.hasConnectedClients()) {
+									this.emit("clientDisconnected", ws);
 								}
 								return;
 							}
@@ -401,7 +409,12 @@ export class WebSocketService extends EventEmitter {
 	}
 
 	public hasConnectedClients(): boolean {
-		return this.clients.size > 0;
+		for (const [ws, info] of this.clientTabs.entries()) {
+			if (ws.readyState === WebSocket.OPEN && !info.isOverlay) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public getPort(): number {

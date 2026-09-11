@@ -146,7 +146,7 @@ ytm-web-controller/
 │   ├── background.js            # MV3 service worker for tab and window foreground activation
 │   ├── bridge.js                # ISOLATED world bridge for chrome.storage & manifest version
 │   ├── ytm-selectors.js         # Single Source of Truth for all YouTube Music DOM element selectors
-│   ├── ytm-media-session.js     # Tier 1 W3C Media Session API hooks (setActionHandler / setPositionState)
+│   ├── ytm-media-session.js     # Tier 1 W3C Media Session API hooks (setActionHandler / metadata)
 │   ├── utils.js                 # DOM helpers, text/time parsers & in-memory cover canvas processor
 │   ├── ytm-player-api.js        # Direct, zero-DOM interaction with native #movie_player Player API
 │   ├── ytm-fallback.js          # UI toggles (Like/Dislike/Shuffle/Repeat) & <video> volume fallbacks
@@ -253,18 +253,19 @@ The browser companion extension runs in the context of `https://music.youtube.co
    - Shields the rest of the codebase from UI mutations: when YouTube updates markup or CSS classes, only this single registry requires adjustments.
 
 4. **Tier 1: W3C Media Session API Integration ([`extension/ytm-media-session.js`](../extension/ytm-media-session.js))**:
-   - Intercepts `navigator.mediaSession.setActionHandler` and `navigator.mediaSession.setPositionState` at `document_start`.
+   - Intercepts `navigator.mediaSession.setActionHandler` at `document_start`.
    - Captures YouTube Music's internal action callbacks (`play`, `pause`, `nexttrack`, `previoustrack`, `seekto`).
-   - Implements **W3C § 4.5 Position State** monitoring: synchronizes track position, duration, and playback rate (0 on pause, 1 on play) with the active media engine to produce drift-free snapshots for Stream Deck client-side interpolation.
+   - Extracts official `playbackState` and `metadata` (title, artist, album, artwork).
 
 5. **Core Utilities & Helpers ([`extension/utils.js`](../extension/utils.js))**:
    - Fast DOM query helpers (`$`, `$$`, `clickElement`).
-   - Text sanitizers (`cleanWhitespace`, `isNonAlbumText`) to filter multi-lingual YouTube metadata.
+   - Text & time sanitizers (`cleanWhitespace`, `isNonAlbumText`, `parseTimeToSeconds`) to filter multi-lingual YouTube metadata and parse track durations.
    - High-resolution artwork URL extractor (`extractArtworkUrl` preferring `226x226` for Stream Deck keys and touchstrips).
 
 6. **Native Player API ([`extension/ytm-player-api.js`](../extension/ytm-player-api.js))**:
    - Primary playback & seeking controller: executes commands directly through the internal YouTube Music Player API (`#movie_player` / `playerBar.playerApi_`: `playVideo()`, `pauseVideo()`, `nextVideo()`, `previousVideo()`, `setVolume()`, `isMuted()`, `mute()`, `unMute()`, `seekTo()`, `getCurrentTime()`, `getDuration()`).
-   - Zero DOM dependencies; unaffected by CSS/HTML changes.
+   - Robust timing extraction: `getCurrentTime()` directly via Player API with `<video>` fallback; `getDuration()` directly via the authoritative player bar `.time-info` with native API / `<video>` fallback. Immune to MSE streaming buffer truncations during track transitions.
+   - Zero DOM dependencies for playback controls; unaffected by CSS/HTML changes.
 
 7. **DOM & UI Fallbacks ([`extension/ytm-fallback.js`](../extension/ytm-fallback.js))**:
    - Handles controls not exposed via official JavaScript APIs (Like, Dislike, Shuffle, Repeat) and provides hardware `<video>` volume/mute fallbacks.
@@ -278,7 +279,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
 
 9. **State Extraction & Observers ([`extension/ytm-state.js`](../extension/ytm-state.js))**:
    - Primary metadata extraction via `navigator.mediaSession.metadata` (title, artist, album, artwork).
-   - High-precision timing snapshot via `window.YTM.mediaSession.getPositionState()`.
+   - High-precision timing snapshot via `window.YTM.playerApi.getCurrentTime()` and `window.YTM.playerApi.getDuration()`.
    - Event-driven snapshot broadcasting on state transitions (`play`, `pause`, `seeking`, `seeked`, `durationchange`, `loadedmetadata`, `ratechange`, `volumechange`, `ended`) with zero periodic `timeupdate` WebSocket flood.
    - Scoped `MutationObserver` on player bar elements for immediate state broadcast on like, dislike, shuffle, and repeat clicks.
 

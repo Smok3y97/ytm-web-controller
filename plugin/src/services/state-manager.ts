@@ -157,7 +157,19 @@ export class StateManager extends EventEmitter {
 	 */
 	public handleClientsDisconnected(): void {
 		const prevState = { ...this.currentState };
+		this.currentState.title = "";
+		this.currentState.artist = "";
+		this.currentState.album = "";
+		this.currentState.coverUrl = "";
+		this.currentState.coverBase64 = undefined;
+		this.currentState.trackUrl = "";
+		this.currentState.artistUrl = "";
+		this.currentState.albumUrl = "";
+		this.currentState.currentTime = 0;
+		this.currentState.duration = 0;
 		this.currentState.paused = true;
+		this.currentState.isLiked = false;
+		this.currentState.isDisliked = false;
 		this.currentState.isVersionMismatch = false;
 		this.currentState.extensionVersion = undefined;
 		this.emit("stateChanged", this.currentState, prevState);
@@ -241,8 +253,12 @@ export class StateManager extends EventEmitter {
 	 */
 	public formatTimeTemplate(template: string = "{both}", currentTime?: number, duration?: number): string {
 		const state = this.currentState;
-		const cur = typeof currentTime === "number" ? currentTime : this.getInterpolatedCurrentTime();
 		const dur = typeof duration === "number" ? duration : state.duration;
+		const cur = typeof currentTime === "number" ? currentTime : this.getInterpolatedCurrentTime();
+
+		if (!state.title && !state.artist && dur <= 0) {
+			return "";
+		}
 
 		const currentStr = this.formatTime(cur);
 		const durationStr = this.formatTime(dur);

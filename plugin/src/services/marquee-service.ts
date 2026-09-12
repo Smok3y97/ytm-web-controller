@@ -6,8 +6,8 @@ import { StateManager } from "./state-manager.js";
 export const MAX_LCD_PIXEL_WIDTH = 198; // Full 200px touchstrip width for Stream Deck +
 export const KEYPAD_MAX_PIXEL_WIDTH = 64; // Usable text width for standard 72x72 px Stream Deck key (with margin padding)
 export const DEFAULT_MARQUEE_SPEED_MS = 320; // ~3.1 Hz default reading pace
-export const START_PAUSE_TICKS = 4; // Responsive pause at beginning of song title (~1.2s)
-export const END_PAUSE_TICKS = 3; // Responsive pause at the end of song title (~1.0s)
+export const START_PAUSE_TICKS = 4; // Pause at the beginning before scrolling (~1.2s)
+export const END_PAUSE_TICKS = 3; // Pause at the end before reversing scroll (~1.0s)
 
 function estimateCharWidthPx(char: string): number {
 	if ("ilj!:. ,'|/\\()[]{}".includes(char)) return 3.4;

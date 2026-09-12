@@ -1,6 +1,6 @@
 # Privacy Policy (`PRIVACY.md`)
 
-**Last updated:** September 8, 2026
+**Last updated:** September 12, 2026
 
 This Privacy Policy applies to the **Controller for YouTube Music Web** Elgato Stream Deck plugin and companion browser extension (**Controller Companion for YouTube Music Web**).
 
@@ -39,9 +39,7 @@ The browser companion extension requests the minimum necessary permissions in [`
 | Permission | Technical Reason |
 | :--- | :--- |
 | `storage` | Stores your customized local WebSocket port (default `39865`) within Chrome's local storage so settings persist across browser restarts. |
-| `tabs` | Used solely to bring the existing YouTube Music tab to the foreground when you press and hold the Play/Pause key on your Stream Deck. |
 | `host_permissions` (`https://music.youtube.com/*`) | Required to inject the content script into the YouTube Music web player to receive playback events and send control commands. |
-| `host_permissions` (`https://*.googleusercontent.com/*`, `*.ggpht.com/*`, `*.ytimg.com/*`) | Required to fetch album artwork thumbnails into an in-memory canvas for your Stream Deck keys. |
 
 ---
 

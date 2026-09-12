@@ -1,8 +1,8 @@
 /**
  * Image Renderer Service
  *
- * 100% In-Memory Graphics Generator (Zero Disk Footprint).
- * Generates SVG/Base64 Data-URLs for Stream Deck keys and Stream Deck + LCD Touchstrips.
+ * Fetches remote album artwork and encodes it as Base64 data URLs in RAM
+ * for Stream Deck keys and LCD touchstrips.
  */
 import streamDeck from "@elgato/streamdeck";
 

@@ -1,13 +1,9 @@
 /**
  * YouTube Music Web Controller - UI Controls & Hardware Fallback
  * 
- * Manages player controls that are not covered by the W3C Media Session API
- * (Like, Dislike, Shuffle, Repeat) and provides direct HTML5 <video> fallbacks
- * for volume and mute.
- * 
- * Playback actions (Play, Pause, Next, Prev, Seek) are strictly handled via
- * MediaSession (Tier 1) and Native Player API (Tier 2), eliminating brittle
- * DOM button clicks entirely.
+ * Handles player controls that are not exposed by the Media Session API
+ * (Like, Dislike, Shuffle, Repeat) via DOM buttons, and provides HTML5 <video>
+ * fallbacks for volume and mute.
  */
 
 'use strict';

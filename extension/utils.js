@@ -2,7 +2,7 @@
  * YouTube Music Web Controller - Utilities & Helpers
  * 
  * DOM selectors, player element locators, text sanitization, timing parsers,
- * ID extraction, cover art canvas processing, version / platform utilities,
+ * ID extraction, artwork URL extraction, version / platform utilities,
  * and unified button state helpers.
  */
 
@@ -64,29 +64,12 @@ function findVideoElement() {
 }
 
 /**
- * Locate the YouTube Music player API instance
+ * Locate the YouTube Music player API instance (delegates to centralized ytm-player-api)
  */
 function getPlayerApi() {
   if (window.YTM.playerApi?.getPlayerApi) {
     return window.YTM.playerApi.getPlayerApi();
   }
-
-  const selectors = window.YTM.selectors?.player || {};
-  const playerBar = $(selectors.playerBar || 'ytmusic-player-bar');
-  if (playerBar?.playerApi_) return playerBar.playerApi_;
-
-  const moviePlayer = $(selectors.moviePlayer || '#movie_player') || $('#player') || $('.html5-video-player');
-  if (moviePlayer && typeof moviePlayer.setVolume === 'function') return moviePlayer;
-
-  const ytPlayer = $(selectors.ytPlayer || 'ytmusic-player');
-  if (ytPlayer?.playerApi_) return ytPlayer.playerApi_;
-  if (ytPlayer?.getPlayer && typeof ytPlayer.getPlayer === 'function') {
-    try {
-      const p = ytPlayer.getPlayer();
-      if (p) return p;
-    } catch (e) { }
-  }
-
   return null;
 }
 

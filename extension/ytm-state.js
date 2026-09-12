@@ -1,8 +1,8 @@
 /**
  * YouTube Music Web Controller - State Extraction & Media Observers
  * 
- * High-precision metadata parser, player state collector (like, dislike, shuffle,
- * repeat, volume, timing), and reactive DOM/Media event listeners with zero polling overhead.
+ * Extracts player metadata and state (like, dislike, shuffle, repeat, volume, timing)
+ * and provides reactive DOM and media event listeners.
  */
 
 'use strict';
@@ -169,7 +169,7 @@ function collectPlaybackState() {
     }
 
     if (!videoId) {
-      const imgs = $$('ytmusic-player-bar img, ytmusic-player-page img');
+      const imgs = $$('ytmusic-player-bar img');
       for (const img of imgs) {
         const src = img.getAttribute('src') || img.src || '';
         const match = src.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
@@ -285,20 +285,6 @@ function collectPlaybackState() {
       artistUrl = `https://music.youtube.com/search?q=${encodeURIComponent(artist)}`;
     }
   } catch { }
-
-  if (!coverUrl && mediaSession?.artwork && mediaSession.artwork.length > 0) {
-    if (typeof extractArtworkUrl === 'function') {
-      coverUrl = extractArtworkUrl(mediaSession);
-    } else if (window.YTM?.utils?.extractArtworkUrl) {
-      coverUrl = window.YTM.utils.extractArtworkUrl(mediaSession);
-    }
-  }
-  if (!coverUrl) {
-    const imgElem = $('ytmusic-player-bar img#img') ||
-      $('ytmusic-player-bar .thumbnail img') ||
-      $('ytmusic-player-bar .image');
-    coverUrl = imgElem?.src || '';
-  }
 
   const volume = getPlayerVolume();
   const muted = getPlayerMuted();
@@ -521,17 +507,41 @@ function setupGlobalMediaListeners() {
   document.addEventListener('volumechange', () => sendSnapshot(true), true);
   document.addEventListener('ended', () => sendSnapshot(true), true);
 
-  // Slim MutationObserver for Like, Dislike, Shuffle, Repeat button states
-  const targetNode = $('ytmusic-player-bar') || document.body;
-  const observer = new MutationObserver(() => {
-    notifyState(false);
-  });
-  observer.observe(targetNode, {
+  // Slim MutationObserver for Like, Dislike, Shuffle, Repeat button states (Debounced & Scoped)
+  let mutationDebounceTimer = null;
+  const onMutation = () => {
+    if (mutationDebounceTimer) return;
+    mutationDebounceTimer = setTimeout(() => {
+      mutationDebounceTimer = null;
+      notifyState(false);
+    }, 75);
+  };
+
+  const observerOptions = {
     childList: true,
     subtree: true,
     attributes: true,
     attributeFilter: ['aria-pressed', 'aria-checked', 'like-status', 'active', 'icon']
-  });
+  };
+
+  const playerBar = $('ytmusic-player-bar');
+  if (playerBar) {
+    const observer = new MutationObserver(onMutation);
+    observer.observe(playerBar, observerOptions);
+  } else {
+    // If player-bar not rendered yet, temporarily observe document.body until player-bar appears
+    const initialObserver = new MutationObserver((mutations, obs) => {
+      const bar = $('ytmusic-player-bar');
+      if (bar) {
+        // Disconnect from full document and narrow strictly to ytmusic-player-bar
+        obs.disconnect();
+        const refinedObserver = new MutationObserver(onMutation);
+        refinedObserver.observe(bar, observerOptions);
+      }
+      onMutation();
+    });
+    initialObserver.observe(document.body || document.documentElement, observerOptions);
+  }
 }
 
 // Export state methods to YTM namespace

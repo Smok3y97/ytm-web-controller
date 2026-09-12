@@ -1,8 +1,8 @@
 /**
- * YouTube Music Web Controller - Native Player API
+ * YouTube Music Web Controller - Player API
  * 
- * Direct, zero-DOM interaction with the internal YouTube Player API (#movie_player).
- * Completely immune to CSS/DOM redesigns.
+ * Interacts directly with the YouTube Player component (#movie_player).
+ * Controls playback, volume, and timing via player instance methods.
  */
 
 'use strict';

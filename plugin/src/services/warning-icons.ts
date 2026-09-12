@@ -1,8 +1,8 @@
 /**
  * Warning Icon SVG Generator
  *
- * Generates pixel-perfect, uniform in-memory SVG data URLs for keypad actions
- * during version mismatch with a crisp amber warning triangle overlay.
+ * Generates SVG data URLs for keypad actions with an amber warning triangle overlay
+ * to indicate version mismatch status.
  */
 
 const RAW_PATHS: Record<string, string> = {

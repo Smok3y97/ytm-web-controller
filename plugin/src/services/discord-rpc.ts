@@ -1,8 +1,7 @@
 /**
  * Discord Rich Presence (RPC) Service
  *
- * High-performance, resilient Discord RPC client for YouTube Music Web
- * powered by modern @xhayper/discord-rpc.
+ * Connects to the local Discord desktop client via IPC to display current playback status.
  */
 import streamDeck from "@elgato/streamdeck";
 import { Client, type SetActivity, StatusDisplayType } from "@xhayper/discord-rpc";

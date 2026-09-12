@@ -1,11 +1,10 @@
 /**
  * YouTube Music Web Controller - Action Orchestrator
  * 
- * Streamlined 2-tier action dispatcher.
- * - Playback (Play, Pause, Next, Prev, Seek): MediaSession (Tier 1) -> Native Player API (Tier 2).
- *   Completely DOM-immune and free of brittle button selectors.
- * - Volume & Mute: Native Player API -> HTML5 <video> element.
- * - UI Toggles (Like, Dislike, Shuffle, Repeat): Direct UI clicks.
+ * Dispatches control commands using a layered approach:
+ * - Playback (Play, Pause, Next, Prev, Seek): MediaSession -> Player API fallback.
+ * - Volume & Mute: Player API -> HTML5 <video> element fallback.
+ * - UI Toggles (Like, Dislike, Shuffle, Repeat): DOM button clicks.
  */
 
 'use strict';
@@ -87,27 +86,24 @@ function previousTrack() {
 }
 
 /**
- * Set player volume (0 - 100) and sync UI
+ * Set player volume (0 - 100) and sync visual UI slider
  */
 function setPlayerVolume(targetPercent) {
   const clamped = Math.min(100, Math.max(0, Math.round(targetPercent)));
 
-  // 1. YouTube Music Player API
+  // 1. YouTube Music Player API (controls actual audio)
   const api = window.YTM.playerApi;
-  api?.setVolume(clamped);
+  const success = api?.setVolume(clamped);
 
-  // 2. Polymer playerBar component UI properties
-  const playerBar = document.querySelector('ytmusic-player-bar');
-  if (playerBar) {
-    try {
+  // 2. Synchronize YouTube Music's Polymer player-bar UI and paper-slider
+  try {
+    const playerBar = document.querySelector('ytmusic-player-bar');
+    if (playerBar) {
       if (typeof playerBar.setVolume_ === 'function') playerBar.setVolume_(clamped);
       if (typeof playerBar.volume_ !== 'undefined') playerBar.volume_ = clamped;
       if (clamped > 0 && typeof playerBar.muted_ !== 'undefined') playerBar.muted_ = false;
-    } catch (e) { }
-  }
+    }
 
-  // 3. Update visual DOM slider element
-  try {
     const slider = document.querySelector('ytmusic-player-bar #volume-slider') ||
       document.querySelector('tp-yt-paper-slider#volume-slider') ||
       document.querySelector('#volume-slider') ||
@@ -119,9 +115,11 @@ function setPlayerVolume(targetPercent) {
     }
   } catch (e) { }
 
-  // 4. HTML5 video fallback
-  const fb = window.YTM.fallback;
-  fb?.setPlayerVolume(clamped);
+  // 3. HTML5 video fallback if Player API is unavailable
+  if (!success) {
+    const fb = window.YTM.fallback;
+    fb?.setPlayerVolume(clamped);
+  }
 
   triggerStateNotification([50, 150]);
 }

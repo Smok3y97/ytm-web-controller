@@ -31,7 +31,7 @@ if (extApi?.runtime?.onMessage) {
       if (tabId && windowId) {
         focusTabAndWindow(tabId, windowId);
       } else if (extApi.tabs?.query) {
-        extApi.tabs.query({ url: '*://music.youtube.com/*' }, (tabs) => {
+        extApi.tabs.query({ url: 'https://music.youtube.com/*' }, (tabs) => {
           if (tabs && tabs.length > 0) {
             focusTabAndWindow(tabs[0].id, tabs[0].windowId);
           }

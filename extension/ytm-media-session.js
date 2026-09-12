@@ -1,9 +1,8 @@
 /**
- * YouTube Music Web Controller - Media Session API Integration (Tier 1 Primary)
+ * YouTube Music Web Controller - Media Session API Integration
  * 
- * Intercepts and captures official W3C Media Session action handlers and position
- * states registered by YouTube Music at document_start.
- * Provides the highest-tier, DOM-immune control and state extraction layer.
+ * Captures W3C Media Session action handlers and metadata registered by YouTube Music.
+ * Serves as the primary control and metadata layer.
  */
 
 'use strict';

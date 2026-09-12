@@ -1,9 +1,8 @@
 /**
  * Window Focus Service
  *
- * Reliably brings the YouTube Music Browser Tab or PWA Window to the foreground,
- * bypassing Windows ForegroundLockTimeout restrictions using the pre-compiled native
- * Win32 binary ytm-focus.exe (0ms compile latency, instant DWM Z-Order restacking).
+ * Brings the YouTube Music browser tab or window to the foreground
+ * using the compiled Win32 helper ytm-focus.exe on Windows or AppleScript on macOS.
  */
 import streamDeck from "@elgato/streamdeck";
 import { exec, execFile } from "node:child_process";
@@ -53,7 +52,7 @@ export class WindowFocusService {
 			}
 
 			if (this.cachedExePath) {
-				// Ultra-fast 2ms native execution
+				// Execute native helper to bring window to foreground
 				execFile(this.cachedExePath, (err) => {
 					if (err && err.code !== 0) {
 						streamDeck.logger.debug(`[WindowFocus] ytm-focus.exe exited with code ${err.code}`);

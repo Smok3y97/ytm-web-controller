@@ -147,11 +147,11 @@ ytm-web-controller/
 │   ├── bridge.js                # ISOLATED world bridge for chrome.storage & manifest version
 │   ├── ytm-selectors.js         # Single Source of Truth for all YouTube Music DOM element selectors
 │   ├── ytm-media-session.js     # Tier 1 W3C Media Session API hooks (setActionHandler / metadata)
-│   ├── utils.js                 # DOM helpers, text/time parsers & in-memory cover canvas processor
-│   ├── ytm-player-api.js        # Direct, zero-DOM interaction with native #movie_player Player API
+│   ├── utils.js                 # DOM helpers, text/time parsers & artwork URL extraction
+│   ├── ytm-player-api.js        # YouTube Player API interaction (#movie_player)
 │   ├── ytm-fallback.js          # UI toggles (Like/Dislike/Shuffle/Repeat) & <video> volume fallbacks
-│   ├── ytm-actions.js           # Action dispatcher: 2-Tier Playback (MediaSession -> Player API) + UI controls
-│   ├── ytm-state.js             # High-precision metadata parser, state collector & reactive media observers
+│   ├── ytm-actions.js           # Action dispatcher: Playback (MediaSession -> Player API) & UI controls
+│   ├── ytm-state.js             # Metadata parser, state collector & reactive media observers
 │   ├── content.js               # WebSocket client orchestrator, command router & initialization
 │   ├── popup.html               # Extension status, version diagnostics & port configuration UI
 │   ├── popup.css                # Extension popup dark theme stylesheet
@@ -264,7 +264,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
 
 6. **Native Player API ([`extension/ytm-player-api.js`](../extension/ytm-player-api.js))**:
    - Primary playback & seeking controller: executes commands directly through the internal YouTube Music Player API (`#movie_player` / `playerBar.playerApi_`: `playVideo()`, `pauseVideo()`, `nextVideo()`, `previousVideo()`, `setVolume()`, `isMuted()`, `mute()`, `unMute()`, `seekTo()`, `getCurrentTime()`, `getDuration()`).
-   - Robust timing extraction: `getCurrentTime()` directly via Player API with `<video>` fallback; `getDuration()` directly via the authoritative player bar `.time-info` with native API / `<video>` fallback. Immune to MSE streaming buffer truncations during track transitions.
+   - Timing extraction: `getCurrentTime()` directly via Player API with `<video>` fallback; `getDuration()` directly via the authoritative player bar `.time-info` with native API / `<video>` fallback. Avoids MSE streaming buffer truncation issues during track transitions.
    - Zero DOM dependencies for playback controls; unaffected by CSS/HTML changes.
 
 7. **DOM & UI Fallbacks ([`extension/ytm-fallback.js`](../extension/ytm-fallback.js))**:
@@ -287,7 +287,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
     - Generates unique session `tabId` to participate in multi-tab arbitration.
     - Dispatches `TAB_CLOSED` on `beforeunload` and `pagehide` to cleanly deregister tabs.
     - Automatically synchronizes playback state on `visibilitychange` when returning to background tabs.
-    - Handles auto-reconnect, bidirectional version handshake, and routes Stream Deck commands to `window.YTM.actions`.
+    - Handles bounded reconnect with passive standby, bidirectional version handshake, and routes Stream Deck commands to `window.YTM.actions`.
 
 ---
 

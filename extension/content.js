@@ -17,7 +17,7 @@ let currentPort = DEFAULT_PORT;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
-let bridgeVersion = '1.11.5.0';
+let bridgeVersion = '1.11.6.0';
 
 let lastSentState = {
   title: '',
@@ -99,12 +99,10 @@ function sendState(force = false) {
     const isPlaying = !state.paused;
     ws.send(JSON.stringify({
       type: 'STATE_UPDATE',
-      event: 'STATE_UPDATE',
       timestamp,
       tabId: tabId,
       isPlaying: isPlaying,
-      data: state,
-      state: state
+      data: state
     }));
   } catch (err) {
     console.error('[YTM Controller] Error collecting/sending state:', err);
@@ -348,17 +346,41 @@ function connectWebSocket(port) {
   }
 }
 
+const MAX_FAST_RETRIES = 3;
+
 /**
- * Schedule reconnect with exponential backoff capped at 3s
+ * Schedule reconnect with fast bounded retries
+ * Retries up to 3 times to handle plugin hot-reloads, then enters passive standby (zero polling)
  */
 function scheduleReconnect() {
   if (reconnectTimeout) return;
+  if (reconnectAttempts >= MAX_FAST_RETRIES) {
+    // Zero Polling: Discontinue all timers. Stay in passive standby until an event occurs.
+    return;
+  }
+
   reconnectAttempts++;
-  const delay = Math.min(3000, 800 + reconnectAttempts * 400);
+  const delay = 600 + reconnectAttempts * 500; // 1100ms, 1600ms, 2100ms
+
   reconnectTimeout = setTimeout(() => {
     reconnectTimeout = null;
     connectWebSocket(currentPort);
   }, delay);
+}
+
+/**
+ * Wake connection from passive standby upon genuine user or media events
+ */
+function wakeFromStandby() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+  reconnectAttempts = 0;
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
+  connectWebSocket(currentPort);
 }
 
 /**
@@ -375,12 +397,21 @@ function init() {
   window.addEventListener('beforeunload', notifyTabClosed);
   window.addEventListener('pagehide', notifyTabClosed);
 
-  // Sync state when tab becomes visible
+  // Passive event wakeups: Reconnect on user or playback events without any polling timers
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-      sendState(true);
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        wakeFromStandby();
+      } else {
+        sendState(true);
+      }
     }
   });
+
+  window.addEventListener('focus', wakeFromStandby);
+  document.addEventListener('play', wakeFromStandby, true);
+  document.addEventListener('loadedmetadata', wakeFromStandby, true);
+  document.addEventListener('pointerdown', wakeFromStandby, { passive: true, capture: true });
 
   // Listen for configuration from bridge script (ISOLATED world)
   window.addEventListener('message', (event) => {

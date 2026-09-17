@@ -171,8 +171,8 @@ The packaging script automates:
 7. Hot-restarting the live plugin process in Stream Deck via `streamdeck restart` for instant live testing.
 
 ### CI/CD & Automated GitHub Releases:
-- **CI Pipeline (`.github/workflows/ci.yml`)**: Automatically triggered on pushes and PRs (`main`/`master`) on `windows-latest`. Validates types (`tsc`), linting (`eslint`), builds the plugin bundle, validates via `streamdeck validate`, and uploads test build artifacts (`.streamDeckPlugin` and `extension.zip`).
-- **Release Pipeline (`.github/workflows/release.yml`)**: Triggered upon pushing a version tag (e.g. `v1.12.0.0` following `npm run bump <version>`). Packages, validates, and automatically publishes the official GitHub Release with attached `.streamDeckPlugin` and `extension.zip` binaries.
+- **CI Pipeline (`.github/workflows/ci.yml`)**: Automatically triggered on pushes and PRs (`main`/`master`) on `ubuntu-latest`. Validates types (`tsc`), linting (`eslint`), builds the plugin bundle, validates via `streamdeck validate`, and uploads test build artifacts (`.streamDeckPlugin` and `extension.zip`).
+- **Release Pipeline (`.github/workflows/release.yml`)**: Triggered upon pushing a version tag (e.g. `v1.12.0.0` following `npm run bump <version>`) on `ubuntu-latest`. Packages, validates, and automatically publishes the official GitHub Release with attached `.streamDeckPlugin` and `extension.zip` binaries.
 - **Dependency Automation (`.github/dependabot.yml`)**: Scans weekly for dependency and GitHub Actions security/version updates.
 
 ---
@@ -204,5 +204,6 @@ The packaging script automates:
 * **Never Manually Edit `package-lock.json`**: Lockfiles (`plugin/package-lock.json`) must always be committed to Git, but **never** manually edited, rewritten, or modified via text tools. Changes must always be generated natively by npm (`npm install <pkg>`, `npm update`, or `npm install --package-lock-only` via `npm run bump`).
 * **Maintain Web Component UI Synchronization in Browser Extension**: When dispatching player actions (especially volume and mute) in [`extension/ytm-actions.js`](extension/ytm-actions.js), always preserve the Polymer UI synchronization calls (e.g. `playerBar.setVolume_()`, slider DOM updates) alongside native player API methods, ensuring YouTube Music's on-screen visual slider accurately mirrors Stream Deck hardware adjustments.
 * **Always Run Validation on Code Changes**: Before submitting any manifest or code changes, execute `npx streamdeck validate` on the staged plugin to guarantee `√ Validation successful (0 errors, 0 warnings)`.
+* **Mandatory Structured Commit Messages (Summary & Description)**: Whenever creating Git commits or pushing changes, commits must always include both a concise, conventional subject line (`Summary`) and a detailed body (`Description`) explaining the specific changes and rationale in bullet points. Never create single-line, generic, or unexplained commits (e.g. avoid commit messages like just "fix" or "update").
 
 

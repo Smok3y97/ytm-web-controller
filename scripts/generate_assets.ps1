@@ -1,10 +1,15 @@
-# Generate Compliant PNG and SVG Assets for Controller for YouTube Music Web
-Add-Type -AssemblyName System.Drawing
-
 $scriptsDir = $PSScriptRoot
 $rootDir = (Get-Item $PSScriptRoot).Parent.FullName
-$assetsDir = Join-Path $rootDir "plugin\assets"
-$extensionIconsDir = Join-Path $rootDir "extension\icons"
+$assetsDir = Join-Path (Join-Path $rootDir "plugin") "assets"
+$extensionIconsDir = Join-Path (Join-Path $rootDir "extension") "icons"
+
+$canDraw = $false
+try {
+    Add-Type -AssemblyName System.Drawing -ErrorAction Stop
+    $canDraw = $true
+} catch {
+    Write-Output "System.Drawing is not available on this platform. Skipping PNG regeneration; existing committed PNG assets will be used."
+}
 
 function Generate-PluginIconPng([int]$size, [string]$outFile) {
     # Render at 512x512 master resolution with full details (Headphones + Play Triangle)
@@ -95,14 +100,16 @@ function Generate-PluginIconPng([int]$size, [string]$outFile) {
     Write-Output "Created: $outFile ($size x $size)"
 }
 
-# 1. Plugin Icons (Stream Deck)
-Generate-PluginIconPng 256 (Join-Path $assetsDir "plugin-icon.png")
-Generate-PluginIconPng 512 (Join-Path $assetsDir "plugin-icon@2x.png")
+if ($canDraw) {
+    # 1. Plugin Icons (Stream Deck)
+    Generate-PluginIconPng 256 (Join-Path $assetsDir "plugin-icon.png")
+    Generate-PluginIconPng 512 (Join-Path $assetsDir "plugin-icon@2x.png")
 
-# 2. Browser Extension Icons (Chrome Web Store & Browser Toolbar)
-Generate-PluginIconPng 16 (Join-Path $extensionIconsDir "icon-16.png")
-Generate-PluginIconPng 48 (Join-Path $extensionIconsDir "icon-48.png")
-Generate-PluginIconPng 128 (Join-Path $extensionIconsDir "icon-128.png")
+    # 2. Browser Extension Icons (Chrome Web Store & Browser Toolbar)
+    Generate-PluginIconPng 16 (Join-Path $extensionIconsDir "icon-16.png")
+    Generate-PluginIconPng 48 (Join-Path $extensionIconsDir "icon-48.png")
+    Generate-PluginIconPng 128 (Join-Path $extensionIconsDir "icon-128.png")
+}
 
 # 3. Run node SVG generator for vector icons
 node (Join-Path $scriptsDir "generate_svgs.mjs")

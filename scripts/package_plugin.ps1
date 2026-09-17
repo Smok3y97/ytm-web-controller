@@ -4,7 +4,8 @@ $rootDir = (Get-Item $PSScriptRoot).Parent.FullName
 $uuid = "com.smok3y97.ytmusicweb"
 $pluginDir = Join-Path $rootDir "plugin"
 $releaseDir = Join-Path $rootDir "release"
-$stageDir = Join-Path $rootDir ".build_stage\$uuid.sdPlugin"
+$buildStageParent = Join-Path $rootDir ".build_stage"
+$stageDir = Join-Path $buildStageParent "$uuid.sdPlugin"
 $releaseSdPlugin = Join-Path $releaseDir "$uuid.sdPlugin"
 
 Write-Output "Assembling Stream Deck Plugin: $uuid"
@@ -12,8 +13,8 @@ Write-Output "Assembling Stream Deck Plugin: $uuid"
 if (Test-Path $releaseDir) {
     Remove-Item $releaseDir -Recurse -Force
 }
-if (Test-Path (Join-Path $rootDir ".build_stage")) {
-    Remove-Item (Join-Path $rootDir ".build_stage") -Recurse -Force
+if (Test-Path $buildStageParent) {
+    Remove-Item $buildStageParent -Recurse -Force
 }
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
@@ -40,17 +41,33 @@ Pop-Location
 
 # Compile native Windows window focus helper
 $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-$focusCs = Join-Path $rootDir "scripts\ytm-focus.cs"
-$focusExe = Join-Path $pluginDir "bin\ytm-focus.exe"
-if ((Test-Path $csc) -and (Test-Path $focusCs)) {
-    Write-Output "Compiling native Windows focus helper..."
+$focusCs = Join-Path (Join-Path $rootDir "scripts") "ytm-focus.cs"
+$focusBinDir = Join-Path $pluginDir "bin"
+$focusExe = Join-Path $focusBinDir "ytm-focus.exe"
+
+if (!(Test-Path $focusBinDir)) {
+    New-Item -ItemType Directory -Path $focusBinDir -Force | Out-Null
+}
+
+$isWin = if ($null -ne $IsWindows) { $IsWindows } else { $env:OS -eq "Windows_NT" }
+
+if ($isWin -and (Test-Path $csc) -and (Test-Path $focusCs)) {
+    Write-Output "Compiling native Windows focus helper with csc.exe..."
     & $csc /target:winexe /optimize+ /nologo /out:$focusExe $focusCs
+} elseif ((Get-Command "mcs" -ErrorAction SilentlyContinue) -and (Test-Path $focusCs)) {
+    Write-Output "Compiling native Windows focus helper with Mono (mcs)..."
+    & mcs -target:winexe -optimize+ -out:$focusExe $focusCs
+} elseif (Test-Path $focusExe) {
+    Write-Output "Using pre-existing native Windows focus helper binary: $focusExe"
+} else {
+    Write-Warning "Neither csc.exe nor mcs compiler found; ytm-focus.exe could not be compiled."
 }
 
 $binTarget = Join-Path $stageDir "bin"
 New-Item -ItemType Directory -Path $binTarget -Force | Out-Null
-if (Test-Path (Join-Path $pluginDir "bin\plugin.js")) {
-    Copy-Item (Join-Path $pluginDir "bin\plugin.js") $binTarget
+$pluginJs = Join-Path (Join-Path $pluginDir "bin") "plugin.js"
+if (Test-Path $pluginJs) {
+    Copy-Item $pluginJs $binTarget
 }
 if (Test-Path $focusExe) {
     Copy-Item $focusExe $binTarget
@@ -71,8 +88,9 @@ Get-ChildItem $assetsTarget -Include "*.ps1","*.mjs" -Recurse | Remove-Item -For
 Copy-Item (Join-Path $pluginDir "ui") $stageDir -Recurse
 
 # 5. Copy Layouts
-if (Test-Path (Join-Path $pluginDir "layouts")) {
-    Copy-Item (Join-Path $pluginDir "layouts") $stageDir -Recurse
+$layoutsDir = Join-Path $pluginDir "layouts"
+if (Test-Path $layoutsDir) {
+    Copy-Item $layoutsDir $stageDir -Recurse
 }
 
 # 6. Preserve staged sdPlugin directory in release folder for validation
@@ -102,13 +120,14 @@ $extDir = Join-Path $rootDir "extension"
 if (Test-Path $extDir) {
     $extZip = Join-Path $releaseDir "extension.zip"
     Write-Output "Packaging Chrome Extension to: $extZip"
-    Compress-Archive -Path "$extDir\*" -DestinationPath $extZip -Force
+    $extItems = (Get-ChildItem -Path $extDir).FullName
+    Compress-Archive -Path $extItems -DestinationPath $extZip -Force
 }
 
 # 9. Optionally install/update local Stream Deck plugin if Stream Deck is installed
 $appDataPlugins = $null
 if ($env:APPDATA) {
-    $winPlugins = Join-Path $env:APPDATA "Elgato\StreamDeck\Plugins"
+    $winPlugins = Join-Path $env:APPDATA (Join-Path "Elgato" (Join-Path "StreamDeck" "Plugins"))
     if (Test-Path $winPlugins) {
         $appDataPlugins = $winPlugins
     }
@@ -121,13 +140,14 @@ if ($appDataPlugins) {
         New-Item -ItemType Directory -Path $targetSdPlugin -Force | Out-Null
     }
     # Clean orphaned action asset folders
-    $targetActionDir = Join-Path $targetSdPlugin "assets\actions"
-    $stageActionDir = Join-Path $releaseSdPlugin "assets\actions"
+    $targetActionDir = Join-Path (Join-Path $targetSdPlugin "assets") "actions"
+    $stageActionDir = Join-Path (Join-Path $releaseSdPlugin "assets") "actions"
     if ((Test-Path $targetActionDir) -and (Test-Path $stageActionDir)) {
         $validActions = (Get-ChildItem $stageActionDir -Directory).Name
         Get-ChildItem $targetActionDir -Directory | Where-Object { $_.Name -notin $validActions } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     }
-    Copy-Item -Path "$releaseSdPlugin\*" -Destination $targetSdPlugin -Recurse -Force
+    $releaseItems = (Get-ChildItem -Path $releaseSdPlugin).FullName
+    Copy-Item -Path $releaseItems -Destination $targetSdPlugin -Recurse -Force
     Write-Output "Plugin successfully updated in Stream Deck plugins directory!"
 
     # 10. Hot-restart plugin via Stream Deck CLI so changes apply instantly
@@ -139,7 +159,7 @@ if ($appDataPlugins) {
     }
 }
 
-if (Test-Path (Join-Path $rootDir ".build_stage")) {
-    Remove-Item (Join-Path $rootDir ".build_stage") -Recurse -Force -ErrorAction SilentlyContinue
+if (Test-Path $buildStageParent) {
+    Remove-Item $buildStageParent -Recurse -Force -ErrorAction SilentlyContinue
 }
 

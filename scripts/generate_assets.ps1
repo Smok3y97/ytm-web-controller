@@ -3,12 +3,19 @@ $rootDir = (Get-Item $PSScriptRoot).Parent.FullName
 $assetsDir = Join-Path (Join-Path $rootDir "plugin") "assets"
 $extensionIconsDir = Join-Path (Join-Path $rootDir "extension") "icons"
 
+$isWin = if ($null -ne $IsWindows) { $IsWindows } else { $env:OS -eq "Windows_NT" }
 $canDraw = $false
-try {
-    Add-Type -AssemblyName System.Drawing -ErrorAction Stop
-    $canDraw = $true
-} catch {
-    Write-Output "System.Drawing is not available on this platform. Skipping PNG regeneration; existing committed PNG assets will be used."
+if ($isWin) {
+    try {
+        Add-Type -AssemblyName System.Drawing -ErrorAction Stop
+        $testBmp = New-Object System.Drawing.Bitmap(1, 1)
+        $testBmp.Dispose()
+        $canDraw = $true
+    } catch {
+        Write-Output "System.Drawing GDI+ is not operational. Skipping PNG regeneration; existing committed PNG assets will be used."
+    }
+} else {
+    Write-Output "Running on non-Windows environment. Skipping PNG raster asset regeneration (committed assets will be used)."
 }
 
 function Generate-PluginIconPng([int]$size, [string]$outFile) {

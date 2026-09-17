@@ -24,6 +24,10 @@ on:
       - '.github/pull_request_template.md'
       - 'LICENSE'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -45,28 +49,30 @@ jobs:
       - name: Install dependencies
         run: npm ci --prefix plugin
 
-      - name: Install Stream Deck CLI
-        run: npm install -g @elgato/cli@latest
-
-      - name: Install Mono Compiler
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mono-mcs
-
-      # 1. Linting & Typecheck (fails fast on syntax/type issues before packaging)
+      # 1. Linting & Typecheck (fails fast on syntax/type issues before packaging or system installs)
       - name: Lint and Typecheck
         run: npm run lint
 
-      # 2. Assembling & Packaging (Rollup build, C# focus helper, icons & staging)
+      # 2. Add local plugin node_modules CLI binaries (streamdeck) to PATH
+      - name: Add local CLI binaries to PATH
+        run: echo "$GITHUB_WORKSPACE/plugin/node_modules/.bin" >> $GITHUB_PATH
+
+      # 3. Install lightweight Mono C# compiler for Windows focus helper
+      - name: Install Mono Compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends mono-mcs
+
+      # 4. Assembling & Packaging (Rollup build, C# focus helper, icons & staging)
       - name: Package Plugin & Extension
         shell: pwsh
         run: ./scripts/package_plugin.ps1
 
-      # 3. Official Elgato Stream Deck Plugin Validation
+      # 5. Official Elgato Stream Deck Plugin Validation
       - name: Validate Stream Deck Plugin
         run: streamdeck validate --no-update-check release/com.smok3y97.ytmusicweb.sdPlugin
 
-      # 4. Upload Build Artifacts
+      # 6. Upload Build Artifacts
       - name: Upload Stream Deck Plugin Artifact
         uses: actions/upload-artifact@v7
         with:

@@ -102,9 +102,24 @@ Copy-Item -Path $stageDir -Destination $releaseSdPlugin -Recurse -Force
 # 7. Create .streamDeckPlugin Archive using official Elgato Stream Deck CLI
 $archivePath = Join-Path $releaseDir "$uuid.streamDeckPlugin"
 Write-Output "Packaging plugin with official Elgato CLI (streamdeck pack)..."
-try {
-    npx streamdeck pack $stageDir -o $releaseDir --force
-} catch {
+
+$streamdeckCmd = $null
+if (Get-Command "streamdeck" -ErrorAction SilentlyContinue) {
+    $streamdeckCmd = "streamdeck"
+} else {
+    $localCli = Join-Path $pluginDir (Join-Path "node_modules" (Join-Path ".bin" "streamdeck"))
+    if ($isWin -and (Test-Path "$localCli.cmd")) {
+        $streamdeckCmd = "$localCli.cmd"
+    } elseif (Test-Path $localCli) {
+        $streamdeckCmd = $localCli
+    }
+}
+
+if ($streamdeckCmd) {
+    & $streamdeckCmd pack $stageDir -o $releaseDir --force
+}
+
+if (!(Test-Path $archivePath)) {
     Write-Warning "Elgato CLI pack failed, falling back to Compress-Archive..."
     $archiveZip = Join-Path $releaseDir "$uuid.zip"
     Compress-Archive -Path $releaseSdPlugin -DestinationPath $archiveZip -Force
@@ -112,6 +127,7 @@ try {
 }
 
 if (Test-Path $archivePath) {
+    $global:LASTEXITCODE = 0
     Write-Output "Successfully created package: $archivePath"
 }
 
@@ -153,7 +169,9 @@ if ($appDataPlugins) {
     # 10. Hot-restart plugin via Stream Deck CLI so changes apply instantly
     Write-Output "Hot-restarting plugin via Elgato CLI (streamdeck restart)..."
     try {
-        npx streamdeck restart $uuid
+        if ($streamdeckCmd) {
+            & $streamdeckCmd restart $uuid
+        }
     } catch {
         Write-Warning "Could not restart plugin via CLI (Stream Deck app might not be running)."
     }

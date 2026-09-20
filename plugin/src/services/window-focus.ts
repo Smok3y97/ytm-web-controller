@@ -61,7 +61,7 @@ export class WindowFocusService {
 				return;
 			}
 
-			// 2. Fallback to VB Interaction AppActivate
+			// 2. Fallback to VB Interaction AppActivate via PowerShell if precompiled native binary is absent
 			const fallbackCmd = `powershell -NoProfile -NonInteractive -WindowStyle Hidden -Command "[void][System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic'); try { [Microsoft.VisualBasic.Interaction]::AppActivate('YouTube Music') } catch { try { [Microsoft.VisualBasic.Interaction]::AppActivate('YouTube') } catch {} }"`;
 			exec(fallbackCmd, () => {});
 		} catch (e) {

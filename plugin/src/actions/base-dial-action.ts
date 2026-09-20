@@ -60,7 +60,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		await this.updateDialDisplay(ev.action, state, ev.payload.settings);
 		this.checkPlaybackTimer();
 
-		// Request instantaneous state sync from browser
+		// Synchronize initial dial LCD graphics immediately upon action appearance
 		WebSocketService.getInstance().sendCommand("requestState");
 	}
 

@@ -66,7 +66,7 @@ export class CopyUrlAction extends BaseStateAction {
 				// Show green checkmark feedback icon
 				await ev.action.setImage("assets/actions/copyurl/copied.svg");
 
-				// Reset back to default icon after snappy 750ms
+				// Reset back to default action icon after 750ms
 				const timer = setTimeout(async () => {
 					this.feedbackTimers.delete(actionId);
 					try {

@@ -158,7 +158,7 @@ export class WebSocketService extends EventEmitter {
 								}
 							}
 
-							// Tab closed notification
+							// Handle explicit browser tab unload to clean up client registry and multi-tab arbitration
 							if (payload.type === "TAB_CLOSED") {
 								streamDeck.logger.info(`[WebSocket] Tab closed notification (tabId: ${payload.tabId || "unknown"})`);
 								if (tabInfo) {
@@ -172,14 +172,14 @@ export class WebSocketService extends EventEmitter {
 								return;
 							}
 
-							// Client state request
+							// Respond with latest cached state on demand
 							if (payload.command === "requestState" || payload.type === "requestState") {
 								const currentState = StateManager.getInstance().getState();
 								this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
 								return;
 							}
 
-							// Intercept Handshake packet
+							// Validate extension version compatibility via handshake packet
 							if (payload.type === "handshake") {
 								if (tabInfo && payload.tabId) tabInfo.tabId = payload.tabId;
 								const extVersion = payload.version || "0.0.0.0";

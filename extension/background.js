@@ -24,7 +24,7 @@ if (extApi?.runtime?.onMessage) {
             extApi.windows.update(wId, { focused: true });
           }
         } catch (err) {
-          // Suppress error safely
+          // Suppress error if target tab or window was closed before focus API completed
         }
       };
 

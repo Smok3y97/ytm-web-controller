@@ -39,7 +39,7 @@ export class ImageRenderer {
 			const buffer = Buffer.from(arrayBuffer);
 			const base64 = `data:${contentType};base64,${buffer.toString("base64")}`;
 
-			// Manage cache size
+			// Evict oldest cached cover in RAM to maintain memory bounds
 			if (this.coverCache.size >= this.maxCacheSize) {
 				const firstKey = this.coverCache.keys().next().value;
 				if (firstKey) this.coverCache.delete(firstKey);

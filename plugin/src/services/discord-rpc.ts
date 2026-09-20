@@ -203,8 +203,7 @@ export class DiscordRpcService {
 			return;
 		}
 
-		// If music is paused, no media is active, or title is missing:
-		// Immediately clear Discord activity (standard media player behavior)
+		// Clear Discord activity immediately when playback is paused or track info is missing
 		if (state.paused || !state.title || state.title.trim() === "") {
 			if (this.lastCachedActivity !== null) {
 				this.lastCachedActivity = null;
@@ -228,7 +227,7 @@ export class DiscordRpcService {
 			let startTimestamp: number | undefined;
 			let endTimestamp: number | undefined;
 
-			// Live playback timeline calculation:
+			// Live playback timeline calculation
 			if (!state.paused) {
 				startTimestamp = Math.floor(now - Math.max(0, state.currentTime) * 1000);
 				if (state.duration > 0) {
@@ -266,7 +265,7 @@ export class DiscordRpcService {
 				}
 			}
 
-			// If album name is present as a standalone segment or whole word inside artist, strip it safely!
+			// If album name is present as a standalone segment or whole word inside artist, strip it safely
 			if (cleanAlbum && cleanAlbum.length >= 3 && cleanArtist.length > cleanAlbum.length) {
 				const escapedAlbum = cleanAlbum.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 				cleanArtist = cleanArtist
@@ -307,7 +306,7 @@ export class DiscordRpcService {
 						return;
 					}
 
-					// If previous update had no endTimestamp (song duration was not yet loaded), do not skip this update!
+					// Force update if end timestamp is newly available or drifted significantly
 					const hadNoEnd =
 						(!prev.endTimestamp && !!endTimestamp) || Math.abs((prev.endTimestamp || 0) - (endTimestamp || 0)) > 2000;
 
@@ -409,14 +408,14 @@ export class DiscordRpcService {
 
 		const hasDigits = /\d/.test(s);
 
-		// 5. View count patterns across all YouTube languages:
+		// 5. View count patterns across all YouTube languages
 		const hasViewKeyword =
 			/(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)/i.test(
 				s,
 			);
 		if (hasDigits && hasViewKeyword) return true;
 
-		// 6. Relative upload times across languages:
+		// 6. Relative upload times across languages
 		const hasTimeKeyword =
 			/(?:^vor\s|\bago$|^il y a\b|^hace\s|^há\s|\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\s|^pred\s|^acum\s|^πριν\s|^pre\s|לפني|قبل|trước$|ที่แล้ว$|年前|前$|전$)/i.test(
 				s,

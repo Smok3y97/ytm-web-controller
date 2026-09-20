@@ -192,10 +192,10 @@ export class ObsExporterService {
 				const resolvedPath = path.resolve(this.filePath);
 				const dirPath = path.dirname(resolvedPath);
 
-				// Ensure directory exists recursively
+				// Create target directory structure if missing before writing file
 				await fs.mkdir(dirPath, { recursive: true });
 
-				// Safe write UTF-8
+				// Write current song metadata with UTF-8 encoding for OBS text source consumption
 				await fs.writeFile(resolvedPath, currentContent, { encoding: "utf8" });
 				this.lastWrittenContent = currentContent;
 			} catch (err: unknown) {

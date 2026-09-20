@@ -66,7 +66,7 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 
 		if (ticks === 0) return;
 
-		// Debounce track skipping
+		// Prevent rapid duplicate track skip commands during continuous dial detent rotation
 		const now = Date.now();
 		if (now - this.lastTrackSkipTime < 200) {
 			return;

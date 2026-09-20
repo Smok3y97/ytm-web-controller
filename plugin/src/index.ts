@@ -10,7 +10,6 @@ import { DislikeAction } from "./actions/dislike.js";
 import { LikeAction } from "./actions/like.js";
 import { MuteAction } from "./actions/mute.js";
 import { NextAction } from "./actions/next.js";
-// Action Handlers
 import { PlayPauseAction } from "./actions/play-pause.js";
 import { PreviousAction } from "./actions/previous.js";
 import { RepeatAction } from "./actions/repeat.js";
@@ -39,7 +38,7 @@ const obsService = ObsExporterService.getInstance();
 const versionService = VersionControlService.getInstance();
 const marqueeService = MarqueeService.getInstance();
 
-// Enable logging
+// Set default plugin log level for diagnostic output
 streamDeck.logger.setLevel("info");
 streamDeck.logger.info(`[YTM Controller] Initializing plugin (v${versionService.currentPluginVersion})...`);
 

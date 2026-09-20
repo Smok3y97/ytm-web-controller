@@ -355,7 +355,7 @@ const MAX_FAST_RETRIES = 3;
 function scheduleReconnect() {
   if (reconnectTimeout) return;
   if (reconnectAttempts >= MAX_FAST_RETRIES) {
-    // Zero Polling: Discontinue all timers. Stay in passive standby until an event occurs.
+    // Zero Polling: Discontinue timers and enter passive standby until triggered by playback events
     return;
   }
 

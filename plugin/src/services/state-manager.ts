@@ -388,7 +388,7 @@ export class StateManager extends EventEmitter {
 
 		const hasDigits = /\d/.test(s);
 
-		// 5. View count patterns across all YouTube languages:
+		// 5. View count patterns across all YouTube languages
 		// e.g. "20 Mio. Aufrufe", "20M views", "1.2M views", "500 Aufrufe", "1 Aufruf", "20 M de vues", "10 млн просмотров", "500 次观看", "100万回視聴", "1.2만회 조회"
 		const hasViewKeyword =
 			/(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)/i.test(
@@ -396,7 +396,7 @@ export class StateManager extends EventEmitter {
 			);
 		if (hasDigits && hasViewKeyword) return true;
 
-		// 6. Relative upload times across languages:
+		// 6. Relative upload times across languages
 		// e.g. "vor 3 Jahren", "3 years ago", "il y a 2 ans", "hace 5 meses", "2 anni fa", "3 года назад", "1年前", "3년 전", "há 3 anos"
 		const hasTimeKeyword =
 			/(?:^vor\s|\bago$|^il y a\b|^hace\s|^há\s|\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\s|^pred\s|^acum\s|^πριν\s|^pre\s|לפني|قبل|trước$|ที่แล้ว$|年前|前$|전$)/i.test(

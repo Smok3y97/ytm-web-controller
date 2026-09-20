@@ -110,7 +110,7 @@
             mismatchMessage: event.data.mismatchMessage || ''
           }, () => {
             if (chrome?.runtime?.lastError) {
-              // Ignore invalid context or storage errors safely
+              // Ignore storage errors if extension context was invalidated during async write
             }
           });
         }
@@ -120,7 +120,7 @@
           try {
             api.runtime.sendMessage({ type: 'YTM_FOCUS_TAB' }, () => {
               if (chrome?.runtime?.lastError) {
-                // Ignore runtime errors
+                // Suppress error if background service worker is inactive or unreachable
               }
             });
           } catch { }

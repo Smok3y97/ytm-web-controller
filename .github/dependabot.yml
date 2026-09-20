@@ -13,6 +13,9 @@ updates:
       # Keep ESLint on 9.x for @elgato/eslint-config peer dependency compatibility
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
+      # Keep Prettier on 3.x for @elgato/prettier-config peer dependency compatibility
+      - dependency-name: "prettier"
+        update-types: ["version-update:semver-major"]
       # Keep Node types aligned with Stream Deck Node.js 24 runtime
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]

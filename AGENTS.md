@@ -205,7 +205,7 @@ The plugin strictly adheres to [`docs/plugin-guideline.md`](docs/plugin-guidelin
 ### Commands:
 ```bash
 # 0. Fast TypeScript validation (type check only without building bundles)
-npx tsc --noEmit -p plugin/tsconfig.json
+npx --prefix plugin tsc --noEmit -p plugin/tsconfig.json
 
 # 1. Compile TypeScript / Rollup bundle
 npm run build
@@ -243,7 +243,7 @@ The packaging script automates:
 
 ### 🛑 Definition of Done (Task Checklist)
 Before completing any task, verify the following checklist:
-1. `npx tsc --noEmit -p plugin/tsconfig.json` passes with 0 type errors, followed by `npm run build` for the final bundle.
+1. `npx --prefix plugin tsc --noEmit -p plugin/tsconfig.json` passes with 0 type errors, followed by `npm run build` for the final bundle.
 2. `npm run lint` (or Prettier/ESLint) completes with 0 errors and 0 warnings.
 3. `npm run validate` confirms official Elgato SDK schema compliance with 0 errors and 0 warnings.
 4. No orphaned `console.log()` debug statements left in production code (only use the dedicated plugin/extension logger).

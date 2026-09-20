@@ -22,19 +22,55 @@ The project consists of two core components working together over a local WebSoc
 └───────────────────────────────┘               └─────────────────────────────────┘
 ```
 
-1. **Browser Extension (`extension/`)**:
-   - Injected into `https://music.youtube.com/*` with `MAIN` world execution.
-   - Extracts playback states (`playbackState`, `title`, `artist`, `album`, `currentTime`, `duration`, `likeStatus`, `repeatMode`, `shuffleState`, `trackUrl`, `albumArt`).
-   - **Zero Polling**: Never uses periodic `setInterval()` to query DOM. State updates are strictly dispatched on HTML5 `<video>` events (`play`, `pause`, `timeupdate`, `seeking`, `seeked`) and targeted DOM `MutationObserver` callbacks.
+### 📁 Repository Layout
+- `extension/`: Chrome/Brave/Edge extension (Manifest V3, Content Script executing in `MAIN` world).
+- `plugin/`: Stream Deck Node.js Plugin (SDK v3, TypeScript, Rollup bundle).
+- `scripts/`: Automation and build scripts (asset generation, packaging, and validation helpers).
+- `docs/`: Architecture specifications, OBS guides, feature documentation, and Elgato guidelines.
+- `release/`: Generated distribution packages (`.streamDeckPlugin` and `extension.zip`).
 
-2. **Stream Deck Plugin (`plugin/`)**:
-   - Built on `@elgato/streamdeck` SDK (SDK Version 3, Minimum Stream Deck Software: `7.1+`, Node.js `24`).
-   - Hosts a local `ws.Server` (Default port: `39865`).
-   - Handles multi-controller setups: standard Keypad actions and Stream Deck + Dials & LCD Touchstrips.
-   - **Zero Disk Footprint**: Computes dynamic images, cover thumbnails, and marquee LCD text strictly in memory using Base64 data URLs.
+### 🔄 End-to-End State Flow
+```text
+1. Event Trigger:
+   YouTube Music Web DOM (<video> status events & MutationObserver for toggles)
+2. Extension Extraction:
+   ytm-media-session.js (Metadata) + ytm-player-api.js (Timing) ──► ytm-state.js
+3. Transport:
+   content.js ──► Local WebSocket (ws://127.0.0.1:39865)
+4. Plugin Backend:
+   websocket-server.ts (Tab arbitration) ──► state-manager.ts (State cache & time interpolation)
+5. Distribution Layer:
+   ├── Action Controllers (Hardware keys & dials via image-renderer.ts / marquee-service.ts)
+   ├── discord-rpc.ts (Desktop Rich Presence)
+   ├── obs-exporter.ts (Live .txt file output)
+   └── http-api.ts (/overlay OBS widget & /api/current chatbot endpoint)
+```
 
-### 🧩 Modular Architecture & Single Responsibility Principle (SRP)
-The entire codebase strictly follows a decoupled, modular architecture adhering to the Single Responsibility Principle:
+### 🌐 Extension Context Boundaries
+- **MAIN World (`extension/ytm-*.js`, `extension/content.js`):** Interacts directly with YouTube Music DOM, Polymer UI components, and the `#movie_player` API. It has **zero direct access** to Chrome Extension runtime APIs (`chrome.storage`, `chrome.runtime`).
+- **ISOLATED World (`extension/bridge.js`):** Bridges manifest metadata and stored port configurations. It communicates with the MAIN world exclusively via bidirectional `window.postMessage`.
+- **Strict Rule:** Never attempt to call `chrome.*` APIs inside MAIN world scripts, and never query YouTube player internals directly inside `bridge.js`.
+
+---
+
+## 🚨 2. Critical Rules & Edge Cases
+
+- **Never edit generated/packed files:** Never manually edit `release/**`, `plugin/bin/**`, or `plugin/package-lock.json`. Dependencies and lockfiles must strictly be managed natively via `npm`.
+- **Zero Polling Overhead:** Never introduce `setInterval()` or polling loops in `extension/content.js`. Playback updates are strictly event-driven via `<video>` events (`play`, `pause`, `timeupdate`, `seeking`, `seeked`) and targeted DOM `MutationObserver` callbacks.
+- **In-Memory Assets Only:** Never write temporary cover art or thumbnails to the file system. All image transformations, canvas compositions, and artwork buffering must remain in RAM as Base64 data URLs.
+- **10 Hz Hardware Limit:** Programmatic updates to Stream Deck keys, canvas graphics, and LCD touchstrips must never exceed 10 updates per second (10 Hz).
+- **Central Version Source:** Never manually edit version strings across manifests or package files. Always use the central bump command: `npm run bump <version>`.
+- **Immutable Action UUIDs:** Never modify existing action UUIDs in `manifest.json` after release (use `"VisibleInActionsList": false` to deprecate actions).
+- **Volume Clamping (0–100):** YouTube Music treats volume strictly as an integer between `0` and `100`. When mapping Stream Deck dial rotations (+/- 2% or 5%), always clamp the calculated value to `[0, 100]` before dispatching.
+- **Client-Side Time Interpolation:** Do not expect real-time WebSocket ticks for playback position during playback. Progress timelines must be interpolated client-side (`StateManager.getInterpolatedCurrentTime()`) using snapshot timestamps.
+- **String Sanitization:** Track titles and artists often contain unescaped HTML entities (e.g. `&amp;`) or emojis. Always sanitize text before passing it to canvas SVG templates or OBS `.txt` exports.
+- **Strict Typing Discipline:** Avoid `as any`, `@ts-ignore`, and `@ts-expect-error`. If payload or SDK event types are missing, define or extend explicit TypeScript interfaces in `plugin/src/types/` instead of bypassing the type checker.
+
+---
+
+## 🧩 3. Modular Architecture & Single Responsibility Principle (SRP)
+
+The codebase strictly follows a decoupled, modular architecture adhering to the Single Responsibility Principle:
 
 - **Backend Services Layer (`plugin/src/services/`)**: Centralized, isolated services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `warning-icons.ts`, `version-control.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`) consumed exclusively via Singleton patterns.
 - **Action Controllers Layer (`plugin/src/actions/`)**: Independent action handlers inheriting from shared base classes (`base-state-action.ts`, `base-volume-action.ts`, `base-dial-action.ts`).
@@ -43,7 +79,7 @@ The entire codebase strictly follows a decoupled, modular architecture adhering 
 
 ---
 
-## 🏷️ 2. Versioning Specification & Centralized Synchronization
+## 🏷️ 4. Versioning Specification & Centralized Synchronization
 
 The project strictly follows the **4-digit Elgato Stream Deck Manifest Specification**:
 
@@ -78,9 +114,29 @@ Running `npm run bump` automatically updates and synchronizes all required files
 > [!NOTE]
 > Version numbers appearing in code snippets, tables, or guides within [`docs/development.md`](docs/development.md) serve strictly as **illustrative examples** and do **not** need to be edited or bumped with each release. The live version is defined solely by [`version.json`](version.json) and synchronized across the 5 manifest/package files.
 
+### 🏷️ Creating and Triggering a GitHub Release
+To trigger the automated GitHub Actions release pipeline (`release.yml`), the version tag must be created and pushed along with the bump commit:
+
+```bash
+# 1. Bump version across all 5 manifests / package files
+npm run bump <version>  # e.g., npm run bump 1.5.0.0
+
+# 2. Stage and commit the synchronized files
+git add version.json package.json plugin/manifest.json plugin/package.json plugin/package-lock.json extension/manifest.json
+git commit -m "chore(release): bump version to <version>" -m "- Synchronized all manifests to <version> via npm run bump"
+
+# 3. Create the version tag matching the v{Major}.{Minor}.{Patch}.{Build} pattern
+git tag v<version>  # e.g., git tag v1.5.0.0
+
+# 4. Push commit and tag to GitHub to trigger the release workflow
+git push origin main
+git push origin v<version>
+```
+*Note: The `.github/workflows/release.yml` pipeline strictly listens to tags matching `v*.*.*.*`. Pushing only the commit will trigger the CI test pipeline, but will NOT create a GitHub Release.*
+
 ---
 
-## 🎨 3. Iconography & Asset Guidelines
+## 🎨 5. Iconography & Asset Guidelines
 
 Refer to [`docs/plugin-guideline.md`](docs/plugin-guideline.md) (and the official [Elgato Stream Deck Plugin Guidelines](https://docs.elgato.com/guidelines/stream-deck/plugins/)) for full asset specifications and marketplace requirements. Stream Deck UI has distinct requirements for different asset types:
 
@@ -110,37 +166,47 @@ Refer to [`docs/plugin-guideline.md`](docs/plugin-guideline.md) (and the officia
 
 ---
 
-## 📋 4. Elgato Marketplace & Plugin Guidelines Compliance
+## 📋 6. Elgato Marketplace & Plugin Guidelines Compliance
 
 The plugin strictly adheres to [`docs/plugin-guideline.md`](docs/plugin-guideline.md):
 
 1. **Identifiers & UUIDs**:
    - Root UUID: `com.smok3y97.ytmusicweb` (Reverse DNS).
    - Action UUID Prefix: Every action UUID **must** start with `com.smok3y97.ytmusicweb.<action>`.
-   - Immutability: **Never** alter existing action UUIDs after release. Use `VisibleInActionsList: false` to deprecate actions.
+   - Immutability: **Never** alter existing action UUIDs after release.
 
 2. **Naming & Action Limits**:
    - Plugin Name: Concise (<= 30 chars), descriptive, no author prefix in name.
    - Action Count: Keep between 2 and 30 actions.
 
-3. **Performance & Programmatic Flooding Limit**:
-   - Programmatic key/canvas/LCD rendering calls must **never exceed 10 updates per second (10 Hz)**.
-
-4. **Visual Feedback (`showAlert` / `showOk`)**:
+3. **Visual Feedback (`showAlert` / `showOk`)**:
    - `showAlert`: Trigger on errors or unreachable WebSocket endpoints.
    - `showOk`: Trigger **only** when there is no other visual indicator of success (e.g. clipboard copy, file written). Never call `showOk` if the key icon or state updates dynamically.
 
-5. **Property Inspector (PI) UI Rules**:
+4. **Property Inspector (PI) UI Rules**:
    - **Auto-Save**: Settings must save automatically on input change (`setSettings` / `setGlobalSettings`). **Never include a manual "Save" button.**
    - **No Visual Flickering**: Hide UI components by default and reveal them on DOM ready.
    - **Prohibited**: Do NOT include donation buttons, sponsor links, or raw copyright text in the Property Inspector.
 
 ---
 
-## 🚀 5. Build, Packaging & Validation Workflow
+## 💬 7. Code Commenting Guidelines for AI Agents
+
+- **Explain Intent, Not Syntax ("Why over What"):** Comments must explain *why* a particular piece of logic, guard clause, or branch exists rather than narrating what the syntax does. Avoid trivial comments (e.g. do not put `// Set volume` directly above `setVolume()`).
+- **Document Workarounds & Quirks:** Any fallback logic addressing YouTube Music DOM mutations, Sandboxing/MAIN world isolation, or Stream Deck SDK specifics must explicitly state the problem or bug being mitigated.
+- **Visual Section Separators:** For complex methods or multibranch logic, use a short, concise one-line comment above major logical steps as a visual anchor.
+- **No Trailing Periods:** Single-line comments should end without a period (concise imperative style).
+- **No Marketing Fluff:** Avoid hyperbolic buzzwords ("blazing", "ultra-optimized", "bulletproof") in code comments and docstrings; keep language strictly technical and objective.
+
+---
+
+## 🚀 8. Build, Packaging & Validation Workflow
 
 ### Commands:
 ```bash
+# 0. Fast TypeScript validation (type check only without building bundles)
+npx tsc --noEmit -p plugin/tsconfig.json
+
 # 1. Compile TypeScript / Rollup bundle
 npm run build
 
@@ -175,35 +241,37 @@ The packaging script automates:
 - **Release Pipeline (`.github/workflows/release.yml`)**: Triggered upon pushing a version tag (e.g. `v1.12.0.0` following `npm run bump <version>`) on `ubuntu-latest`. Packages, validates, and automatically publishes the official GitHub Release with attached `.streamDeckPlugin` and `extension.zip` binaries.
 - **Dependency Automation (`.github/dependabot.yml`)**: Scans weekly for dependency and GitHub Actions security/version updates.
 
+### 🛑 Definition of Done (Task Checklist)
+Before completing any task, verify the following checklist:
+1. `npx tsc --noEmit -p plugin/tsconfig.json` passes with 0 type errors, followed by `npm run build` for the final bundle.
+2. `npm run lint` (or Prettier/ESLint) completes with 0 errors and 0 warnings.
+3. `npm run validate` confirms official Elgato SDK schema compliance with 0 errors and 0 warnings.
+4. No orphaned `console.log()` debug statements left in production code (only use the dedicated plugin/extension logger).
+5. Any additions or modifications to services, routes, or settings are synchronized in the relevant markdown files in `docs/` and `README.md` within the same change.
+
 ---
 
-## ⚠️ 6. Critical Guidelines for AI Agents
+## ⚠️ 9. Critical Operational Guidelines for AI Agents
 
-* **Comprehensive Documentation Maintenance (`docs/` & `README.md`)**: Always keep documentation files inside [`docs/`](docs/) (as well as [`README.md`](README.md)) up to date whenever new services, actions, UI components, settings, or architectural workflows are added or modified.
-  - **Highest Priority ([`docs/architecture.md`](docs/architecture.md))**: Must meticulously reflect every backend service, REST route, Mermaid diagram, and monorepo file structure change.
-  - **User & Streamer Guides ([`docs/obs-setup.md`](docs/obs-setup.md), [`docs/features.md`](docs/features.md), [`docs/configuration.md`](docs/configuration.md))**: Must accurately document all user-facing settings, chatbot commands, action tables, and OBS setups.
-  - **Developer & Reference Guides ([`docs/development.md`](docs/development.md), [`docs/ai-disclosure.md`](docs/ai-disclosure.md))**: Must keep build steps and testing environments synchronized without stale or contradictory information.
-  - **Do NOT Edit [`docs/plugin-guideline.md`](docs/plugin-guideline.md)**: Serves as an immutable upstream reference mirroring the official Elgato specifications and must **never** be manually modified by AI agents.
-  - **Focused & Minimal Edits**: Avoid unnecessary sentence restructuring, cosmetic rephrasing, or adding fluff. Focus documentation changes strictly on the essentials and factual updates.
-* **Conditional Build & Validation**:
-  - Run packaging and validation (`npm run package` / `npm run validate`) **only** when modifying code, assets, UI, or manifests (`plugin/`, `extension/`, `package.json`).
-  - Do **not** trigger unnecessary build/package/validation runs when making changes strictly to markdown documentation (`.md` files).
-* **Do Not Introduce Polling**: Always rely on WebSocket event messages from `content.js`. Do not add `setInterval` loops for querying music state.
-* **Respect the 10 Hz Rendering Rate Limit**: Never flood Stream Deck hardware with canvas or LCD layout updates faster than 10 Hz.
-* **Keep Memory-Only Buffering**: Do not write temporary album artwork to the local file system. Always use Base64 data URLs.
-* **No Manual Save Buttons in PI**: All Property Inspector settings must auto-save on change.
-* **Preserve Monorepo Path Structure**:
-  - `plugin/`: Stream Deck Node.js plugin.
-  - `extension/`: Browser companion extension.
-  - `docs/`: Specifications and marketplace guidelines.
-  - `release/`: Generated distribution packages.
-* **No Redundant Version Bumps in Documentation Examples**: Version numbers in [`docs/development.md`](docs/development.md) serve strictly as illustrative examples / placeholders and do **not** need to be bumped with every release. The single source of truth for the project version is [`version.json`](version.json).
-* **Neutral & Factual Communication (Zero Marketing Fluff)**: Strictly avoid hyperbolic marketing buzzwords (e.g. "ultra-fast", "blazing", "military-grade", "pixel-perfect", "immune", "zero-overhead", "flawless") in code comments, JSDoc headers, and documentation. All comments, commit messages, and documentation must remain purely technical, objective, and easily understandable for any developer.
-* **Principle of Least Privilege & Privacy-by-Design**: Strictly minimize extension permissions in [`extension/manifest.json`](extension/manifest.json). Never request broad or redundant permissions (e.g. `"tabs"`, unneeded external CDN host permissions) unless technically unavoidable. Maintain [`PRIVACY.md`](PRIVACY.md) whenever permissions or data flows change.
-* **Passive Standby Over Infinite Reconnect Loops**: Avoid unbounded reconnection intervals or periodic polling in the browser extension ([`extension/content.js`](extension/content.js)). Reconnection attempts must be strictly bounded (e.g. 3 attempts), transitioning cleanly into a 100% passive standby mode that wakes up exclusively on user interactions or media playback events.
-* **Never Manually Edit `package-lock.json`**: Lockfiles (`plugin/package-lock.json`) must always be committed to Git, but **never** manually edited, rewritten, or modified via text tools. Changes must always be generated natively by npm (`npm install <pkg>`, `npm update`, or `npm install --package-lock-only` via `npm run bump`).
-* **Maintain Web Component UI Synchronization in Browser Extension**: When dispatching player actions (especially volume and mute) in [`extension/ytm-actions.js`](extension/ytm-actions.js), always preserve the Polymer UI synchronization calls (e.g. `playerBar.setVolume_()`, slider DOM updates) alongside native player API methods, ensuring YouTube Music's on-screen visual slider accurately mirrors Stream Deck hardware adjustments.
-* **Always Run Validation on Code Changes**: Before submitting any manifest or code changes, execute `npx streamdeck validate` on the staged plugin to guarantee `√ Validation successful (0 errors, 0 warnings)`.
-* **Mandatory Structured Commit Messages (Summary & Description)**: Whenever creating Git commits or pushing changes, commits must always include both a concise, conventional subject line (`Summary`) and a detailed body (`Description`) explaining the specific changes and rationale in bullet points. Never create single-line, generic, or unexplained commits (e.g. avoid commit messages like just "fix" or "update").
+### 📚 Documentation Maintenance Hierarchy
+Always synchronize documentation within the same turn whenever code, features, routes, or settings change:
+- **`docs/architecture.md` (Highest Priority):** Must meticulously reflect any backend service changes, REST/WebSocket routes, Mermaid diagrams, and directory tree updates.
+- **User & Streamer Guides (`docs/obs-setup.md`, `docs/features.md`, `docs/configuration.md`):** Keep all action tables, chatbot commands, query parameters, and OBS setup instructions accurate.
+- **Developer Guides (`docs/development.md`, `docs/ai-disclosure.md`):** Keep setup instructions, prerequisites, and build commands up to date without stale information.
+- **Immutable Upstream Reference:** Do NOT edit `docs/plugin-guideline.md`. It serves as an immutable copy of official Elgato specifications.
+- **Edit Style:** Keep documentation edits minimal, precise, and technical. Avoid cosmetic rephrasing, tone drift, or fluff.
 
+### 🛡️ Browser Security & Runtime Isolation
+- **Principle of Least Privilege:** Strictly minimize permissions in `extension/manifest.json`. Never request broad permissions (e.g. `"tabs"`, broad host permissions) unless technically unavoidable. Update `PRIVACY.md` whenever data flows or permissions change.
+- **Passive Standby Over Infinite Loops:** Reconnection attempts in `extension/content.js` must be strictly bounded (max 3 attempts). The extension must enter a 100% passive standby mode and wake up exclusively on user playback events.
+- **UI State Synchronization:** When dispatching volume/mute controls in `extension/ytm-actions.js`, always trigger Polymer UI updates alongside native Player API calls to keep YouTube Music's visual sliders in sync with hardware inputs.
 
+### 📦 Git & Workflow Discipline
+- **Conditional Builds:** Run packaging and validation (`npm run package` / `npm run validate`) only when code, assets, UI, or manifests are modified. Do not execute build or validation commands for documentation-only changes.
+- **Structured Commit Messages:** Commits must follow Conventional Commits with a mandatory body. Never create single-line or vague commit messages:
+  ```text
+  <type>(<scope>): <short imperative summary>
+
+  - <bullet point explaining what changed>
+  - <bullet point explaining why the change was made>
+  ```

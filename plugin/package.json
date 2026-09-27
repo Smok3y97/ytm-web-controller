@@ -29,7 +29,7 @@
         "ws": "^8.18.0"
     },
     "devDependencies": {
-        "@elgato/cli": "^1.9.0",
+        "@elgato/cli": "^1.10.0",
         "@elgato/eslint-config": "^0.3.2",
         "@elgato/prettier-config": "^0.3.3",
         "@rollup/plugin-commonjs": "^29.0.3",

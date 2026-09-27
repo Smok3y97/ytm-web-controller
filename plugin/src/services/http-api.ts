@@ -50,6 +50,17 @@ export class HttpApiService extends EventEmitter {
 			return fromCwd;
 		}
 
+		const fromPluginSdDir = path.resolve(
+			process.cwd(),
+			"plugin",
+			"com.smok3y97.ytmusicweb.sdPlugin",
+			"assets",
+			"overlay",
+		);
+		if (fs.existsSync(fromPluginSdDir)) {
+			return fromPluginSdDir;
+		}
+
 		const fromPluginDir = path.resolve(process.cwd(), "plugin", "assets", "overlay");
 		if (fs.existsSync(fromPluginDir)) {
 			return fromPluginDir;

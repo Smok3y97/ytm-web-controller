@@ -24,7 +24,7 @@ The project consists of two core components working together over a local WebSoc
 
 ### 📁 Repository Layout
 - `extension/`: Chrome/Brave/Edge extension (Manifest V3, Content Script executing in `MAIN` world).
-- `plugin/`: Stream Deck Node.js Plugin (SDK v3, TypeScript, Rollup bundle).
+- `plugin/`: Stream Deck Node.js Plugin project (SDK v3, TypeScript, Rollup bundle). Contains the standard `com.smok3y97.ytmusicweb.sdPlugin/` directory (`manifest.json`, `bin/`, `assets/`, `layouts/`, `ui/`, localization JSONs) alongside `src/`, `package.json`, and Rollup configurations.
 - `scripts/`: Automation and build scripts (asset generation, packaging, and validation helpers).
 - `docs/`: Architecture specifications, OBS guides, feature documentation, and Elgato guidelines.
 - `release/`: Generated distribution packages (`.streamDeckPlugin` and `extension.zip`).
@@ -74,7 +74,7 @@ The codebase strictly follows a decoupled, modular architecture adhering to the 
 
 - **Backend Services Layer (`plugin/src/services/`)**: Centralized, isolated services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `warning-icons.ts`, `version-control.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`) consumed exclusively via Singleton patterns.
 - **Action Controllers Layer (`plugin/src/actions/`)**: Independent action handlers inheriting from shared base classes (`base-state-action.ts`, `base-volume-action.ts`, `base-dial-action.ts`).
-- **Property Inspector Frontend Layer (`plugin/ui/`)**: Strict separation between the low-level SDK WebSocket bridge ([`streamdeck-client.js`](plugin/ui/streamdeck-client.js)), the modular global settings component ([`global-settings.js`](plugin/ui/global-settings.js)), and action-specific scripts.
+- **Property Inspector Frontend Layer (`plugin/com.smok3y97.ytmusicweb.sdPlugin/ui/`)**: Strict separation between the low-level SDK WebSocket bridge ([`streamdeck-client.js`](plugin/com.smok3y97.ytmusicweb.sdPlugin/ui/streamdeck-client.js)), the modular global settings component ([`global-settings.js`](plugin/com.smok3y97.ytmusicweb.sdPlugin/ui/global-settings.js)), and action-specific scripts.
 - **Full Architecture & Component Reference**: Detailed diagrams, data flows, and full directory trees are maintained in [`docs/architecture.md`](docs/architecture.md).
 
 ---
@@ -97,7 +97,7 @@ Running `npm run bump` automatically updates and synchronizes all required files
 | File | Property | Format Example | Requirement |
 | :--- | :--- | :--- | :--- |
 | [`version.json`](version.json) | `"version"` | `"1.5.0.0"` | **Single Source of Truth** for the entire monorepo. |
-| [`plugin/manifest.json`](plugin/manifest.json) | `"Version"` | `"1.5.0.0"` | **Must be 4 numeric parts** matching regex `^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`. Required by Elgato CLI validation. |
+| [`plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json`](plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json) | `"Version"` | `"1.5.0.0"` | **Must be 4 numeric parts** matching regex `^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`. Required by Elgato CLI validation. |
 | [`extension/manifest.json`](extension/manifest.json) | `"version"`<br>`"version_name"` | `"1.5.0.0"`<br>`"1.5.0"` | `version` must be 4-digit for automated update comparisons; `version_name` defines user-facing display. |
 | [`plugin/package.json`](plugin/package.json) | `"version"` | `"1.5.0.0"` | Synchronized with plugin manifest version. |
 | [`plugin/package-lock.json`](plugin/package-lock.json) | `"version"` | `"1.5.0.0"` | Synchronized natively via `npm install --package-lock-only` (never edited manually). |
@@ -122,7 +122,7 @@ To trigger the automated GitHub Actions release pipeline (`release.yml`), the ve
 npm run bump <version>  # e.g., npm run bump 1.5.0.0
 
 # 2. Stage and commit the synchronized files
-git add version.json package.json plugin/manifest.json plugin/package.json plugin/package-lock.json extension/manifest.json
+git add version.json package.json plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json plugin/package.json plugin/package-lock.json extension/manifest.json
 git commit -m "chore(release): bump version to <version>" -m "- Synchronized all manifests to <version> via npm run bump"
 
 # 3. Create the version tag matching the v{Major}.{Minor}.{Patch}.{Build} pattern
@@ -141,18 +141,18 @@ git push origin v<version>
 Refer to [`docs/plugin-guideline.md`](docs/plugin-guideline.md) (and the official [Elgato Stream Deck Plugin Guidelines](https://docs.elgato.com/guidelines/stream-deck/plugins/)) for full asset specifications and marketplace requirements. Stream Deck UI has distinct requirements for different asset types:
 
 1. **Main Plugin Icon (`Icon`)**:
-   - Location: `plugin/assets/plugin-icon.png` (256×256 px) and `plugin/assets/plugin-icon@2x.png` (512×512 px).
+   - Location: `plugin/com.smok3y97.ytmusicweb.sdPlugin/assets/plugin-icon.png` (256×256 px) and `plugin/com.smok3y97.ytmusicweb.sdPlugin/assets/plugin-icon@2x.png` (512×512 px).
    - Format: **PNG** (Strict requirement by Stream Deck preferences detail pane).
    - Design: **Brand-Compliant Circular Badge** (Transparent background with `#FF0033` red circular disc and crisp white stylized audio-controller headphones + play glyph).
 
 2. **Category & Sidebar Icon (`CategoryIcon`)**:
-   - Location: `plugin/assets/category-icon.svg` (and referenced as `"CategoryIcon": "assets/category-icon"` in `manifest.json`).
+   - Location: `plugin/com.smok3y97.ytmusicweb.sdPlugin/assets/category-icon.svg` (and referenced as `"CategoryIcon": "assets/category-icon"` in `manifest.json`).
    - Dimensions: 28×28 px (Standard DPI) / 56×56 px (`@2x` High DPI).
    - Format: **SVG** (Vector) or PNG.
    - Design: **Monochromatic White (`#FFFFFF`)** glyph on transparent background (stylized minimalist headphones with embedded play triangle). No solid background fill.
 
 3. **Action Key & Dial Icons (`Actions[].Icon` & `Actions[].States[].Image`)**:
-   - Location: `plugin/assets/actions/<action-name>/...`
+   - Location: `plugin/com.smok3y97.ytmusicweb.sdPlugin/assets/actions/<action-name>/...`
    - Dimensions: Action List Icons: 20×20 px (40×40 px `@2x`). Key State Icons: 72×72 px (144×144 px `@2x`).
    - Format: **SVG** (Vector).
    - Design: **Default White (`#FFFFFF`)** on transparent background for consistency across Stream Deck dark UI. Active highlight states (e.g. Liked, Disliked, Repeat-All) use active colors (`#FF0033`).
@@ -215,10 +215,10 @@ npm run package
 # or directly:
 powershell -ExecutionPolicy Bypass -File .\scripts\package_plugin.ps1
 
-# 3. Validate packaged plugin against official Elgato SDK Schema
+# 3. Validate plugin against official Elgato SDK Schema
 npm run validate
 # or directly:
-npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
+npx streamdeck validate plugin/com.smok3y97.ytmusicweb.sdPlugin
 
 # 4. Hot-restart plugin in Stream Deck app without restarting Stream Deck
 npm run restart
@@ -237,8 +237,8 @@ The packaging script automates:
 7. Hot-restarting the live plugin process in Stream Deck via `streamdeck restart` for instant live testing.
 
 ### CI/CD & Automated GitHub Releases:
-- **CI Pipeline (`.github/workflows/ci.yml`)**: Automatically triggered on pushes and PRs (`main`/`master`) on `ubuntu-latest`. Validates types (`tsc`), linting (`eslint`), builds the plugin bundle, validates via `streamdeck validate`, and uploads test build artifacts (`.streamDeckPlugin` and `extension.zip`).
-- **Release Pipeline (`.github/workflows/release.yml`)**: Triggered upon pushing a version tag (e.g. `v1.12.0.0` following `npm run bump <version>`) on `ubuntu-latest`. Packages, validates, and automatically publishes the official GitHub Release with attached `.streamDeckPlugin` and `extension.zip` binaries.
+- **CI Pipeline (`.github/workflows/ci.yml`)**: Automatically triggered on pushes and PRs (`main`/`master`) on `ubuntu-latest`. Executes transparent native steps: typechecking (`tsc`), linting (`eslint`), compiling the plugin bundle (`rollup`), compiling the native Windows focus helper via Mono (`mcs`), validating via `streamdeck validate`, packaging the plugin (`streamdeck pack`), zipping the browser extension (`zip`), and uploading test build artifacts (`.streamDeckPlugin` and `extension.zip`).
+- **Release Pipeline (`.github/workflows/release.yml`)**: Triggered upon pushing a version tag (e.g. `v1.12.0.0` following `npm run bump <version>`) on `ubuntu-latest`. Runs identical transparent native steps, packages, validates, and automatically publishes the official GitHub Release with attached `.streamDeckPlugin` and `extension.zip` binaries.
 - **Dependency Automation (`.github/dependabot.yml`)**: Scans weekly for dependency and GitHub Actions security/version updates.
 
 ### 🛑 Definition of Done (Task Checklist)

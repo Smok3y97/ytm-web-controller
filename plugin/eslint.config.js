@@ -29,7 +29,7 @@ export default defineConfig([
 		},
 	},
 	{
-		files: ["ui/**/*.js"],
+		files: ["com.smok3y97.ytmusicweb.sdPlugin/ui/**/*.js"],
 		languageOptions: {
 			globals: {
 				...globals.browser,
@@ -51,6 +51,11 @@ export default defineConfig([
 		},
 	},
 	{
-		ignores: ["bin/", "node_modules/", "assets/"],
+		ignores: [
+			"com.smok3y97.ytmusicweb.sdPlugin/bin/",
+			"node_modules/",
+			"com.smok3y97.ytmusicweb.sdPlugin/assets/",
+			"bin/",
+		],
 	},
 ]);

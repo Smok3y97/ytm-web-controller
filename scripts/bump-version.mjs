@@ -5,7 +5,7 @@
  * 1. version.json
  * 2. package.json (root)
  * 3. plugin/package.json
- * 4. plugin/manifest.json
+ * 4. plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json
  * 5. extension/manifest.json
  * 
  * Usage:
@@ -90,8 +90,8 @@ updateJsonFile(path.join(pluginDir, 'package.json'), (json) => {
   json.version = targetVersion;
 });
 
-// 4. plugin/manifest.json
-updateJsonFile(path.join(pluginDir, 'manifest.json'), (json) => {
+// 4. plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json
+updateJsonFile(path.join(pluginDir, 'com.smok3y97.ytmusicweb.sdPlugin', 'manifest.json'), (json) => {
   json.Version = targetVersion;
 });
 

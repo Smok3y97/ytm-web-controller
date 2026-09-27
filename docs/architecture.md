@@ -13,7 +13,7 @@ This document provides an in-depth technical overview of the **Controller for Yo
 - [🌐 4. Browser Companion Extension Layer (`extension/`)](#-4-browser-companion-extension-layer-extension)
 - [🔌 5. Backend Services Layer (`plugin/src/services/`)](#-5-backend-services-layer-pluginsrcservices)
 - [🕹️ 6. Action Controllers Layer (`plugin/src/actions/`)](#-6-action-controllers-layer-pluginsrcactions)
-- [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/ui/`)](#-7-property-inspector-pi-modular-architecture-pluginui)
+- [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/.../ui/`)](#-7-property-inspector-pi-modular-architecture-plugincomsmok3y97ytmusicwebsdpluginui)
 - [🔒 8. Version Handshake & Incompatibility Warning Protocol](#-8-version-handshake--incompatibility-warning-protocol)
 - [⚡ 9. Stream Deck + Dial & LCD Handling](#-9-stream-deck--dial--lcd-handling)
 - [🎥 10. OBS Overlay & Chatbot HTTP Architecture](#-10-obs-overlay--chatbot-http-architecture)
@@ -158,46 +158,47 @@ ytm-web-controller/
 │   ├── popup.js                 # Port storage & live connection diagnostic tester
 │   └── icons/                   # Extension toolbar icons (16, 48, 128 px)
 ├── plugin/                      # Stream Deck Plugin (Node.js SDK 3)
-│   ├── manifest.json            # Stream Deck Plugin Manifest (com.smok3y97.ytmusicweb)
-│   ├── de.json                  # German localization manifest & action strings
-│   ├── en.json                  # English default localization reference strings
+│   ├── com.smok3y97.ytmusicweb.sdPlugin/ # Official Elgato distribution directory
+│   │   ├── manifest.json        # Stream Deck Plugin Manifest (com.smok3y97.ytmusicweb)
+│   │   ├── de.json              # German localization manifest & action strings
+│   │   ├── en.json              # English default localization reference strings
+│   │   ├── bin/                 # Compiled plugin artifacts
+│   │   │   ├── plugin.js        # Node.js Rollup bundle
+│   │   │   └── ytm-focus.exe    # Native 7 KB Win32 foreground activation binary
+│   │   ├── assets/              # High-resolution vector & raster assets
+│   │   │   ├── category-icon.svg # Monochromatic category icon (28x28 / 56x56)
+│   │   │   ├── plugin-icon.png  # Brand-compliant circular badge (256x256)
+│   │   │   ├── plugin-icon@2x.png # High-DPI circular badge (512x512)
+│   │   │   ├── plugin-icon.svg  # Vector source for plugin badge
+│   │   │   ├── overlay/         # OBS Studio Browser Source overlay assets (/overlay)
+│   │   │   │   ├── index.html   # Transparent overlay widget DOM structure
+│   │   │   │   ├── style.css    # Responsive frosted dark theme & animation styles
+│   │   │   │   └── overlay.js   # Live WebSocket client & URL parameter parser
+│   │   │   └── actions/         # SVG action icons (playpause, trackdial, volume, etc.)
+│   │   ├── layouts/             # Stream Deck + Dial LCD JSON layouts
+│   │   │   └── dial_layout.json # Single-source-of-truth 4-item LCD strip layout
+│   │   └── ui/                  # Modular Property Inspector (PI) Frontend
+│   │       ├── i18n.js          # Property Inspector internationalization helper (DE/EN)
+│   │       ├── streamdeck-client.js # Low-level Stream Deck WebSocket SDK bridge
+│   │       ├── global-settings.js # Global settings UI component (Discord / OBS / Port)
+│   │       ├── common.html/.js  # Standard inspector for stateless/trigger keys (Dynamic action descriptions)
+│   │       ├── track-dial.html/.js # Track Controller Dial inspector
+│   │       ├── volume-dial.html/.js # Volume Controller Dial inspector
+│   │       ├── seek-dial.html/.js # Seek Controller Dial inspector
+│   │       ├── playpause.html/.js # Play/Pause inspector (Album cover toggle)
+│   │       ├── volume.html/.js  # Volume Up & Down keys inspector
+│   │       ├── seek.html/.js    # Seek Forward & Rewind keys inspector
+│   │       ├── copy-url.html/.js # Copy Song URL inspector (Custom format template)
+│   │       └── css/sdpi.css     # Stream Deck Property Inspector stylesheet
 │   ├── package.json             # Plugin dependencies & rollup build scripts
 │   ├── eslint.config.js         # Official Elgato ESLint flat configuration
 │   ├── rollup.config.mjs        # Rollup bundler configuration
 │   ├── tsconfig.json            # TypeScript compiler configuration (ES2023)
-│   ├── bin/                     # Compiled plugin artifacts
-│   │   ├── plugin.js            # Node.js Rollup bundle
-│   │   └── ytm-focus.exe        # Native 7 KB Win32 foreground activation binary
-│   ├── assets/                  # High-resolution vector & raster assets
-│   │   ├── category-icon.svg    # Monochromatic category icon (28x28 / 56x56)
-│   │   ├── plugin-icon.png      # Brand-compliant circular badge (256x256)
-│   │   ├── plugin-icon@2x.png   # High-DPI circular badge (512x512)
-│   │   ├── plugin-icon.svg      # Vector source for plugin badge
-│   │   ├── overlay/             # OBS Studio Browser Source overlay assets (/overlay)
-│   │   │   ├── index.html       # Transparent overlay widget DOM structure
-│   │   │   ├── style.css        # Responsive frosted dark theme & animation styles
-│   │   │   └── overlay.js       # Live WebSocket client & URL parameter parser
-│   │   └── actions/             # SVG action icons (playpause, trackdial, volume, etc.)
-│   ├── layouts/                 # Stream Deck + Dial LCD JSON layouts
-│   │   └── dial_layout.json     # Single-source-of-truth 4-item LCD strip layout
-│   ├── ui/                      # Modular Property Inspector (PI) Frontend
-│   │   ├── i18n.js              # Property Inspector internationalization helper (DE/EN)
-│   │   ├── streamdeck-client.js # Low-level Stream Deck WebSocket SDK bridge
-│   │   ├── global-settings.js   # Global settings UI component (Discord / OBS / Port)
-│   │   ├── common.html/.js      # Standard inspector for stateless/trigger keys (Dynamic action descriptions)
-│   │   ├── track-dial.html/.js  # Track Controller Dial inspector
-│   │   ├── volume-dial.html/.js # Volume Controller Dial inspector
-│   │   ├── seek-dial.html/.js   # Seek Controller Dial inspector
-│   │   ├── playpause.html/.js   # Play/Pause inspector (Album cover toggle)
-│   │   ├── volume.html/.js      # Volume Up & Down keys inspector
-│   │   ├── seek.html/.js        # Seek Forward & Rewind keys inspector
-│   │   ├── copy-url.html/.js    # Copy Song URL inspector (Custom format template)
-│   │   └── css/sdpi.css         # Stream Deck Property Inspector stylesheet
 │   └── src/                     # Backend Source Code (TypeScript)
 │       ├── index.ts             # Plugin entry point & action registration
 │       ├── types/               # TypeScript interfaces & event payloads
-│       ├── services/            # Decoupled backend services layer
-│       │   ├── version-control.ts   # Centralized version control & handshake validator
+│       └── services/            # Decoupled backend services layer
+│           ├── version-control.ts   # Centralized version control & handshake validator
 │       │   ├── websocket-server.ts  # Unified Server (Port 39865: HTTP + WebSocket)
 │       │   ├── http-api.ts          # Read-only HTTP API & overlay static asset router
 │       │   ├── state-manager.ts     # Centralized playback state store
@@ -325,7 +326,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
 
 ---
 
-## [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/ui/`)](#top)
+## [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/.../ui/`)](#top)
 
 The Property Inspector frontend uses a modular architecture with centralized internationalization:
 
@@ -348,13 +349,13 @@ The Property Inspector frontend uses a modular architecture with centralized int
 ```
 
 1. **Centralized Localization Single Source of Truth**:
-   - All translation strings, labels, hints, and dynamic descriptions are stored under `"Localization"` in [`plugin/en.json`](../plugin/en.json) (Default English) and [`plugin/de.json`](../plugin/de.json) (German).
+   - All translation strings, labels, hints, and dynamic descriptions are stored under `"Localization"` in [`plugin/com.smok3y97.ytmusicweb.sdPlugin/en.json`](../plugin/com.smok3y97.ytmusicweb.sdPlugin/en.json) (Default English) and [`plugin/com.smok3y97.ytmusicweb.sdPlugin/de.json`](../plugin/com.smok3y97.ytmusicweb.sdPlugin/de.json) (German).
    - Zero duplication: `i18n.js` contains no hardcoded strings and dynamically loads the JSON files at runtime.
 2. **Automatic Language Resolution & Fallback**:
    - `StreamDeckClient` extracts the active Stream Deck language (`application.language`) on socket connection and initializes `I18n`.
    - `I18n` scans the DOM for `data-i18n`, `data-i18n-placeholder`, and `data-i18n-title` attributes. If a translation key is missing or undefined in a non-English locale, it automatically falls back to English.
 3. **Dynamic Action Descriptions**:
-   - [`common.js`](../plugin/ui/common.js) inspects the active `actionInfo.action` UUID and renders a concise, action-specific description.
+   - [`common.js`](../plugin/com.smok3y97.ytmusicweb.sdPlugin/ui/common.js) inspects the active `actionInfo.action` UUID and renders a concise, action-specific description.
 4. **Auto-Save**:
    - All settings automatically sync on `change` / `input` events via `StreamDeckClient.saveLocalSettings()` and `StreamDeckClient.saveGlobalSettings()`. No manual save buttons.
 

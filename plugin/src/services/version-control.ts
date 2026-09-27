@@ -4,7 +4,7 @@
  * Centralized, decoupled version negotiation and compatibility management.
  * Dynamically reads the plugin version from manifest.json at build time.
  */
-import manifest from "../../manifest.json" with { type: "json" };
+import manifest from "../../com.smok3y97.ytmusicweb.sdPlugin/manifest.json" with { type: "json" };
 import { HandshakeAckPayload, VersionMismatchPayload } from "../types/index.js";
 
 export class VersionControlService {

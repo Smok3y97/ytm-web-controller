@@ -3,9 +3,8 @@
 $rootDir = (Get-Item $PSScriptRoot).Parent.FullName
 $uuid = "com.smok3y97.ytmusicweb"
 $pluginDir = Join-Path $rootDir "plugin"
+$sdPluginDir = Join-Path $pluginDir "$uuid.sdPlugin"
 $releaseDir = Join-Path $rootDir "release"
-$buildStageParent = Join-Path $rootDir ".build_stage"
-$stageDir = Join-Path $buildStageParent "$uuid.sdPlugin"
 $releaseSdPlugin = Join-Path $releaseDir "$uuid.sdPlugin"
 
 Write-Output "Assembling Stream Deck Plugin: $uuid"
@@ -13,21 +12,9 @@ Write-Output "Assembling Stream Deck Plugin: $uuid"
 if (Test-Path $releaseDir) {
     Remove-Item $releaseDir -Recurse -Force
 }
-if (Test-Path $buildStageParent) {
-    Remove-Item $buildStageParent -Recurse -Force
-}
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
-New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 
-
-# 1. Copy Manifest, Package & Localization Files
-Copy-Item (Join-Path $pluginDir "manifest.json") $stageDir
-Copy-Item (Join-Path $pluginDir "package.json") $stageDir
-Get-ChildItem -Path $pluginDir -Filter "*.json" | Where-Object { $_.Name -notin @("package.json", "package-lock.json", "tsconfig.json") } | ForEach-Object {
-    Copy-Item $_.FullName $stageDir
-}
-
-# 2. Compile binary
+# 1. Compile plugin & run linters
 Write-Output "Checking code style, formatting & building plugin bundle..."
 Push-Location $pluginDir
 if (!(Test-Path (Join-Path $pluginDir "node_modules"))) {
@@ -39,10 +26,10 @@ npm run lint:fix
 npm run build
 Pop-Location
 
-# Compile native Windows window focus helper
+# 2. Compile native Windows window focus helper
 $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 $focusCs = Join-Path (Join-Path $rootDir "scripts") "ytm-focus.cs"
-$focusBinDir = Join-Path $pluginDir "bin"
+$focusBinDir = Join-Path $sdPluginDir "bin"
 $focusExe = Join-Path $focusBinDir "ytm-focus.exe"
 
 if (!(Test-Path $focusBinDir)) {
@@ -63,43 +50,23 @@ if ($isWin -and (Test-Path $csc) -and (Test-Path $focusCs)) {
     Write-Warning "Neither csc.exe nor mcs compiler found; ytm-focus.exe could not be compiled."
 }
 
-$binTarget = Join-Path $stageDir "bin"
-New-Item -ItemType Directory -Path $binTarget -Force | Out-Null
-$pluginJs = Join-Path (Join-Path $pluginDir "bin") "plugin.js"
-if (Test-Path $pluginJs) {
-    Copy-Item $pluginJs $binTarget
-}
-if (Test-Path $focusExe) {
-    Copy-Item $focusExe $binTarget
-}
-
-# 3. Generate & Copy Assets
+# 3. Generate Assets
 $genScript = Join-Path $PSScriptRoot "generate_assets.ps1"
 if (Test-Path $genScript) {
     Write-Output "Generating plugin and action assets..."
     & $genScript
 }
 
-$assetsTarget = Join-Path $stageDir "assets"
-Copy-Item (Join-Path $pluginDir "assets") $stageDir -Recurse
-Get-ChildItem $assetsTarget -Include "*.ps1","*.mjs" -Recurse | Remove-Item -Force
-
-# 4. Copy UI
-Copy-Item (Join-Path $pluginDir "ui") $stageDir -Recurse
-
-# 5. Copy Layouts
-$layoutsDir = Join-Path $pluginDir "layouts"
-if (Test-Path $layoutsDir) {
-    Copy-Item $layoutsDir $stageDir -Recurse
+# Clean any non-asset scripts from assets directory if present
+$assetsTarget = Join-Path $sdPluginDir "assets"
+if (Test-Path $assetsTarget) {
+    Get-ChildItem $assetsTarget -Include "*.ps1","*.mjs" -Recurse | Remove-Item -Force
 }
 
-# 6. Preserve staged sdPlugin directory in release folder for validation
-if (Test-Path $releaseSdPlugin) {
-    Remove-Item $releaseSdPlugin -Recurse -Force
-}
-Copy-Item -Path $stageDir -Destination $releaseSdPlugin -Recurse -Force
+# 4. Copy sdPlugin directory to release folder for inspection/validation
+Copy-Item -Path $sdPluginDir -Destination $releaseSdPlugin -Recurse -Force
 
-# 7. Create .streamDeckPlugin Archive using official Elgato Stream Deck CLI
+# 5. Create .streamDeckPlugin Archive using official Elgato Stream Deck CLI
 $archivePath = Join-Path $releaseDir "$uuid.streamDeckPlugin"
 Write-Output "Packaging plugin with official Elgato CLI (streamdeck pack)..."
 
@@ -116,7 +83,7 @@ if (Get-Command "streamdeck" -ErrorAction SilentlyContinue) {
 }
 
 if ($streamdeckCmd) {
-    & $streamdeckCmd pack $stageDir -o $releaseDir --force
+    & $streamdeckCmd pack $sdPluginDir -o $releaseDir --force
 }
 
 if (!(Test-Path $archivePath)) {
@@ -131,7 +98,7 @@ if (Test-Path $archivePath) {
     Write-Output "Successfully created package: $archivePath"
 }
 
-# 8. Package Extension into release folder as extension.zip
+# 6. Package Extension into release folder as extension.zip
 $extDir = Join-Path $rootDir "extension"
 if (Test-Path $extDir) {
     $extZip = Join-Path $releaseDir "extension.zip"
@@ -140,7 +107,7 @@ if (Test-Path $extDir) {
     Compress-Archive -Path $extItems -DestinationPath $extZip -Force
 }
 
-# 9. Optionally install/update local Stream Deck plugin if Stream Deck is installed
+# 7. Optionally install/update local Stream Deck plugin if Stream Deck is installed
 $appDataPlugins = $null
 if ($env:APPDATA) {
     $winPlugins = Join-Path $env:APPDATA (Join-Path "Elgato" (Join-Path "StreamDeck" "Plugins"))
@@ -166,7 +133,7 @@ if ($appDataPlugins) {
     Copy-Item -Path $releaseItems -Destination $targetSdPlugin -Recurse -Force
     Write-Output "Plugin successfully updated in Stream Deck plugins directory!"
 
-    # 10. Hot-restart plugin via Stream Deck CLI so changes apply instantly
+    # 8. Hot-restart plugin via Stream Deck CLI so changes apply instantly
     Write-Output "Hot-restarting plugin via Elgato CLI (streamdeck restart)..."
     try {
         if ($streamdeckCmd) {
@@ -176,8 +143,3 @@ if ($appDataPlugins) {
         Write-Warning "Could not restart plugin via CLI (Stream Deck app might not be running)."
     }
 }
-
-if (Test-Path $buildStageParent) {
-    Remove-Item $buildStageParent -Recurse -Force -ErrorAction SilentlyContinue
-}
-

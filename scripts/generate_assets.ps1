@@ -1,6 +1,6 @@
 $scriptsDir = $PSScriptRoot
 $rootDir = (Get-Item $PSScriptRoot).Parent.FullName
-$assetsDir = Join-Path (Join-Path $rootDir "plugin") "assets"
+$assetsDir = Join-Path (Join-Path (Join-Path $rootDir "plugin") "com.smok3y97.ytmusicweb.sdPlugin") "assets"
 $extensionIconsDir = Join-Path (Join-Path $rootDir "extension") "icons"
 
 $isWin = if ($null -ne $IsWindows) { $IsWindows } else { $env:OS -eq "Windows_NT" }

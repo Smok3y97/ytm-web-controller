@@ -46,10 +46,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package_plugin.ps1
 # 4. Synchronize versions centrally across all manifests & packages
 npm run bump 1.8.0.0
 
-# 5. Validate packaged plugin against official Elgato SDK Schema
+# 5. Validate plugin against official Elgato SDK Schema
 npm run validate
 # (or directly via npx):
-npx streamdeck validate release/com.smok3y97.ytmusicweb.sdPlugin
+npx streamdeck validate plugin/com.smok3y97.ytmusicweb.sdPlugin
 
 # 6. Hot-restart plugin process in Stream Deck without restarting the app
 npm run restart
@@ -76,13 +76,12 @@ The codebase strictly adheres to the official [Elgato Stream Deck Style Guide fo
 
 The automated packaging script executes a complete quality assurance and deployment pipeline:
 1. **Automated Formatting & Linting**: Runs `npm run lint:fix` (Prettier code formatting and ESLint auto-fix) on the codebase.
-2. **Bundle Compilation**: Compiles the plugin bundle with Rollup to `plugin/bin/plugin.js`.
-3. **Asset Generation**: Generates all vector SVGs and PNG raster badges using `scripts/generate_assets.ps1` (or `npm run assets`).
-4. **Staging**: Stages the `.sdPlugin` directory under `release/com.smok3y97.ytmusicweb.sdPlugin` (including localized language files `de.json`, `en.json`).
-5. **Plugin Distribution Package**: Creates `release/com.smok3y97.ytmusicweb.streamDeckPlugin` release archive via `streamdeck pack`.
-6. **Browser Extension Package**: Archives the companion browser extension into `release/extension.zip`.
-7. **Live Deployment**: Automatically deploys the staged `.sdPlugin` directly to `%APPDATA%\Elgato\StreamDeck\Plugins\`.
-8. **Hot Restart**: Automatically invokes `streamdeck restart` to instantly reload the live plugin in Stream Deck without restarting the application.
+2. **Bundle Compilation**: Compiles the plugin bundle with Rollup directly to `plugin/com.smok3y97.ytmusicweb.sdPlugin/bin/plugin.js`.
+3. **Asset Generation**: Generates all vector SVGs and PNG raster badges using `scripts/generate_assets.ps1` (or `npm run assets`) into `plugin/com.smok3y97.ytmusicweb.sdPlugin/assets/`.
+4. **Plugin Distribution Package**: Creates `release/com.smok3y97.ytmusicweb.streamDeckPlugin` release archive directly from `plugin/com.smok3y97.ytmusicweb.sdPlugin` via `streamdeck pack`.
+5. **Browser Extension Package**: Archives the companion browser extension into `release/extension.zip`.
+6. **Live Deployment**: Automatically deploys the `.sdPlugin` directory directly to `%APPDATA%\Elgato\StreamDeck\Plugins\`.
+7. **Hot Restart**: Automatically invokes `streamdeck restart` to instantly reload the live plugin in Stream Deck without restarting the application.
 
 ---
 
@@ -97,7 +96,7 @@ $$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
 
 | Component | Format | Example | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Stream Deck Plugin** (`plugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.7.0.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
+| **Stream Deck Plugin** (`plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.7.0.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
 | **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.7.0.0"`<br>`"1.7.0"` | `version` handles browser update comparisons; `version_name` defines user-facing store display. |
 | **Node.js Packages** (`package.json`, `plugin/package.json`) | 4-part / SemVer | `1.7.0.0` | Synchronized monorepo package versions. |
 
@@ -118,16 +117,20 @@ The repository utilizes GitHub Actions and Dependabot to automate testing, quali
 - **Pipeline Tasks**:
   1. Installs monorepo and plugin dependencies (`npm ci`).
   2. Runs TypeScript typechecking and ESLint checks (`npm run lint`).
-  3. Executes the full packaging pipeline (`scripts/package_plugin.ps1`).
-  4. Validates the generated `.sdPlugin` using the official Elgato CLI (`streamdeck validate`).
-  5. Uploads both generated distribution packages (`.streamDeckPlugin` and `extension.zip`) as workflow artifacts for immediate testing.
+  3. Compiles the plugin bundle with Rollup (`npm run build`).
+  4. Compiles the native Windows focus helper binary via Mono (`mcs`).
+  5. Validates the plugin using the official Elgato CLI (`npm run validate`).
+  6. Packages the Stream Deck plugin via official CLI (`streamdeck pack`).
+  7. Packages the companion browser extension (`extension.zip`).
+  8. Uploads both generated distribution packages (`.streamDeckPlugin` and `extension.zip`) as workflow artifacts for immediate testing.
 
 ### 2. Automated GitHub Releases (`.github/workflows/release.yml`)
 - **Triggers**: On tag push matching `v*` (e.g. `v1.11.0.0`) or manually via `workflow_dispatch`.
 - **Pipeline Tasks**:
-  1. Runs full linting, building, and Elgato CLI validation.
-  2. Creates or updates the official GitHub Release with auto-generated release notes.
-  3. Attaches both release assets:
+  1. Runs identical transparent building, compiling, and Elgato CLI validation steps.
+  2. Packages both release binaries (`.streamDeckPlugin` and `extension.zip`).
+  3. Creates or updates the official GitHub Release with auto-generated release notes.
+  4. Attaches both release assets:
      - `com.smok3y97.ytmusicweb.streamDeckPlugin`
      - `extension.zip`
 

@@ -6,7 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const baseDir = path.resolve(__dirname, "../plugin/assets");
+const baseDir = path.resolve(__dirname, "../plugin/com.smok3y97.ytmusicweb.sdPlugin/assets");
 
 const icons = {
 	// Plugin Main Icon (Red Accent Disc with White Audio/Play Glyph on Transparent Background)

@@ -1,4 +1,5 @@
 bin/
+com.smok3y97.ytmusicweb.sdPlugin/bin/
 node_modules/
 release/
 package-lock.json

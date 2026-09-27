@@ -1,9 +1,9 @@
 {
     "name": "com.smok3y97.ytmusicweb",
     "version": "1.11.6.0",
-    "description": "Elgato Stream Deck Plugin for YouTube Music Web with Discord RPC",
+    "description": "Elgato Stream Deck Plugin for YouTube Music Web with Dial support, OBS Overlay, and Discord RPC.",
     "type": "module",
-    "main": "bin/plugin.js",
+    "main": "com.smok3y97.ytmusicweb.sdPlugin/bin/plugin.js",
     "scripts": {
         "build": "rollup -c",
         "watch": "rollup -c -w",
@@ -11,7 +11,7 @@
         "lint:fix": "eslint . --fix && prettier . --write",
         "format": "prettier . --write",
         "restart": "streamdeck restart com.smok3y97.ytmusicweb",
-        "pack": "rollup -c && streamdeck pack . -o ../bin"
+        "pack": "rollup -c && streamdeck pack com.smok3y97.ytmusicweb.sdPlugin -o ../release --force"
     },
     "prettier": "@elgato/prettier-config",
     "keywords": [

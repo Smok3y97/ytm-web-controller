@@ -8,7 +8,7 @@ import { builtinModules } from "module";
 export default {
 	input: "src/index.ts",
 	output: {
-		file: "bin/plugin.js",
+		file: "com.smok3y97.ytmusicweb.sdPlugin/bin/plugin.js",
 		format: "esm",
 		sourcemap: true,
 	},
@@ -26,7 +26,7 @@ export default {
 		typescript({
 			tsconfig: "./tsconfig.json",
 			compilerOptions: {
-				outDir: "./bin",
+				outDir: "./com.smok3y97.ytmusicweb.sdPlugin/bin",
 			},
 		}),
 		terser({

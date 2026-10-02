@@ -18,10 +18,11 @@ This document outlines the local development setup, build scripts, testing proce
 
 ## [🛠️ Prerequisites](#top)
 
-- **Node.js**: `v24.0.0` or newer recommended.
+- **Node.js**: `v24.0.0` or newer (**mandatory requirement**).
 - **npm**: `v10.0.0` or newer.
-- **Elgato Stream Deck Software**: `v7.1+` (tested on `v7.5+`).
-- **PowerShell**: Windows PowerShell or PowerShell 7 (for automated packaging scripts).
+- **Elgato Stream Deck Software**: `v7.1+` (mandatory requirement for Node.js 24 runtime support; actively tested on `v7.6`).
+- **Elgato Stream Deck SDK**: **SDK 3** (**mandatory requirement**).
+- **PowerShell**: Windows PowerShell 5.1 or PowerShell 7 (**optional**; helper for local Windows deployment scripts `package_plugin.ps1` and `generate_assets.ps1`; cross-platform builds, CI/CD, and all standard workflows run completely via cross-platform `npm` scripts and Elgato CLI).
 
 ---
 
@@ -83,6 +84,9 @@ The automated packaging script executes a complete quality assurance and deploym
 6. **Live Deployment**: Automatically deploys the `.sdPlugin` directory directly to `%APPDATA%\Elgato\StreamDeck\Plugins\`.
 7. **Hot Restart**: Automatically invokes `streamdeck restart` to instantly reload the live plugin in Stream Deck without restarting the application.
 
+> [!NOTE]
+> For exact asset dimensions, icon specifications, and marketplace guidelines, refer to [**`docs/plugin-guideline.md`**](plugin-guideline.md).
+
 ---
 
 ## [🏷️ Versioning Scheme](#top)
@@ -94,11 +98,26 @@ The project follows the official **4-digit Elgato Stream Deck Manifest Specifica
 
 $$\mathbf{\{Major\}.\{Minor\}.\{Patch\}.\{Build\}}$$
 
-| Component | Format | Example | Purpose |
+### 🚀 Centralized Single Command Versioning (`npm run bump`)
+
+Versions are managed centrally via [`version.json`](../version.json) and automated with:
+```bash
+npm run bump <version>
+# Example:
+npm run bump 1.5.0.0
+```
+
+Running `npm run bump` automatically updates and synchronizes all required files:
+| File | Property | Format Example | Requirement |
 | :--- | :--- | :--- | :--- |
-| **Stream Deck Plugin** (`plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json`) | 4-part numeric (`{M}.{m}.{p}.{b}`) | `1.7.0.0` | Strict Elgato Marketplace requirement (`^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`) for automated version comparison. |
-| **Browser Extension** (`extension/manifest.json`) | `version`: 4-part numeric<br>`version_name`: string | `"1.7.0.0"`<br>`"1.7.0"` | `version` handles browser update comparisons; `version_name` defines user-facing store display. |
-| **Node.js Packages** (`package.json`, `plugin/package.json`) | 4-part / SemVer | `1.7.0.0` | Synchronized monorepo package versions. |
+| [`version.json`](../version.json) | `"version"` | `"1.5.0.0"` | **Single Source of Truth** for the entire monorepo. |
+| [`plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json`](../plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json) | `"Version"` | `"1.5.0.0"` | **Must be 4 numeric parts** matching regex `^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`. Required by Elgato CLI validation. |
+| [`extension/manifest.json`](../extension/manifest.json) | `"version"`<br>`"version_name"` | `"1.5.0.0"`<br>`"1.5.0"` | `version` must be 4-digit for automated update comparisons; `version_name` defines user-facing display. |
+| [`plugin/package.json`](../plugin/package.json) | `"version"` | `"1.5.0.0"` | Synchronized with plugin manifest version. |
+| [`plugin/package-lock.json`](../plugin/package-lock.json) | `"version"` | `"1.5.0.0"` | Synchronized natively via `npm install --package-lock-only` (never edited manually). |
+| [`package.json`](../package.json) | `"version"` | `"1.5.0.0"` | Synchronized monorepo root package version. |
+| `plugin/src/services/version-control.ts` | Dynamic Import | — | Dynamically imports `manifest.json` at build time; requires **zero** manual editing. |
+| [`extension/popup.html`](../extension/popup.html) & [`extension/popup.js`](../extension/popup.js) | Version string | `v1.5.0` | Dynamically reads `manifest.version_name || manifest.version`. |
 
 ### Version Semantics:
 - **Major** (`{Major}`): Fundamental architectural overhauls, breaking changes, or SDK major upgrades.
@@ -136,7 +155,7 @@ The repository utilizes GitHub Actions and Dependabot to automate testing, quali
 
 #### 🚀 Step-by-Step Guide: How to Publish a New Release
 
-Follow these 4 simple steps in your terminal (PowerShell / Terminal in VS Code / Antigravity) whenever you want to release a new version:
+Follow these steps in your terminal whenever you want to release a new version:
 
 ##### Step 1: Decide on your new version number
 The version follows the 4-digit Elgato format: `Major.Minor.Patch.Build` (e.g. `1.12.0.0`).
@@ -146,22 +165,40 @@ The version follows the 4-digit Elgato format: `Major.Minor.Patch.Build` (e.g. `
 ##### Step 2: Run the automated version bump command
 This updates all 5 manifest, package, and configuration files automatically with a single command:
 ```bash
-npm run bump 1.12.0.0
+npm run bump <version>  # e.g., npm run bump 1.12.0.0
 ```
 
-##### Step 3: Commit and Tag the release
-Commit the modified files and create a Git version tag starting with `v`:
+##### Step 3: Stage, Commit, and Tag the release
+Stage the synchronized files and commit them using structured Conventional Commits with a mandatory body, then create a Git version tag starting with `v`:
 ```bash
-git commit -am "chore: release 1.12.0.0"
-git tag v1.12.0.0
+# Stage the synchronized files
+git add version.json package.json plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json plugin/package.json plugin/package-lock.json extension/manifest.json
+
+# Commit following Conventional Commits format
+git commit -m "chore(release): bump version to <version>" -m "- Synchronized all manifests to <version> via npm run bump"
+
+# Create version tag matching the v{Major}.{Minor}.{Patch}.{Build} pattern
+git tag v<version>  # e.g., git tag v1.12.0.0
 ```
+
+> [!IMPORTANT]
+> The `.github/workflows/release.yml` pipeline strictly listens to tags matching `v*.*.*.*`. Pushing only the commit will trigger the CI test pipeline, but will **NOT** create a GitHub Release.
 
 ##### Step 4: Push to GitHub
-Push your commits and tags to GitHub:
+Push your commit and tag to GitHub to trigger the release workflow:
 ```bash
-git push origin master --follow-tags
+git push origin main
+git push origin v<version>
 ```
-*(If your default branch is `main`, use `git push origin main --follow-tags`).*
+
+##### 📝 Git Commit Conventions
+Commits must follow Conventional Commits with a mandatory descriptive body:
+```text
+<type>(<scope>): <short imperative summary>
+
+- <bullet point explaining what changed>
+- <bullet point explaining why the change was made>
+```
 
 ---
 

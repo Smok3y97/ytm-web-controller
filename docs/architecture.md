@@ -73,6 +73,24 @@ graph LR
     end
 ```
 
+### 🔄 End-to-End State Flow
+
+```text
+1. Event Trigger:
+   YouTube Music Web DOM (<video> status events & MutationObserver for toggles)
+2. Extension Extraction:
+   ytm-media-session.js (Metadata) + ytm-player-api.js (Timing) ──► ytm-state.js
+3. Transport:
+   content.js ──► Local WebSocket (ws://127.0.0.1:39865)
+4. Plugin Backend:
+   websocket-server.ts (Tab arbitration) ──► state-manager.ts (State cache & time interpolation)
+5. Distribution Layer:
+   ├── Action Controllers (Hardware keys & dials via image-renderer.ts / marquee-service.ts)
+   ├── discord-rpc.ts (Desktop Rich Presence)
+   ├── obs-exporter.ts (Live .txt file output)
+   └── http-api.ts (/overlay OBS widget & /api/current chatbot endpoint)
+```
+
 ---
 
 ## [🧩 2. Core Architectural Principles](#top)
@@ -197,8 +215,8 @@ ytm-web-controller/
 │   └── src/                     # Backend Source Code (TypeScript)
 │       ├── index.ts             # Plugin entry point & action registration
 │       ├── types/               # TypeScript interfaces & event payloads
-│       └── services/            # Decoupled backend services layer
-│           ├── version-control.ts   # Centralized version control & handshake validator
+│       ├── services/            # Decoupled backend services layer
+│       │   ├── version-control.ts   # Centralized version control & handshake validator
 │       │   ├── websocket-server.ts  # Unified Server (Port 39865: HTTP + WebSocket)
 │       │   ├── http-api.ts          # Read-only HTTP API & overlay static asset router
 │       │   ├── state-manager.ts     # Centralized playback state store
@@ -290,6 +308,12 @@ The browser companion extension runs in the context of `https://music.youtube.co
     - Automatically synchronizes playback state on `visibilitychange` when returning to background tabs.
     - Handles bounded reconnect with passive standby, bidirectional version handshake, and routes Stream Deck commands to `window.YTM.actions`.
 
+### 🌐 Extension Context Boundaries (MAIN vs. ISOLATED World)
+
+- **MAIN World (`extension/ytm-*.js`, `extension/content.js`):** Interacts directly with the YouTube Music DOM, Polymer UI components, and the `#movie_player` API. It has **zero direct access** to Chrome Extension runtime APIs (`chrome.storage`, `chrome.runtime`).
+- **ISOLATED World (`extension/bridge.js`):** Bridges manifest metadata and stored port configurations from `chrome.storage.local`. It communicates with the MAIN world exclusively via bidirectional `window.postMessage`.
+- **Strict Boundary Rule:** Never attempt to call `chrome.*` APIs inside MAIN world scripts, and never query YouTube player internals or the DOM directly inside `bridge.js`.
+
 ---
 
 ## [🔌 5. Backend Services Layer (`plugin/src/services/`)](#top)
@@ -370,6 +394,28 @@ The Property Inspector frontend uses a modular architecture with centralized int
    - Dials show `⚠️ Mismatch` on LCD.
    - Property Inspector reveals top upgrade banner with releases link.
    - Extension popup highlights version requirement card.
+
+---
+
+## [⚡ 9. Stream Deck + Dial & LCD Handling](#top)
+
+The Stream Deck + integration combines physical rotary encoders with high-density LCD touchstrips (`200 × 100 px` per dial slot).
+
+### 🎛️ Touchstrip Layout & Visual Pipeline
+- **Layout Definition (`layouts/dial_layout.json`)**: Single source of truth 4-item LCD layout rendering track artwork/title, artist/album, volume level/progress bar, and playback state icon.
+- **In-Memory Rendering Pipeline**: Dynamic canvas drawings, SVG generation, and album cover processing are executed entirely in RAM (`ImageRenderer`) and output as Base64 Data URLs with zero intermediate disk writes.
+- **Hardware Refresh Limit**: Programmatic LCD touchstrip renders and key updates must not exceed **10 updates per second (10 Hz)** to avoid USB bus congestion and Stream Deck firmware latency.
+- **Marquee Scroller (`MarqueeService`)**: For metadata exceeding LCD slot width, an asynchronous ping-pong bounce scroller smoothly shifts text back and forth.
+
+### ⏱️ Client-Side Time Interpolation
+- YouTube Music does not push continuous WebSocket timestamp ticks during playback (Zero Polling / Zero `timeupdate` over WS).
+- The plugin interpolates current playback time client-side via `StateManager.getInterpolatedCurrentTime()`:
+  $$\text{CurrentTime} = \min\left(\text{Duration}, \text{SnapshotTime} + \frac{(\text{Date.now}() - \text{SnapshotTimestamp}) \times \text{PlaybackRate}}{1000}\right)$$
+- If the track is paused (`isPaused === true`), the time remains frozen at `SnapshotTime`.
+
+### 🔊 Volume Clamping & Step Normalization
+- YouTube Music treats player volume strictly as an integer between `0` and `100`.
+- Dial rotation ticks (typically configured at $\pm 2\%$ or $\pm 5\%$) calculate the delta and must clamp the resulting value strictly to `[0, 100]` before dispatching over WebSocket.
 
 ---
 

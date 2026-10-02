@@ -48,20 +48,28 @@ Universally unique identifiers (UUIDs) identify your plugin and its individual a
 
 | Asset Type | Standard DPI | High DPI (`@2x`) | Supported Formats | Color & Style Requirements |
 | :--- | :--- | :--- | :--- | :--- |
-| **Plugin Icon** (Preferences) | `256 × 256 px` | `512 × 512 px` | PNG | Full-color or branded, transparent or styled background. |
-| **Category Icon** (Action List) | `28 × 28 px` | `56 × 56 px` | SVG (Recommended) / PNG | **Monochromatic**, `#FFFFFF` white stroke, transparent background. No solid background fill. |
-| **Action Icon** (Action List) | `20 × 20 px` | `40 × 40 px` | SVG (Recommended) / PNG | **Monochromatic**, `#FFFFFF` white stroke, transparent background. No solid background fill. |
-| **Key State Icons** | `72 × 72 px` | `144 × 144 px` | SVG (Recommended), PNG, GIF | Crisp vector scaling. Reflects active/inactive states dynamically. |
+| **Plugin Icon** (Preferences) | `256 × 256 px` | `512 × 512 px` | PNG (Required) | **Brand-Compliant Circular Badge**: Transparent background with `#FF0033` red circular disc and crisp white stylized audio-controller headphones + play glyph. |
+| **Category Icon** (Action List) | `28 × 28 px` | `56 × 56 px` | SVG (Recommended) / PNG | **Monochromatic White (`#FFFFFF`)** glyph on transparent background (stylized headphones with play triangle). No solid background fill. |
+| **Action Icon** (Action List) | `20 × 20 px` | `40 × 40 px` | SVG (Recommended) / PNG | **Monochromatic White (`#FFFFFF`)** glyph on transparent background. No solid background fill. |
+| **Key State Icons** | `72 × 72 px` | `144 × 144 px` | SVG (Recommended), PNG, GIF | Crisp vector scaling. **Default White (`#FFFFFF`)** on transparent background; active highlight states (e.g. Liked, Disliked, Repeat-All) use active accent colors (`#FF0033`). |
 | **Stream Deck + LCD Layout** | `200 × 100 px` | Native Canvas/JSON | JSON Layout / In-Memory SVG | Interactive touch targets must be at least **`35 × 35 px`**. All elements must stay strictly within bounds. |
 
-> ⚠️ **Programmatic Flooding Limit:** Programmatic canvas/key render calls must not exceed **10 updates per second** (10 Hz).
+> ⚠️ **Programmatic Flooding Limit:** Programmatic canvas/key render calls and LCD touchstrip updates must not exceed **10 updates per second** (10 Hz).
+
+### Asset Generation
+Run the automated generation script to synchronize all vector SVGs and raster PNGs:
+```bash
+npm run assets
+# or directly via PowerShell:
+powershell -ExecutionPolicy Bypass -File scripts/generate_assets.ps1
+```
 
 ---
 
 ## [4. Visual Feedback & Logging](#top)
 
 * **`showAlert`:** Trigger when an action fails, an endpoint is unreachable, or an error occurs (applicable to both keys and dials).
-* **`showOk`:** Trigger **only** when there is no other visual indicator of success (e.g. clipboard copy, file written). Do **not** use `showOk` if the key icon or state updates visually.
+* **`showOk`:** Trigger **only** when there is no other visual indicator of success (e.g. clipboard copy, file written). **Never** call `showOk` if the key icon or state updates dynamically/visually.
 * **Logging:** Maintain structured logging via the SDK logger for error diagnostics and troubleshooting.
 
 ---

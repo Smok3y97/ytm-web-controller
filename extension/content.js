@@ -17,7 +17,7 @@ let currentPort = DEFAULT_PORT;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
-let bridgeVersion = document.documentElement?.dataset?.ytmExtensionVersion || '';
+let bridgeVersion = '';
 
 let lastSentState = {
   title: '',
@@ -56,6 +56,7 @@ function notifyTabClosed() {
         type: 'TAB_CLOSED',
         tabId: tabId
       }));
+      ws.close();
     } catch { }
   }
 }
@@ -264,7 +265,7 @@ function connectWebSocket(port) {
 
       lastSentState = {};
 
-      const extVersion = bridgeVersion || document.documentElement?.dataset?.ytmExtensionVersion || '';
+      const extVersion = bridgeVersion || '';
       const platform = detectBrowserPlatform();
 
       // 1. Send Handshake packet immediately before any playback events
@@ -410,7 +411,6 @@ function init() {
   window.addEventListener('focus', wakeFromStandby);
   document.addEventListener('play', wakeFromStandby, true);
   document.addEventListener('loadedmetadata', wakeFromStandby, true);
-  document.addEventListener('pointerdown', wakeFromStandby, { passive: true, capture: true });
 
   // Listen for configuration from bridge script (ISOLATED world)
   window.addEventListener('message', (event) => {

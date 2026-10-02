@@ -164,9 +164,12 @@ export class HttpApiService extends EventEmitter {
 
 		relativeFile = relativeFile.replace(/^\/+/, "");
 		const safePath = path.normalize(relativeFile).replace(/^(\.\.[/\\])+/, "");
-		const filePath = path.join(this.overlayDir, safePath);
+		const filePath = path.resolve(this.overlayDir, safePath);
 
-		if (!filePath.startsWith(this.overlayDir) || !fs.existsSync(filePath)) {
+		if (
+			(filePath !== this.overlayDir && !filePath.startsWith(this.overlayDir + path.sep)) ||
+			!fs.existsSync(filePath)
+		) {
 			res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
 			res.end("Overlay asset not found");
 			return;

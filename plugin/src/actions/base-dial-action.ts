@@ -24,10 +24,11 @@ import { WebSocketService } from "../services/websocket-server.js";
 import { YTMPlaybackState } from "../types/index.js";
 
 export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> extends SingletonAction<TSettings> {
-	protected activeDials: Set<WillAppearEvent<TSettings>["action"]> = new Set();
-	protected lastDialPressTime: number = 0;
-	protected rotationTimer: NodeJS.Timeout | null = null;
-	protected pendingTicks: number = 0;
+	protected activeDials: Map<string, WillAppearEvent<TSettings>["action"]> = new Map();
+	protected lastDialPressTime: Map<string, number> = new Map();
+	protected rotationTimer: Map<string, NodeJS.Timeout> = new Map();
+	protected pendingTicks: Map<string, number> = new Map();
+	protected lastFeedbackTime: Map<string, number> = new Map();
 	protected playbackTimer: NodeJS.Timeout | null = null;
 	protected lastRenderedValue: Map<string, string> = new Map();
 	protected lastRenderedIndicator: Map<string, number> = new Map();
@@ -48,7 +49,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	}
 
 	override async onWillAppear(ev: WillAppearEvent<TSettings>): Promise<void> {
-		this.activeDials.add(ev.action);
+		this.activeDials.set(ev.action.id, ev.action);
 		MarqueeService.getInstance().registerConsumer();
 
 		if (ev.action.isDial()) {
@@ -65,29 +66,31 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	}
 
 	override async onWillDisappear(ev: WillDisappearEvent<TSettings>): Promise<void> {
-		this.lastRenderedValue.delete(ev.action.id);
-		this.lastRenderedIndicator.delete(ev.action.id);
-		this.lastRenderedTitle.delete(ev.action.id);
-		this.removeActiveDial(ev.action.id);
+		const id = ev.action.id;
+		this.lastRenderedValue.delete(id);
+		this.lastRenderedIndicator.delete(id);
+		this.lastRenderedTitle.delete(id);
+		this.lastDialPressTime.delete(id);
+		this.lastFeedbackTime.delete(id);
+		this.pendingTicks.delete(id);
+		const timer = this.rotationTimer.get(id);
+		if (timer) {
+			clearTimeout(timer);
+			this.rotationTimer.delete(id);
+		}
+		this.activeDials.delete(id);
 		MarqueeService.getInstance().unregisterConsumer();
 		this.checkPlaybackTimer();
 	}
 
-	protected removeActiveDial(actionId: string): void {
-		for (const dial of this.activeDials) {
-			if (dial.id === actionId) {
-				this.activeDials.delete(dial);
-				break;
-			}
-		}
-	}
-
 	override async onDialDown(ev: DialDownEvent<TSettings>): Promise<void> {
-		this.lastDialPressTime = Date.now();
-		this.pendingTicks = 0;
-		if (this.rotationTimer) {
-			clearTimeout(this.rotationTimer);
-			this.rotationTimer = null;
+		const id = ev.action.id;
+		this.lastDialPressTime.set(id, Date.now());
+		this.pendingTicks.set(id, 0);
+		const existingTimer = this.rotationTimer.get(id);
+		if (existingTimer) {
+			clearTimeout(existingTimer);
+			this.rotationTimer.delete(id);
 		}
 
 		if (StateManager.getInstance().isVersionMismatch()) {
@@ -98,9 +101,10 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		await this.handleDialPress(ev);
 	}
 
-	override async onDialUp(_ev: DialUpEvent<TSettings>): Promise<void> {
-		this.lastDialPressTime = Date.now();
-		this.pendingTicks = 0;
+	override async onDialUp(ev: DialUpEvent<TSettings>): Promise<void> {
+		const id = ev.action.id;
+		this.lastDialPressTime.set(id, Date.now());
+		this.pendingTicks.set(id, 0);
 	}
 
 	override async onTouchTap(ev: TouchTapEvent<TSettings>): Promise<void> {
@@ -127,8 +131,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	/**
 	 * Push-jitter suppression: returns true if dial was pressed within last 250ms
 	 */
-	protected isPushJitterActive(): boolean {
-		return Date.now() - this.lastDialPressTime < 250;
+	protected isPushJitterActive(actionId: string): boolean {
+		const pressTime = this.lastDialPressTime.get(actionId) || 0;
+		return Date.now() - pressTime < 250;
 	}
 
 	/**
@@ -228,7 +233,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	}
 
 	protected async updatePlaybackTime(): Promise<void> {
-		if (StateManager.getInstance().isVersionMismatch() || this.pendingTicks !== 0 || this.rotationTimer) {
+		if (StateManager.getInstance().isVersionMismatch()) {
 			return;
 		}
 
@@ -238,7 +243,13 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			return;
 		}
 
-		for (const dialAction of this.activeDials) {
+		for (const [actionId, dialAction] of this.activeDials) {
+			const pending = this.pendingTicks.get(actionId) || 0;
+			const hasTimer = this.rotationTimer.has(actionId);
+			if (pending !== 0 || hasTimer) {
+				continue;
+			}
+
 			try {
 				if (dialAction.isDial()) {
 					const settings = await dialAction.getSettings();
@@ -273,7 +284,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			return;
 		}
 
-		for (const dialAction of this.activeDials) {
+		for (const dialAction of this.activeDials.values()) {
 			try {
 				if (dialAction.isDial()) {
 					const settings = await dialAction.getSettings();
@@ -292,7 +303,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 
 	protected async updateAllDials(state: YTMPlaybackState): Promise<void> {
 		this.checkPlaybackTimer();
-		for (const dialAction of this.activeDials) {
+		for (const dialAction of this.activeDials.values()) {
 			try {
 				const settings = await dialAction.getSettings();
 				await this.updateDialDisplay(dialAction, state, settings);

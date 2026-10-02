@@ -34,35 +34,40 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 	}
 
 	override async onDialRotate(ev: DialRotateEvent<TrackDialSettings>): Promise<void> {
-		if (this.isPushJitterActive()) return;
+		const actionId = ev.action.id;
+		if (this.isPushJitterActive(actionId)) return;
 
 		if (StateManager.getInstance().isVersionMismatch()) {
 			await ev.action.showAlert();
 			return;
 		}
 
-		this.pendingTicks += ev.payload.ticks;
+		const currentTicks = (this.pendingTicks.get(actionId) || 0) + ev.payload.ticks;
+		this.pendingTicks.set(actionId, currentTicks);
 
-		if (!this.rotationTimer) {
-			this.rotationTimer = setTimeout(() => {
-				this.flushRotation();
+		const timer = this.rotationTimer.get(actionId);
+		if (!timer) {
+			const newTimer = setTimeout(() => {
+				this.flushRotation(actionId);
 			}, 50);
+			this.rotationTimer.set(actionId, newTimer);
 		}
 	}
 
-	private flushRotation(): void {
-		if (this.rotationTimer) {
-			clearTimeout(this.rotationTimer);
-			this.rotationTimer = null;
+	private flushRotation(actionId: string): void {
+		const timer = this.rotationTimer.get(actionId);
+		if (timer) {
+			clearTimeout(timer);
+			this.rotationTimer.delete(actionId);
 		}
 
-		if (this.isPushJitterActive()) {
-			this.pendingTicks = 0;
+		if (this.isPushJitterActive(actionId)) {
+			this.pendingTicks.set(actionId, 0);
 			return;
 		}
 
-		const ticks = this.pendingTicks;
-		this.pendingTicks = 0;
+		const ticks = this.pendingTicks.get(actionId) || 0;
+		this.pendingTicks.set(actionId, 0);
 
 		if (ticks === 0) return;
 

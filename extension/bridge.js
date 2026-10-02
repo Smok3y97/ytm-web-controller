@@ -31,18 +31,6 @@
     return '';
   }
 
-  function syncDomVersion() {
-    try {
-      const ver = getManifestVersion();
-      if (ver && document.documentElement) {
-        document.documentElement.dataset.ytmExtensionVersion = ver;
-      }
-    } catch (e) { }
-  }
-
-  // Synchronously expose native manifest version (SSOT) to DOM for MAIN world scripts
-  syncDomVersion();
-
   function getStorage() {
     try {
       const api = getApi();
@@ -54,7 +42,6 @@
 
   function sendConfigToPage(port) {
     try {
-      syncDomVersion();
       window.postMessage({
         type: 'YTM_BRIDGE_CONFIG',
         version: getManifestVersion(),

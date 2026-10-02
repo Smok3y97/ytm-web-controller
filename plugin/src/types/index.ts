@@ -27,17 +27,15 @@ export interface YTMPlaybackState {
 	extensionVersion?: string;
 }
 
-export interface HandshakePayload {
-	type: "handshake";
-	version: string;
-	platform?: string;
-	tabId?: string;
-}
-
 export interface HandshakeAckPayload {
 	type: "handshake_ack";
 	version: string;
 	compatible: true;
+}
+
+export interface PropertyInspectorMessage {
+	event?: string;
+	url?: string;
 }
 
 export interface VersionMismatchPayload {

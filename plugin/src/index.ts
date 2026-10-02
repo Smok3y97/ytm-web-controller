@@ -28,7 +28,7 @@ import { ObsExporterService } from "./services/obs-exporter.js";
 import { StateManager } from "./services/state-manager.js";
 import { VersionControlService } from "./services/version-control.js";
 import { WebSocketService } from "./services/websocket-server.js";
-import { GlobalSettings, YTMPlaybackState } from "./types/index.js";
+import { GlobalSettings, PropertyInspectorMessage, YTMPlaybackState } from "./types/index.js";
 
 const wsService = WebSocketService.getInstance();
 const stateManager = StateManager.getInstance();
@@ -113,7 +113,7 @@ stateManager.on("stateChanged", (state: YTMPlaybackState) => {
 
 // 7. Handle Property Inspector IPC messages
 streamDeck.ui.onSendToPlugin(async (ev) => {
-	const payload = ev.payload as { event?: string; url?: string };
+	const payload = ev.payload as PropertyInspectorMessage;
 	if (payload?.event === "openUrl" && payload.url) {
 		await streamDeck.system.openUrl(payload.url);
 	}

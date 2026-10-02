@@ -1,6 +1,6 @@
 {
     "name": "com.smok3y97.ytmusicweb",
-    "version": "2.0.1.0",
+    "version": "2.0.2.0",
     "description": "Elgato Stream Deck Plugin for YouTube Music Web with Dial support, OBS Overlay, and Discord RPC.",
     "type": "module",
     "main": "com.smok3y97.ytmusicweb.sdPlugin/bin/plugin.js",

@@ -66,59 +66,87 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 	}
 
 	override async onDialRotate(ev: DialRotateEvent<VolumeDialSettings>): Promise<void> {
-		if (this.isPushJitterActive()) return;
+		const actionId = ev.action.id;
+		if (this.isPushJitterActive(actionId)) return;
 
 		if (StateManager.getInstance().isVersionMismatch()) {
 			await ev.action.showAlert();
 			return;
 		}
 
-		this.pendingTicks += ev.payload.ticks;
+		const currentTicks = (this.pendingTicks.get(actionId) || 0) + ev.payload.ticks;
+		this.pendingTicks.set(actionId, currentTicks);
 
-		// Instant optimistic feedback on LCD touchstrip
+		// Optimistic LCD feedback (strictly rate-limited to <= 10 Hz)
 		if (ev.action.isDial()) {
-			const step = Math.min(50, Math.max(1, ev.payload.settings.step || 5));
-			const currentState = StateManager.getInstance().getState();
-			const optimisticVolume = Math.min(100, Math.max(0, currentState.volume + this.pendingTicks * step));
-			const valueText = currentState.muted ? "MUTED" : `${optimisticVolume}%`;
-			const indicatorValue = currentState.muted ? 0 : optimisticVolume;
+			const now = Date.now();
+			const lastFeedback = this.lastFeedbackTime.get(actionId) || 0;
+			if (now - lastFeedback >= 100) {
+				this.lastFeedbackTime.set(actionId, now);
+				const step = Math.min(50, Math.max(1, ev.payload.settings.step || 5));
+				const currentState = StateManager.getInstance().getState();
+				const optimisticVolume = Math.min(100, Math.max(0, currentState.volume + currentTicks * step));
+				const valueText = currentState.muted ? "MUTED" : `${optimisticVolume}%`;
+				const indicatorValue = currentState.muted ? 0 : optimisticVolume;
 
-			try {
-				await ev.action.setFeedback({
-					value: valueText,
-					indicator: indicatorValue,
-				});
-			} catch {}
+				try {
+					await ev.action.setFeedback({
+						value: valueText,
+						indicator: indicatorValue,
+					});
+				} catch {}
+			}
 		}
 
-		if (this.rotationTimer) {
-			clearTimeout(this.rotationTimer);
+		const timer = this.rotationTimer.get(actionId);
+		if (timer) {
+			clearTimeout(timer);
 		}
 
-		this.rotationTimer = setTimeout(() => {
-			this.flushRotation(ev.payload.settings);
+		const newTimer = setTimeout(() => {
+			this.flushRotation(ev.action, ev.payload.settings);
 		}, 85);
+		this.rotationTimer.set(actionId, newTimer);
 	}
 
-	private flushRotation(settings: VolumeDialSettings): void {
-		if (this.rotationTimer) {
-			clearTimeout(this.rotationTimer);
-			this.rotationTimer = null;
+	private async flushRotation(
+		action: DialRotateEvent<VolumeDialSettings>["action"],
+		settings: VolumeDialSettings,
+	): Promise<void> {
+		const actionId = action.id;
+		const timer = this.rotationTimer.get(actionId);
+		if (timer) {
+			clearTimeout(timer);
+			this.rotationTimer.delete(actionId);
 		}
 
-		if (this.isPushJitterActive()) {
-			this.pendingTicks = 0;
+		if (this.isPushJitterActive(actionId)) {
+			this.pendingTicks.set(actionId, 0);
 			return;
 		}
 
-		const ticks = this.pendingTicks;
-		this.pendingTicks = 0;
+		const ticks = this.pendingTicks.get(actionId) || 0;
+		this.pendingTicks.set(actionId, 0);
 
 		if (ticks === 0) return;
 
 		const step = Math.min(50, Math.max(1, settings.step || 5));
 		const currentVol = StateManager.getInstance().getState().volume ?? 100;
 		const targetVol = Math.min(100, Math.max(0, currentVol + ticks * step));
+
+		// Ensure final settled feedback is rendered on LCD touchstrip
+		if (action.isDial()) {
+			const currentState = StateManager.getInstance().getState();
+			const valueText = currentState.muted ? "MUTED" : `${targetVol}%`;
+			const indicatorValue = currentState.muted ? 0 : targetVol;
+			this.lastFeedbackTime.set(actionId, Date.now());
+			try {
+				await action.setFeedback({
+					value: valueText,
+					indicator: indicatorValue,
+				});
+			} catch {}
+		}
 
 		WebSocketService.getInstance().sendCommand("setVolume", { volume: targetVol });
 	}

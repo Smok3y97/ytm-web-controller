@@ -9,6 +9,7 @@ import streamDeck from "@elgato/streamdeck";
 export class ImageRenderer {
 	private static instance: ImageRenderer;
 	private coverCache: Map<string, string> = new Map();
+	private inFlightRequests: Map<string, Promise<string | null>> = new Map();
 	private maxCacheSize = 20;
 
 	private constructor() {}
@@ -30,27 +31,38 @@ export class ImageRenderer {
 			return this.coverCache.get(url)!;
 		}
 
-		try {
-			const response = await fetch(url);
-			if (!response.ok) return null;
-
-			const contentType = response.headers.get("content-type") || "image/jpeg";
-			const arrayBuffer = await response.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			const base64 = `data:${contentType};base64,${buffer.toString("base64")}`;
-
-			// Evict oldest cached cover in RAM to maintain memory bounds
-			if (this.coverCache.size >= this.maxCacheSize) {
-				const firstKey = this.coverCache.keys().next().value;
-				if (firstKey) this.coverCache.delete(firstKey);
-			}
-
-			this.coverCache.set(url, base64);
-			return base64;
-		} catch (err) {
-			streamDeck.logger.warn(`[ImageRenderer] Failed to fetch cover art in RAM: ${err}`);
-			return null;
+		if (this.inFlightRequests.has(url)) {
+			return this.inFlightRequests.get(url)!;
 		}
+
+		const fetchPromise = (async () => {
+			try {
+				const response = await fetch(url);
+				if (!response.ok) return null;
+
+				const contentType = response.headers.get("content-type") || "image/jpeg";
+				const arrayBuffer = await response.arrayBuffer();
+				const buffer = Buffer.from(arrayBuffer);
+				const base64 = `data:${contentType};base64,${buffer.toString("base64")}`;
+
+				// Evict oldest cached cover in RAM to maintain memory bounds
+				if (this.coverCache.size >= this.maxCacheSize) {
+					const firstKey = this.coverCache.keys().next().value;
+					if (firstKey) this.coverCache.delete(firstKey);
+				}
+
+				this.coverCache.set(url, base64);
+				return base64;
+			} catch (err) {
+				streamDeck.logger.warn(`[ImageRenderer] Failed to fetch cover art in RAM: ${err}`);
+				return null;
+			} finally {
+				this.inFlightRequests.delete(url);
+			}
+		})();
+
+		this.inFlightRequests.set(url, fetchPromise);
+		return fetchPromise;
 	}
 
 	/**

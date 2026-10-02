@@ -10,8 +10,8 @@ import { HandshakeAckPayload, VersionMismatchPayload } from "../types/index.js";
 export class VersionControlService {
 	private static instance: VersionControlService;
 
-	public readonly currentPluginVersion: string = manifest && manifest.Version ? manifest.Version : "2.0.1.0";
-	public readonly minRequiredExtensionVersion: string = manifest && manifest.Version ? manifest.Version : "2.0.1.0";
+	public readonly currentPluginVersion: string = manifest && manifest.Version ? manifest.Version : "2.0.2.0";
+	public readonly minRequiredExtensionVersion: string = manifest && manifest.Version ? manifest.Version : "2.0.2.0";
 
 	private constructor() {}
 

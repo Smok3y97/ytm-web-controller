@@ -12,7 +12,7 @@ import { YTMPlaybackState } from "../types/index.js";
 export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends SingletonAction<T> {
 	protected abstract readonly command: string;
 	protected actionKey: string = "";
-	protected activeActions: Set<WillAppearEvent<T>["action"]> = new Set();
+	protected activeActions: Map<string, WillAppearEvent<T>["action"]> = new Map();
 	private lastRenderedState: Map<string, number> = new Map();
 	private lastRenderedMismatch: Map<string, boolean> = new Map();
 
@@ -26,7 +26,7 @@ export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends
 	}
 
 	override async onWillAppear(ev: WillAppearEvent<T>): Promise<void> {
-		this.activeActions.add(ev.action);
+		this.activeActions.set(ev.action.id, ev.action);
 		this.lastRenderedState.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
 		const state = StateManager.getInstance().getState();
@@ -36,16 +36,7 @@ export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends
 	override async onWillDisappear(ev: WillDisappearEvent<T>): Promise<void> {
 		this.lastRenderedState.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
-		this.removeActiveAction(ev.action.id);
-	}
-
-	protected removeActiveAction(actionId: string): void {
-		for (const a of this.activeActions) {
-			if (a.id === actionId) {
-				this.activeActions.delete(a);
-				break;
-			}
-		}
+		this.activeActions.delete(ev.action.id);
 	}
 
 	override async onKeyDown(ev: KeyDownEvent<T>): Promise<void> {
@@ -76,7 +67,7 @@ export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends
 	protected abstract calculateState(state: YTMPlaybackState): number;
 
 	protected async updateAllInstances(state: YTMPlaybackState): Promise<void> {
-		for (const actionInstance of this.activeActions) {
+		for (const actionInstance of this.activeActions.values()) {
 			try {
 				await this.updateInstance(actionInstance, state);
 			} catch {}

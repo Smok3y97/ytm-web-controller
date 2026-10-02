@@ -3,30 +3,49 @@
  *
  * UUID: com.smok3y97.ytmusicweb.copyurl
  */
-import streamDeck, { action, KeyDownEvent, WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, {
+	action,
+	KeyDownEvent,
+	SingletonAction,
+	WillAppearEvent,
+	WillDisappearEvent,
+} from "@elgato/streamdeck";
 
 import { copyToClipboard } from "../services/clipboard.js";
 import { StateManager } from "../services/state-manager.js";
+import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
 import { CopyUrlSettings, YTMPlaybackState } from "../types/index.js";
-import { BaseStateAction } from "./base-state-action.js";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.copyurl" })
-export class CopyUrlAction extends BaseStateAction {
-	protected readonly command = "";
-	protected override actionKey = "copyurl";
+export class CopyUrlAction extends SingletonAction<CopyUrlSettings> {
+	private activeActions: Map<string, WillAppearEvent<CopyUrlSettings>["action"]> = new Map();
 	private feedbackTimers: Map<string, NodeJS.Timeout> = new Map();
+	private lastRenderedMismatch: Map<string, boolean> = new Map();
 
-	override async onWillDisappear(ev: WillDisappearEvent): Promise<void> {
-		const timer = this.feedbackTimers.get(ev.action.id);
-		if (timer) {
-			clearTimeout(timer);
-			this.feedbackTimers.delete(ev.action.id);
-		}
-		await super.onWillDisappear(ev);
+	constructor() {
+		super();
+
+		StateManager.getInstance().on("stateChanged", (state: YTMPlaybackState) => {
+			this.updateAllInstances(state);
+		});
 	}
 
-	protected calculateState(_state: YTMPlaybackState): number {
-		return 0;
+	override async onWillAppear(ev: WillAppearEvent<CopyUrlSettings>): Promise<void> {
+		this.activeActions.set(ev.action.id, ev.action);
+		this.lastRenderedMismatch.delete(ev.action.id);
+		const state = StateManager.getInstance().getState();
+		await this.updateInstance(ev.action, state);
+	}
+
+	override async onWillDisappear(ev: WillDisappearEvent<CopyUrlSettings>): Promise<void> {
+		const actionId = ev.action.id;
+		this.lastRenderedMismatch.delete(actionId);
+		this.activeActions.delete(actionId);
+		const timer = this.feedbackTimers.get(actionId);
+		if (timer) {
+			clearTimeout(timer);
+			this.feedbackTimers.delete(actionId);
+		}
 	}
 
 	override async onKeyDown(ev: KeyDownEvent<CopyUrlSettings>): Promise<void> {
@@ -84,5 +103,40 @@ export class CopyUrlAction extends BaseStateAction {
 				await ev.action.showAlert();
 			}
 		}
+	}
+
+	private async updateAllInstances(state: YTMPlaybackState): Promise<void> {
+		for (const actionInstance of this.activeActions.values()) {
+			try {
+				await this.updateInstance(actionInstance, state);
+			} catch {}
+		}
+	}
+
+	private async updateInstance(
+		actionInstance: WillAppearEvent<CopyUrlSettings>["action"],
+		state: YTMPlaybackState,
+	): Promise<void> {
+		if (!actionInstance.isKey()) return;
+
+		try {
+			const isMismatch = !!state.isVersionMismatch;
+			const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
+
+			if (isMismatch) {
+				if (prevMismatch !== true) {
+					await actionInstance.setTitle("");
+					await actionInstance.setImage(getActionWarningSvgDataUrl("copyurl"));
+					this.lastRenderedMismatch.set(actionInstance.id, true);
+				}
+				return;
+			}
+
+			if (prevMismatch === true) {
+				await actionInstance.setImage(undefined);
+				await actionInstance.setTitle("");
+				this.lastRenderedMismatch.set(actionInstance.id, false);
+			}
+		} catch {}
 	}
 }

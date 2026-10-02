@@ -32,71 +32,111 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 	}
 
 	override async onDialRotate(ev: DialRotateEvent<SeekDialSettings>): Promise<void> {
-		if (this.isPushJitterActive()) return;
+		const actionId = ev.action.id;
+		if (this.isPushJitterActive(actionId)) return;
 
 		if (StateManager.getInstance().isVersionMismatch()) {
 			await ev.action.showAlert();
 			return;
 		}
 
-		this.pendingTicks += ev.payload.ticks;
+		const currentTicks = (this.pendingTicks.get(actionId) || 0) + ev.payload.ticks;
+		this.pendingTicks.set(actionId, currentTicks);
 
-		// Instant optimistic LCD feedback
+		// Optimistic LCD feedback (strictly rate-limited to <= 10 Hz)
 		if (ev.action.isDial()) {
-			const step = Math.min(120, Math.max(1, ev.payload.settings.seekStep || 10));
-			const currentState = StateManager.getInstance().getState();
-			const optimisticSeconds = Math.min(
-				currentState.duration || Infinity,
-				Math.max(0, currentState.currentTime + this.pendingTicks * step),
-			);
+			const now = Date.now();
+			const lastFeedback = this.lastFeedbackTime.get(actionId) || 0;
+			if (now - lastFeedback >= 100) {
+				this.lastFeedbackTime.set(actionId, now);
+				const step = Math.min(120, Math.max(1, ev.payload.settings.seekStep || 10));
+				const currentState = StateManager.getInstance().getState();
+				const optimisticSeconds = Math.min(
+					currentState.duration || Infinity,
+					Math.max(0, currentState.currentTime + currentTicks * step),
+				);
 
-			const indicatorValue =
-				currentState.duration > 0
-					? Math.min(100, Math.max(0, Math.round((optimisticSeconds / currentState.duration) * 100)))
-					: 0;
+				const indicatorValue =
+					currentState.duration > 0
+						? Math.min(100, Math.max(0, Math.round((optimisticSeconds / currentState.duration) * 100)))
+						: 0;
 
-			const timeTemplate = ev.payload.settings.timeTemplate || "{both}";
-			const valueText = StateManager.getInstance().formatTimeTemplate(
-				timeTemplate,
-				optimisticSeconds,
-				currentState.duration,
-			);
+				const timeTemplate = ev.payload.settings.timeTemplate || "{both}";
+				const valueText = StateManager.getInstance().formatTimeTemplate(
+					timeTemplate,
+					optimisticSeconds,
+					currentState.duration,
+				);
 
-			try {
-				await ev.action.setFeedback({
-					value: valueText,
-					indicator: indicatorValue,
-				});
-			} catch {}
+				try {
+					await ev.action.setFeedback({
+						value: valueText,
+						indicator: indicatorValue,
+					});
+				} catch {}
+			}
 		}
 
-		if (this.rotationTimer) {
-			clearTimeout(this.rotationTimer);
+		const timer = this.rotationTimer.get(actionId);
+		if (timer) {
+			clearTimeout(timer);
 		}
 
-		this.rotationTimer = setTimeout(() => {
-			this.flushRotation(ev.payload.settings);
+		const newTimer = setTimeout(() => {
+			this.flushRotation(ev.action, ev.payload.settings);
 		}, 85);
+		this.rotationTimer.set(actionId, newTimer);
 	}
 
-	private flushRotation(settings: SeekDialSettings): void {
-		if (this.rotationTimer) {
-			clearTimeout(this.rotationTimer);
-			this.rotationTimer = null;
+	private async flushRotation(
+		action: DialRotateEvent<SeekDialSettings>["action"],
+		settings: SeekDialSettings,
+	): Promise<void> {
+		const actionId = action.id;
+		const timer = this.rotationTimer.get(actionId);
+		if (timer) {
+			clearTimeout(timer);
+			this.rotationTimer.delete(actionId);
 		}
 
-		if (this.isPushJitterActive()) {
-			this.pendingTicks = 0;
+		if (this.isPushJitterActive(actionId)) {
+			this.pendingTicks.set(actionId, 0);
 			return;
 		}
 
-		const ticks = this.pendingTicks;
-		this.pendingTicks = 0;
+		const ticks = this.pendingTicks.get(actionId) || 0;
+		this.pendingTicks.set(actionId, 0);
 
 		if (ticks === 0) return;
 
 		const step = Math.min(120, Math.max(1, settings.seekStep || 10));
 		const deltaSeconds = ticks * step;
+
+		// Ensure final settled feedback is rendered on LCD touchstrip
+		if (action.isDial()) {
+			const currentState = StateManager.getInstance().getState();
+			const optimisticSeconds = Math.min(
+				currentState.duration || Infinity,
+				Math.max(0, currentState.currentTime + deltaSeconds),
+			);
+			const indicatorValue =
+				currentState.duration > 0
+					? Math.min(100, Math.max(0, Math.round((optimisticSeconds / currentState.duration) * 100)))
+					: 0;
+			const timeTemplate = settings.timeTemplate || "{both}";
+			const valueText = StateManager.getInstance().formatTimeTemplate(
+				timeTemplate,
+				optimisticSeconds,
+				currentState.duration,
+			);
+			this.lastFeedbackTime.set(actionId, Date.now());
+			try {
+				await action.setFeedback({
+					value: valueText,
+					indicator: indicatorValue,
+				});
+			} catch {}
+		}
 
 		WebSocketService.getInstance().sendCommand("seekRelative", { seconds: deltaSeconds });
 	}

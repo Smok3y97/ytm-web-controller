@@ -15,7 +15,7 @@ import { WebSocketService } from "../services/websocket-server.js";
 import { VolumeSettings, YTMPlaybackState } from "../types/index.js";
 
 export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
-	protected activeActions: Set<WillAppearEvent<VolumeSettings>["action"]> = new Set();
+	protected activeActions: Map<string, WillAppearEvent<VolumeSettings>["action"]> = new Map();
 	protected abstract readonly command: "volumeDown" | "volumeUp";
 	protected actionKey: string = "";
 	protected abstract calculateOptimisticVolume(currentVolume: number, step: number): number;
@@ -32,7 +32,7 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
 	}
 
 	override async onWillAppear(ev: WillAppearEvent<VolumeSettings>): Promise<void> {
-		this.activeActions.add(ev.action);
+		this.activeActions.set(ev.action.id, ev.action);
 		this.actionSettings.set(ev.action.id, ev.payload.settings);
 		this.lastRenderedTitle.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
@@ -52,16 +52,7 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
 		this.lastRenderedTitle.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
 		this.actionSettings.delete(ev.action.id);
-		this.removeActiveAction(ev.action.id);
-	}
-
-	protected removeActiveAction(actionId: string): void {
-		for (const a of this.activeActions) {
-			if (a.id === actionId) {
-				this.activeActions.delete(a);
-				break;
-			}
-		}
+		this.activeActions.delete(ev.action.id);
 	}
 
 	override async onKeyDown(ev: KeyDownEvent<VolumeSettings>): Promise<void> {
@@ -88,7 +79,7 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
 	}
 
 	protected async updateAllInstances(state: YTMPlaybackState): Promise<void> {
-		for (const actionInstance of this.activeActions) {
+		for (const actionInstance of this.activeActions.values()) {
 			try {
 				const settings =
 					this.actionSettings.get(actionInstance.id) || (await actionInstance.getSettings().catch(() => ({})));

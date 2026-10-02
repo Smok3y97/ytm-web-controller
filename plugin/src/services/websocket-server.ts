@@ -20,6 +20,9 @@ interface ClientTabInfo {
 	isPlaying: boolean;
 	lastActive: number;
 	isOverlay: boolean;
+	isMismatch?: boolean;
+	version?: string;
+	hasTrackLoaded?: boolean;
 }
 
 export class WebSocketService extends EventEmitter {
@@ -134,16 +137,7 @@ export class WebSocketService extends EventEmitter {
 					this.clientTabs.set(ws, tabInfo);
 					this.emit("clientConnected", ws);
 
-					// Immediately send current playback state to newly connected client
-					try {
-						const currentState = StateManager.getInstance().getState();
-						if (currentState && (currentState.title || currentState.artist)) {
-							this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
-						}
-					} catch {}
-
-					// Request fresh state from browser extension
-					this.sendToClient(ws, { command: "requestState" });
+					// Note: State update and command dispatch are deferred until handshake or registration completes
 
 					ws.on("message", (message: Buffer | string) => {
 						try {
@@ -162,28 +156,10 @@ export class WebSocketService extends EventEmitter {
 							// Handle explicit browser tab unload to clean up client registry and multi-tab arbitration
 							if (payload.type === "TAB_CLOSED") {
 								streamDeck.logger.info(`[WebSocket] Tab closed notification (tabId: ${payload.tabId || "unknown"})`);
-								const wasPlaying = tabInfo?.isPlaying === true;
-								if (tabInfo) {
-									tabInfo.isPlaying = false;
-								}
-								this.clients.delete(ws);
-								this.clientTabs.delete(ws);
-
-								if (wasPlaying) {
-									const nextTab = this.getActiveTabSocket();
-									if (nextTab) {
-										this.sendToClient(nextTab, { command: "requestState" });
-									} else {
-										StateManager.getInstance().handleClientsDisconnected();
-									}
-								} else if (!this.hasConnectedClients()) {
-									StateManager.getInstance().handleClientsDisconnected();
-								}
-
-								if (!this.hasConnectedClients()) {
-									this.isMismatchActive = false;
-									this.emit("clientDisconnected", ws);
-								}
+								this.handleClientClose(ws, "tab_closed");
+								try {
+									ws.close();
+								} catch {}
 								return;
 							}
 
@@ -196,17 +172,29 @@ export class WebSocketService extends EventEmitter {
 
 							// Validate extension version compatibility via handshake packet
 							if (payload.type === "handshake") {
-								if (tabInfo && payload.tabId) tabInfo.tabId = payload.tabId;
 								const extVersion = payload.version || "0.0.0.0";
 								const versionService = VersionControlService.getInstance();
 								const validation = versionService.validateHandshake(extVersion);
 
-								this.isMismatchActive = !validation.isCompatible;
+								if (tabInfo) {
+									if (payload.tabId) tabInfo.tabId = payload.tabId;
+									tabInfo.version = extVersion;
+									tabInfo.isMismatch = !validation.isCompatible;
+								}
+
+								this.evaluateMismatchState();
 
 								if (validation.isCompatible) {
 									streamDeck.logger.info(
 										`[WebSocket] Handshake SUCCESS from extension v${extVersion} (min required: ${versionService.minRequiredExtensionVersion})`,
 									);
+									// Immediately send current playback state to newly connected compatible client
+									try {
+										const currentState = StateManager.getInstance().getState();
+										if (currentState && (currentState.title || currentState.artist)) {
+											this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
+										}
+									} catch {}
 									// Request immediate full state upon successful handshake
 									this.sendToClient(ws, { command: "requestState" });
 								} else {
@@ -215,8 +203,8 @@ export class WebSocketService extends EventEmitter {
 									);
 								}
 
-								this.sendToClient(ws, validation.payload as unknown as Record<string, unknown>);
-								this.emit("handshake", { isMismatch: !validation.isCompatible, version: extVersion });
+								this.sendToClient(ws, validation.payload);
+								this.emit("handshake", { isMismatch: this.isMismatchActive, version: extVersion });
 								return;
 							}
 
@@ -229,6 +217,11 @@ export class WebSocketService extends EventEmitter {
 							if (payload.type === "STATE_UPDATE" && incomingState) {
 								if (tabInfo) {
 									tabInfo.isPlaying = !incomingState.paused;
+									tabInfo.hasTrackLoaded = Boolean(
+										incomingState.title ||
+										incomingState.artist ||
+										(incomingState.duration && incomingState.duration > 0),
+									);
 								}
 
 								// Multi-tab arbitration: If this tab is paused, but another tab is currently playing, ignore paused update
@@ -271,29 +264,7 @@ export class WebSocketService extends EventEmitter {
 					});
 
 					ws.on("close", () => {
-						const wasPlaying = tabInfo?.isPlaying === true;
-						if (tabInfo) {
-							tabInfo.isPlaying = false;
-						}
-						this.clients.delete(ws);
-						this.clientTabs.delete(ws);
-						if (!this.hasConnectedClients()) {
-							this.isMismatchActive = false;
-						}
-						streamDeck.logger.info(`[WebSocket] Client disconnected. Remaining clients: ${this.clients.size}`);
-
-						if (wasPlaying) {
-							const nextTab = this.getActiveTabSocket();
-							if (nextTab) {
-								this.sendToClient(nextTab, { command: "requestState" });
-							} else {
-								StateManager.getInstance().handleClientsDisconnected();
-							}
-						} else if (!this.hasConnectedClients()) {
-							StateManager.getInstance().handleClientsDisconnected();
-						}
-
-						this.emit("clientDisconnected", ws);
+						this.handleClientClose(ws, "socket_closed");
 					});
 
 					ws.on("error", (err) => {
@@ -369,8 +340,63 @@ export class WebSocketService extends EventEmitter {
 	}
 
 	/**
+	 * Centralized client disconnect and tab deregistration logic
+	 */
+	private handleClientClose(ws: WebSocket, reason: string): void {
+		if (!this.clients.has(ws)) {
+			return;
+		}
+
+		const tabInfo = this.clientTabs.get(ws);
+		const wasPlaying = tabInfo?.isPlaying === true;
+
+		this.clients.delete(ws);
+		this.clientTabs.delete(ws);
+
+		this.evaluateMismatchState();
+
+		streamDeck.logger.info(`[WebSocket] Client disconnected (${reason}). Remaining clients: ${this.clients.size}`);
+
+		if (wasPlaying) {
+			const nextTab = this.getActiveTabSocket();
+			if (nextTab) {
+				this.sendToClient(nextTab, { command: "requestState" });
+			} else {
+				StateManager.getInstance().handleClientsDisconnected();
+			}
+		} else if (!this.hasConnectedClients()) {
+			StateManager.getInstance().handleClientsDisconnected();
+		} else {
+			// A paused or non-playing tab closed, synchronize state with remaining active tab
+			const nextTab = this.getActiveTabSocket();
+			if (nextTab) {
+				this.sendToClient(nextTab, { command: "requestState" });
+			}
+		}
+
+		this.emit("clientDisconnected", ws);
+	}
+
+	/**
+	 * Re-evaluates version mismatch state across all active non-overlay tabs
+	 */
+	private evaluateMismatchState(): void {
+		const nonOverlayTabs = Array.from(this.clientTabs.values()).filter((t) => !t.isOverlay);
+		const hasMismatch = nonOverlayTabs.some((t) => t.isMismatch === true);
+
+		const mismatchTab = nonOverlayTabs.find((t) => t.isMismatch === true);
+		const targetVersion =
+			mismatchTab?.version || (nonOverlayTabs.length > 0 ? nonOverlayTabs[0].version : undefined) || "0.0.0.0";
+
+		if (this.isMismatchActive !== hasMismatch) {
+			this.isMismatchActive = hasMismatch;
+			this.emit("handshake", { isMismatch: hasMismatch, version: targetVersion });
+		}
+	}
+
+	/**
 	 * Get the currently active YouTube Music tab socket
-	 * Prioritizes actively playing tabs, then most recently active tabs
+	 * Prioritizes actively playing tabs, then paused tabs with track loaded, then most recently active tabs
 	 */
 	public getActiveTabSocket(): WebSocket | null {
 		// 1. Preference: Tab that is actively playing (isPlaying === true) and OPEN
@@ -380,7 +406,20 @@ export class WebSocketService extends EventEmitter {
 			}
 		}
 
-		// 2. Preference: Most recently active non-overlay tab that is OPEN
+		// 2. Preference: Paused non-overlay tab that has a track loaded, ordered by most recently active
+		let latestLoadedWs: WebSocket | null = null;
+		let latestLoadedTime = 0;
+		for (const [ws, info] of this.clientTabs.entries()) {
+			if (ws.readyState === WebSocket.OPEN && !info.isOverlay && info.hasTrackLoaded) {
+				if (info.lastActive > latestLoadedTime) {
+					latestLoadedTime = info.lastActive;
+					latestLoadedWs = ws;
+				}
+			}
+		}
+		if (latestLoadedWs) return latestLoadedWs;
+
+		// 3. Preference: Most recently active non-overlay tab that is OPEN
 		let latestWs: WebSocket | null = null;
 		let latestTime = 0;
 		for (const [ws, info] of this.clientTabs.entries()) {
@@ -393,7 +432,7 @@ export class WebSocketService extends EventEmitter {
 		}
 		if (latestWs) return latestWs;
 
-		// 3. Fallback: Any OPEN client that is not explicitly an overlay
+		// 4. Fallback: Any OPEN client that is not explicitly an overlay
 		for (const ws of this.clients) {
 			const info = this.clientTabs.get(ws);
 			if (ws.readyState === WebSocket.OPEN && (!info || !info.isOverlay)) {
@@ -430,7 +469,7 @@ export class WebSocketService extends EventEmitter {
 	/**
 	 * Send a message to a single specific client
 	 */
-	private sendToClient(ws: WebSocket, message: Record<string, unknown>): void {
+	private sendToClient(ws: WebSocket, message: object): void {
 		if (ws.readyState === WebSocket.OPEN) {
 			try {
 				ws.send(JSON.stringify(message));

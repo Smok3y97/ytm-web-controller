@@ -15,7 +15,7 @@ import { WebSocketService } from "../services/websocket-server.js";
 import { SeekButtonSettings, YTMPlaybackState } from "../types/index.js";
 
 export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings> {
-	protected activeActions: Set<WillAppearEvent<SeekButtonSettings>["action"]> = new Set();
+	protected activeActions: Map<string, WillAppearEvent<SeekButtonSettings>["action"]> = new Map();
 	protected abstract readonly direction: "backward" | "forward";
 	protected abstract readonly actionKey: "seekbackward" | "seekforward";
 	protected actionSettings: Map<string, SeekButtonSettings> = new Map();
@@ -31,7 +31,7 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 	}
 
 	override async onWillAppear(ev: WillAppearEvent<SeekButtonSettings>): Promise<void> {
-		this.activeActions.add(ev.action);
+		this.activeActions.set(ev.action.id, ev.action);
 		this.actionSettings.set(ev.action.id, ev.payload.settings);
 		this.lastRenderedTitle.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
@@ -51,16 +51,7 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 		this.lastRenderedTitle.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
 		this.actionSettings.delete(ev.action.id);
-		this.removeActiveAction(ev.action.id);
-	}
-
-	protected removeActiveAction(actionId: string): void {
-		for (const a of this.activeActions) {
-			if (a.id === actionId) {
-				this.activeActions.delete(a);
-				break;
-			}
-		}
+		this.activeActions.delete(ev.action.id);
 	}
 
 	override async onKeyDown(ev: KeyDownEvent<SeekButtonSettings>): Promise<void> {
@@ -89,7 +80,7 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 	}
 
 	protected async updateAllInstances(state: YTMPlaybackState): Promise<void> {
-		for (const actionInstance of this.activeActions) {
+		for (const actionInstance of this.activeActions.values()) {
 			try {
 				const settings =
 					this.actionSettings.get(actionInstance.id) || (await actionInstance.getSettings().catch(() => ({})));

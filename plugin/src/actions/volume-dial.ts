@@ -117,9 +117,10 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		if (ticks === 0) return;
 
 		const step = Math.min(50, Math.max(1, settings.step || 5));
-		const delta = ticks * step;
+		const currentVol = StateManager.getInstance().getState().volume ?? 100;
+		const targetVol = Math.min(100, Math.max(0, currentVol + ticks * step));
 
-		WebSocketService.getInstance().sendCommand("adjustVolume", { delta });
+		WebSocketService.getInstance().sendCommand("setVolume", { volume: targetVol });
 	}
 
 	protected async updateDialDisplay(

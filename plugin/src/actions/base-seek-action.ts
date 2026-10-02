@@ -18,6 +18,7 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 	protected activeActions: Set<WillAppearEvent<SeekButtonSettings>["action"]> = new Set();
 	protected abstract readonly direction: "backward" | "forward";
 	protected abstract readonly actionKey: "seekbackward" | "seekforward";
+	protected actionSettings: Map<string, SeekButtonSettings> = new Map();
 	private lastRenderedTitle: Map<string, string> = new Map();
 	private lastRenderedMismatch: Map<string, boolean> = new Map();
 
@@ -31,6 +32,7 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 
 	override async onWillAppear(ev: WillAppearEvent<SeekButtonSettings>): Promise<void> {
 		this.activeActions.add(ev.action);
+		this.actionSettings.set(ev.action.id, ev.payload.settings);
 		this.lastRenderedTitle.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
 		const state = StateManager.getInstance().getState();
@@ -38,9 +40,17 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 		WebSocketService.getInstance().sendCommand("requestState");
 	}
 
+	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<SeekButtonSettings>): Promise<void> {
+		this.actionSettings.set(ev.action.id, ev.payload.settings);
+		this.lastRenderedTitle.delete(ev.action.id);
+		const state = StateManager.getInstance().getState();
+		await this.updateInstance(ev.action, state, ev.payload.settings);
+	}
+
 	override async onWillDisappear(ev: WillDisappearEvent<SeekButtonSettings>): Promise<void> {
 		this.lastRenderedTitle.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
+		this.actionSettings.delete(ev.action.id);
 		this.removeActiveAction(ev.action.id);
 	}
 
@@ -51,12 +61,6 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 				break;
 			}
 		}
-	}
-
-	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<SeekButtonSettings>): Promise<void> {
-		this.lastRenderedTitle.delete(ev.action.id);
-		const state = StateManager.getInstance().getState();
-		await this.updateInstance(ev.action, state, ev.payload.settings);
 	}
 
 	override async onKeyDown(ev: KeyDownEvent<SeekButtonSettings>): Promise<void> {
@@ -87,7 +91,8 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 	protected async updateAllInstances(state: YTMPlaybackState): Promise<void> {
 		for (const actionInstance of this.activeActions) {
 			try {
-				const settings = await actionInstance.getSettings();
+				const settings =
+					this.actionSettings.get(actionInstance.id) || (await actionInstance.getSettings().catch(() => ({})));
 				await this.updateInstance(actionInstance, state, settings);
 			} catch {}
 		}

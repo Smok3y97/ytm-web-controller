@@ -17,7 +17,7 @@ let currentPort = DEFAULT_PORT;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
-let bridgeVersion = '2.0.0.0';
+let bridgeVersion = document.documentElement?.dataset?.ytmExtensionVersion || '';
 
 let lastSentState = {
   title: '',
@@ -30,7 +30,7 @@ let lastSentState = {
   paused: true,
   currentTime: 0,
   duration: 0,
-  volume: 1,
+  volume: 100,
   muted: false,
   isLiked: false,
   isDisliked: false,
@@ -121,7 +121,6 @@ function handleCommand(message) {
     const payload = (typeof message === 'object' && message ? message.payload : {}) || {};
     if (!command) return;
 
-    console.log('[YTM Controller] Executing command:', command, payload);
     const actions = window.YTM.actions || {};
 
     switch (command) {
@@ -228,7 +227,7 @@ function handleCommand(message) {
       }
 
       default:
-        console.log('[YTM Controller] Unknown command:', command);
+        console.warn('[YTM Controller] Unknown command:', command);
     }
   } catch (err) {
     console.error('[YTM Controller] Error executing command:', err);
@@ -261,11 +260,11 @@ function connectWebSocket(port) {
     ws.onopen = () => {
       isConnecting = false;
       reconnectAttempts = 0;
-      console.log(`[YTM Controller] 🟢 Connected to Stream Deck on port ${currentPort}`);
+      console.info(`[YTM Controller] 🟢 Connected to Stream Deck on port ${currentPort}`);
 
       lastSentState = {};
 
-      const extVersion = bridgeVersion || '1.8.0.0';
+      const extVersion = bridgeVersion || document.documentElement?.dataset?.ytmExtensionVersion || '';
       const platform = detectBrowserPlatform();
 
       // 1. Send Handshake packet immediately before any playback events
@@ -305,7 +304,7 @@ function connectWebSocket(port) {
         if (data.type === 'handshake_ack') {
           const comp = compareVersions(bridgeVersion, data.version);
           if (comp === 0) {
-            console.log('[YTM Controller] 🟢 Handshake ACK received (Plugin v%s)', data.version);
+            console.info('[YTM Controller] 🟢 Handshake ACK received (Plugin v%s)', data.version);
             reportMismatchStatus(false);
             sendState(true);
             scheduleStateUpdates([50, 200]);
@@ -387,7 +386,7 @@ function wakeFromStandby() {
  * Extension initialization
  */
 function init() {
-  console.log('[YTM Controller] ⚡ Initializing YouTube Music Content Script...');
+  console.info('[YTM Controller] ⚡ Initializing YouTube Music Content Script...');
 
   if (typeof setupGlobalMediaListeners === 'function') {
     setupGlobalMediaListeners();
@@ -424,7 +423,7 @@ function init() {
     } else if (event.data.type === 'YTM_BRIDGE_PORT_UPDATE') {
       const targetPort = event.data.wsPort || DEFAULT_PORT;
       if (targetPort !== currentPort) {
-        console.log('[YTM Controller] Switching WebSocket port to', targetPort);
+        console.info('[YTM Controller] Switching WebSocket port to', targetPort);
         connectWebSocket(targetPort);
       }
     }

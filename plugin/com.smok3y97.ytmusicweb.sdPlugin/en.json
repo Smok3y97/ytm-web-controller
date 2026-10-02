@@ -93,7 +93,6 @@
         "info.default_description": "Controls active playback directly via local WebSocket.",
         "action.settings": "Action Settings",
         "controls.heading": "Controls",
-        "tip.title": "Tip",
         "browse": "Browse...",
         "no_file_selected": "No file selected...",
         "releases": "Releases",

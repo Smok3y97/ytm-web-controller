@@ -125,12 +125,13 @@ export class WebSocketService extends EventEmitter {
 					const origin = req.headers.origin || "";
 					const isOverlay =
 						origin.includes("127.0.0.1") || origin.includes("localhost") || Boolean(req.url?.includes("overlay"));
-					this.clients.add(ws);
-					this.clientTabs.set(ws, {
+					const tabInfo: ClientTabInfo = {
 						isPlaying: false,
 						lastActive: Date.now(),
 						isOverlay,
-					});
+					};
+					this.clients.add(ws);
+					this.clientTabs.set(ws, tabInfo);
 					this.emit("clientConnected", ws);
 
 					// Immediately send current playback state to newly connected client
@@ -161,12 +162,26 @@ export class WebSocketService extends EventEmitter {
 							// Handle explicit browser tab unload to clean up client registry and multi-tab arbitration
 							if (payload.type === "TAB_CLOSED") {
 								streamDeck.logger.info(`[WebSocket] Tab closed notification (tabId: ${payload.tabId || "unknown"})`);
+								const wasPlaying = tabInfo?.isPlaying === true;
 								if (tabInfo) {
 									tabInfo.isPlaying = false;
 								}
 								this.clients.delete(ws);
 								this.clientTabs.delete(ws);
+
+								if (wasPlaying) {
+									const nextTab = this.getActiveTabSocket();
+									if (nextTab) {
+										this.sendToClient(nextTab, { command: "requestState" });
+									} else {
+										StateManager.getInstance().handleClientsDisconnected();
+									}
+								} else if (!this.hasConnectedClients()) {
+									StateManager.getInstance().handleClientsDisconnected();
+								}
+
 								if (!this.hasConnectedClients()) {
+									this.isMismatchActive = false;
 									this.emit("clientDisconnected", ws);
 								}
 								return;
@@ -236,7 +251,11 @@ export class WebSocketService extends EventEmitter {
 								this.emit("stateUpdate", incomingState);
 							} else if (payload.type === "REGISTER_CLIENT") {
 								if (tabInfo) {
-									if (payload.client === "ytm-overlay" || (payload.url && payload.url.includes("/overlay"))) {
+									if (
+										payload.client === "ytm-overlay" ||
+										payload.client === "obs-overlay" ||
+										(payload.url && payload.url.includes("/overlay"))
+									) {
 										tabInfo.isOverlay = true;
 									}
 									if (payload.tabId) tabInfo.tabId = payload.tabId;
@@ -252,23 +271,36 @@ export class WebSocketService extends EventEmitter {
 					});
 
 					ws.on("close", () => {
+						const wasPlaying = tabInfo?.isPlaying === true;
+						if (tabInfo) {
+							tabInfo.isPlaying = false;
+						}
 						this.clients.delete(ws);
 						this.clientTabs.delete(ws);
-						if (this.clients.size === 0) {
+						if (!this.hasConnectedClients()) {
 							this.isMismatchActive = false;
 						}
 						streamDeck.logger.info(`[WebSocket] Client disconnected. Remaining clients: ${this.clients.size}`);
+
+						if (wasPlaying) {
+							const nextTab = this.getActiveTabSocket();
+							if (nextTab) {
+								this.sendToClient(nextTab, { command: "requestState" });
+							} else {
+								StateManager.getInstance().handleClientsDisconnected();
+							}
+						} else if (!this.hasConnectedClients()) {
+							StateManager.getInstance().handleClientsDisconnected();
+						}
+
 						this.emit("clientDisconnected", ws);
 					});
 
 					ws.on("error", (err) => {
 						streamDeck.logger.error(`[WebSocket] Client socket error: ${err}`);
-						this.clients.delete(ws);
-						this.clientTabs.delete(ws);
-						if (this.clients.size === 0) {
-							this.isMismatchActive = false;
-						}
-						this.emit("clientDisconnected", ws);
+						try {
+							ws.terminate();
+						} catch {}
 					});
 				});
 

@@ -34,6 +34,12 @@ body {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.sdpi-wrapper.sdpi-ready {
+	opacity: 1;
 }
 
 .sdpi-heading {

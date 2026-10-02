@@ -54,7 +54,7 @@ export class ImageRenderer {
 	}
 
 	/**
-	 * Produce a button image from album artwork with dynamic Play overlay when paused
+	 * Produce a button image from album artwork with dynamic Pause overlay when paused
 	 */
 	public getCoverWithPlaybackOverlay(coverBase64: string, paused: boolean): string {
 		if (!coverBase64) return "";
@@ -63,13 +63,13 @@ export class ImageRenderer {
 			return coverBase64;
 		}
 
-		// When paused, render dimmed overlay with centered white Pause icon (SVG 1.1 compatible for Stream Deck Qt renderer)
+		// When paused, render dimmed overlay with centered white Pause icon (indicates active pause status over cover art)
 		const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 144 144" width="144" height="144">
   <image href="${coverBase64}" xlink:href="${coverBase64}" x="0" y="0" width="144" height="144" preserveAspectRatio="xMidYMid slice"/>
   <rect x="0" y="0" width="144" height="144" fill="#000000" fill-opacity="0.45"/>
   <circle cx="72" cy="72" r="30" fill="#000000" fill-opacity="0.5" stroke="#ffffff" stroke-width="2.5"/>
-  <rect x="60" y="58" width="7" height="28" rx="2" fill="#ffffff"/>
-  <rect x="77" y="58" width="7" height="28" rx="2" fill="#ffffff"/>
+  <rect x="63" y="58" width="6" height="28" fill="#ffffff" rx="1.5"/>
+  <rect x="75" y="58" width="6" height="28" fill="#ffffff" rx="1.5"/>
 </svg>`;
 
 		return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

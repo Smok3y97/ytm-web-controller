@@ -24,6 +24,7 @@ Consult the specialized documentation before modifying components:
 - **In-Memory Asset Pipeline:** Keep cover art, thumbnails, and canvas drawings strictly in RAM as Base64 Data URLs. Never write temporary image assets to disk.
 - **Hardware Refresh Limit:** Programmatic updates to Stream Deck keys, canvas drawings, and LCD touchstrips must never exceed **10 updates per second (10 Hz)**.
 - **Volume Clamping:** YouTube Music volume is strictly an integer between `0` and `100`. Clamp all dial rotation and step calculations to `[0, 100]` before WebSocket dispatch.
+- **Cover Art Playback Overlay:** When music playback is paused with cover background enabled, `ImageRenderer.getCoverWithPlaybackOverlay()` intentionally renders a Pause indicator (two vertical bars) over the artwork to indicate the active paused state. Do not change this to a Play icon.
 - **Central Versioning:** Never manually edit version strings across manifests. Always use `npm run bump <version>` (synchronizes `version.json`, plugin/extension manifests, and package files).
 - **Immutable Action UUIDs:** Never alter existing action UUIDs in `manifest.json` after release. Deprecate legacy actions using `"VisibleInActionsList": false`.
 - **Strict Typing Discipline:** Prohibited: `as any`, `@ts-ignore`, `@ts-expect-error`. Define or extend interfaces in `plugin/src/types/`.

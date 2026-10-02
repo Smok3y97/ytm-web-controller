@@ -14,8 +14,39 @@ const StreamDeckClient = (function () {
 	let appInfo = {};
 	let language = "en";
 
+	let isReady = false;
+	let localSettingsReceived = false;
+	let globalSettingsReceived = false;
+
 	const localSettingsCallbacks = new Set();
 	const globalSettingsCallbacks = new Set();
+
+	// Prevent FOUC: reveal property inspector once settings and i18n are initialized
+	function setReady() {
+		if (isReady) return;
+		isReady = true;
+		const wrapper = document.querySelector(".sdpi-wrapper");
+		if (wrapper) {
+			wrapper.classList.add("sdpi-ready");
+		}
+	}
+
+	function checkReady() {
+		if (localSettingsReceived && globalSettingsReceived) {
+			if (typeof requestAnimationFrame !== "undefined") {
+				requestAnimationFrame(() => setReady());
+			} else {
+				setReady();
+			}
+		}
+	}
+
+	// Standalone fallback to unhide wrapper if running outside Stream Deck software
+	if (typeof window !== "undefined") {
+		setTimeout(() => {
+			setReady();
+		}, 1000);
+	}
 
 	function connect(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
 		uuid = inPropertyInspectorUUID;
@@ -65,6 +96,8 @@ const StreamDeckClient = (function () {
 
 			// Notify any listeners registered prior to websocket open
 			notifyLocalSettings(localSettings);
+			localSettingsReceived = true;
+			checkReady();
 		};
 
 		websocket.onmessage = (evt) => {
@@ -81,6 +114,8 @@ const StreamDeckClient = (function () {
 			if (event === "didReceiveSettings") {
 				localSettings = payload.settings || {};
 				notifyLocalSettings(localSettings);
+				localSettingsReceived = true;
+				checkReady();
 			} else if (event === "didReceiveGlobalSettings") {
 				globalSettings = payload.settings || {};
 				if (typeof I18n !== "undefined" && I18n.setLanguage) {
@@ -91,6 +126,8 @@ const StreamDeckClient = (function () {
 					}
 				}
 				notifyGlobalSettings(globalSettings);
+				globalSettingsReceived = true;
+				checkReady();
 			}
 		};
 	}
@@ -193,6 +230,7 @@ const StreamDeckClient = (function () {
 		saveGlobalSettings,
 		sendToPlugin,
 		bindAutoSave,
+		setReady,
 		getLocalSettings: () => localSettings,
 		getGlobalSettings: () => globalSettings,
 		getLanguage: () => language,

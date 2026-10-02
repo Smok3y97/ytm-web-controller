@@ -27,13 +27,15 @@ export const DEFAULT_PLAYPAUSE_TEMPLATE = "{artist}\n\n{song}\n\n{both}";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.playpause" })
 export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
-	private activeActions: Set<WillAppearEvent<PlayPauseSettings>["action"]> = new Set();
+	private activeActions: Map<string, WillAppearEvent<PlayPauseSettings>["action"]> = new Map();
+	private actionSettings: Map<string, PlayPauseSettings> = new Map();
 	private lastRenderedImage: Map<string, string | undefined> = new Map();
 	private lastRenderedTitle: Map<string, string> = new Map();
 	private lastRenderedMismatch: Map<string, boolean> = new Map();
 	private registeredConsumers: Set<string> = new Set();
 	private keyPressTimers: Map<string, NodeJS.Timeout> = new Map();
 	private isLongPressTriggered: Map<string, boolean> = new Map();
+	private renderDebounceTimer: NodeJS.Timeout | null = null;
 	private readonly LONG_PRESS_THRESHOLD_MS = 450;
 
 	constructor() {
@@ -51,7 +53,8 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 	}
 
 	override async onWillAppear(ev: WillAppearEvent<PlayPauseSettings>): Promise<void> {
-		this.activeActions.add(ev.action);
+		this.activeActions.set(ev.action.id, ev.action);
+		this.actionSettings.set(ev.action.id, ev.payload.settings);
 		this.lastRenderedImage.delete(ev.action.id);
 		this.lastRenderedTitle.delete(ev.action.id);
 		this.lastRenderedMismatch.delete(ev.action.id);
@@ -71,16 +74,8 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		this.lastRenderedTitle.delete(actionId);
 		this.lastRenderedMismatch.delete(actionId);
 		this.syncConsumerState(actionId, false);
-		this.removeActiveAction(actionId);
-	}
-
-	private removeActiveAction(actionId: string): void {
-		for (const a of this.activeActions) {
-			if (a.id === actionId) {
-				this.activeActions.delete(a);
-				break;
-			}
-		}
+		this.activeActions.delete(actionId);
+		this.actionSettings.delete(actionId);
 	}
 
 	private syncConsumerState(actionId: string, needsMarquee: boolean): void {
@@ -153,40 +148,49 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 	}
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<PlayPauseSettings>): Promise<void> {
+		this.actionSettings.set(ev.action.id, ev.payload.settings);
 		this.lastRenderedImage.delete(ev.action.id);
 		this.lastRenderedTitle.delete(ev.action.id);
 		const state = StateManager.getInstance().getState();
 		await this.updateInstance(ev.action, state, ev.payload.settings);
 	}
 
-	private async updateAllInstances(state: YTMPlaybackState): Promise<void> {
-		for (const actionInstance of this.activeActions) {
-			try {
-				const settings = await actionInstance.getSettings();
-				await this.updateInstance(actionInstance, state, settings);
-			} catch {}
+	private updateAllInstances(state: YTMPlaybackState): void {
+		if (this.renderDebounceTimer) {
+			clearTimeout(this.renderDebounceTimer);
 		}
+		// Debounce rapid bursts during track transitions (e.g. metadata + play + coverBase64 ready)
+		// to guarantee physical hardware (like Corsair keyboards) receives one clean, final image payload
+		this.renderDebounceTimer = setTimeout(async () => {
+			this.renderDebounceTimer = null;
+			for (const [actionId, actionInstance] of this.activeActions) {
+				try {
+					const settings = this.actionSettings.get(actionId) || {};
+					await this.updateInstance(actionInstance, state, settings);
+				} catch {}
+			}
+		}, 40);
 	}
 
 	private async handleMarqueeTick(): Promise<void> {
 		const state = StateManager.getInstance().getState();
 		if (state.paused || state.isVersionMismatch) return;
 
-		for (const actionInstance of this.activeActions) {
+		for (const [actionId, actionInstance] of this.activeActions) {
 			if (!actionInstance.isKey()) continue;
 			try {
-				const settings = await actionInstance.getSettings();
-				if (!settings.showTitle) continue;
+				const settings = this.actionSettings.get(actionId);
+				if (!settings?.showTitle) continue;
 
 				const rawTemplate = settings.titleTemplate?.trim();
 				const template = rawTemplate ? settings.titleTemplate : DEFAULT_PLAYPAUSE_TEMPLATE;
 				const rawFormatted = StateManager.getInstance().formatTrackText(template, state);
 				const marqueeTitle = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
 
-				const prevTitle = this.lastRenderedTitle.get(actionInstance.id);
+				const prevTitle = this.lastRenderedTitle.get(actionId);
 				if (prevTitle !== marqueeTitle) {
 					await actionInstance.setTitle(marqueeTitle);
-					this.lastRenderedTitle.set(actionInstance.id, marqueeTitle);
+					this.lastRenderedTitle.set(actionId, marqueeTitle);
 				}
 			} catch {}
 		}

@@ -545,8 +545,8 @@
 			ws = new WebSocket(wsUrl);
 
 			ws.onopen = () => {
-				console.log(`[Overlay] Connected to Stream Deck server at ${wsUrl}`);
-				ws.send(JSON.stringify({ type: "REGISTER_CLIENT", client: "obs-overlay" }));
+				console.info(`[Overlay] Connected to Stream Deck server at ${wsUrl}`);
+				ws.send(JSON.stringify({ type: "REGISTER_CLIENT", client: "obs-overlay", url: window.location.href }));
 				ws.send(JSON.stringify({ command: "requestState" }));
 			};
 
@@ -566,7 +566,7 @@
 			};
 
 			ws.onclose = () => {
-				console.log("[Overlay] WebSocket connection closed. Reconnecting in 3s...");
+				console.info("[Overlay] WebSocket connection closed. Reconnecting in 3s...");
 				scheduleReconnect();
 			};
 		} catch (e) {

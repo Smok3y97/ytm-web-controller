@@ -93,7 +93,6 @@
         "info.default_description": "Steuert die Wiedergabe direkt über ein lokales WebSocket.",
         "action.settings": "Aktions-Einstellungen",
         "controls.heading": "Steuerung",
-        "tip.title": "Tipp",
         "browse": "Durchsuchen...",
         "no_file_selected": "Keine Datei ausgewählt...",
         "releases": "Releases",

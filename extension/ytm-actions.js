@@ -132,7 +132,7 @@ function adjustPlayerVolume(delta) {
   let current = api?.getVolume();
 
   if (typeof current !== 'number') {
-    current = (typeof getPlayerVolume === 'function') ? getPlayerVolume() : 100;
+    current = (typeof window.YTM.state?.getPlayerVolume === 'function') ? window.YTM.state.getPlayerVolume() : 100;
   }
 
   const target = Math.min(100, Math.max(0, Math.round(current + delta)));
@@ -206,7 +206,7 @@ function seekRelative(deltaSeconds) {
     return;
   }
 
-  const video = window.YTM.selectors?.findVideo?.() || document.querySelector('video');
+  const video = (typeof findVideoElement === 'function' ? findVideoElement() : window.YTM.utils?.findVideoElement?.()) || document.querySelector('video');
   if (video && typeof video.currentTime === 'number') {
     video.currentTime = Math.max(0, video.currentTime + deltaSeconds);
     triggerStateNotification([50, 150]);

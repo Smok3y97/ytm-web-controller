@@ -87,14 +87,10 @@ export interface PlayPauseSettings extends JsonObject {
 
 export interface TrackDialSettings extends JsonObject {
 	[key: string]: JsonValue | undefined;
-	mode?: "track" | "volume";
-	volumeStep?: number;
 	titleTemplate?: string;
 	timeTemplate?: string;
 	showCover?: boolean;
 }
-
-export type DialSettings = TrackDialSettings;
 
 export interface VolumeSettings extends JsonObject {
 	[key: string]: JsonValue | undefined;

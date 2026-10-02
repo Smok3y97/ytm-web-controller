@@ -20,7 +20,7 @@ export class StateManager extends EventEmitter {
 		albumUrl: "",
 		currentTime: 0,
 		duration: 0,
-		volume: 1,
+		volume: 100,
 		paused: true,
 		playbackRate: 1,
 		timestamp: Date.now(),

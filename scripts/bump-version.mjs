@@ -2,15 +2,17 @@
  * Centralized Version Bump Script
  * 
  * Synchronizes the 4-part Elgato Stream Deck specification version across:
- * 1. version.json
+ * 1. version.json (Monorepo SSOT)
  * 2. package.json (root)
  * 3. plugin/package.json
  * 4. plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json
- * 5. extension/manifest.json
+ * 5. extension/manifest.json (Extension native SSOT)
+ * 6. plugin/src/services/version-control.ts (manifest fallback constants)
+ * 7. plugin/package-lock.json (natively via npm)
  * 
  * Usage:
- *   node scripts/bump-version.mjs 1.5.0.0
- *   npm run bump 1.5.0.0
+ *   node scripts/bump-version.mjs 2.0.1.0
+ *   npm run bump 2.0.1.0
  */
 
 import fs from 'fs';
@@ -95,37 +97,20 @@ updateJsonFile(path.join(pluginDir, 'com.smok3y97.ytmusicweb.sdPlugin', 'manifes
   json.Version = targetVersion;
 });
 
-// 5. extension/manifest.json
+// 5. extension/manifest.json (Native SSOT for companion browser extension)
 updateJsonFile(path.join(rootDir, 'extension', 'manifest.json'), (json) => {
   json.version = targetVersion;
   json.version_name = shortVersion;
 });
 
-// 6. extension/popup.html static fallback
-const popupHtmlPath = path.join(rootDir, 'extension', 'popup.html');
-if (fs.existsSync(popupHtmlPath)) {
-  let html = fs.readFileSync(popupHtmlPath, 'utf8');
-  html = html.replace(/<span id="version-text">v[0-9.]+\s*•\s*Open Source<\/span>/i, `<span id="version-text">v${shortVersion} • Open Source</span>`);
-  fs.writeFileSync(popupHtmlPath, html, 'utf8');
-  console.log(`  ✓ Updated: ${path.relative(rootDir, popupHtmlPath)}`);
-}
-
-// 7. extension/content.js & bridge.js fallback strings
-const contentJsPath = path.join(rootDir, 'extension', 'content.js');
-if (fs.existsSync(contentJsPath)) {
-  let code = fs.readFileSync(contentJsPath, 'utf8');
-  code = code.replace(/let bridgeVersion = '[0-9.]+';/, `let bridgeVersion = '${targetVersion}';`);
-  fs.writeFileSync(contentJsPath, code, 'utf8');
-  console.log(`  ✓ Updated: ${path.relative(rootDir, contentJsPath)}`);
-}
-
-const bridgeJsPath = path.join(rootDir, 'extension', 'bridge.js');
-if (fs.existsSync(bridgeJsPath)) {
-  let code = fs.readFileSync(bridgeJsPath, 'utf8');
-  code = code.replace(/return api\.runtime\.getManifest\(\)\.version \|\| '[0-9.]+';/g, `return api.runtime.getManifest().version || '${targetVersion}';`);
-  code = code.replace(/return '[0-9.]+';/g, `return '${targetVersion}';`);
-  fs.writeFileSync(bridgeJsPath, code, 'utf8');
-  console.log(`  ✓ Updated: ${path.relative(rootDir, bridgeJsPath)}`);
+// 6. plugin/src/services/version-control.ts fallback strings
+const versionControlTsPath = path.join(pluginDir, 'src', 'services', 'version-control.ts');
+if (fs.existsSync(versionControlTsPath)) {
+  let code = fs.readFileSync(versionControlTsPath, 'utf8');
+  code = code.replace(/(currentPluginVersion:\s*string\s*=\s*manifest\s*&&\s*manifest\.Version\s*\?\s*manifest\.Version\s*:\s*")[0-9.]+/g, `$1${targetVersion}`);
+  code = code.replace(/(minRequiredExtensionVersion:\s*string\s*=\s*manifest\s*&&\s*manifest\.Version\s*\?\s*manifest\.Version\s*:\s*")[0-9.]+/g, `$1${targetVersion}`);
+  fs.writeFileSync(versionControlTsPath, code, 'utf8');
+  console.log(`  ✓ Updated: ${path.relative(rootDir, versionControlTsPath)}`);
 }
 
 // 7. Let npm natively update package-lock.json files without manual JSON manipulation

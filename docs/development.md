@@ -110,14 +110,14 @@ npm run bump 1.5.0.0
 Running `npm run bump` automatically updates and synchronizes all required files:
 | File | Property | Format Example | Requirement |
 | :--- | :--- | :--- | :--- |
-| [`version.json`](../version.json) | `"version"` | `"1.5.0.0"` | **Single Source of Truth** for the entire monorepo. |
-| [`plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json`](../plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json) | `"Version"` | `"1.5.0.0"` | **Must be 4 numeric parts** matching regex `^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`. Required by Elgato CLI validation. |
-| [`extension/manifest.json`](../extension/manifest.json) | `"version"`<br>`"version_name"` | `"1.5.0.0"`<br>`"1.5.0"` | `version` must be 4-digit for automated update comparisons; `version_name` defines user-facing display. |
-| [`plugin/package.json`](../plugin/package.json) | `"version"` | `"1.5.0.0"` | Synchronized with plugin manifest version. |
-| [`plugin/package-lock.json`](../plugin/package-lock.json) | `"version"` | `"1.5.0.0"` | Synchronized natively via `npm install --package-lock-only` (never edited manually). |
-| [`package.json`](../package.json) | `"version"` | `"1.5.0.0"` | Synchronized monorepo root package version. |
-| `plugin/src/services/version-control.ts` | Dynamic Import | — | Dynamically imports `manifest.json` at build time; requires **zero** manual editing. |
-| [`extension/popup.html`](../extension/popup.html) & [`extension/popup.js`](../extension/popup.js) | Version string | `v1.5.0` | Dynamically reads `manifest.version_name || manifest.version`. |
+| [`version.json`](../version.json) | `"version"` | `"2.0.1.0"` | **Single Source of Truth** for the entire monorepo. |
+| [`plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json`](../plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json) | `"Version"` | `"2.0.1.0"` | **Must be 4 numeric parts** matching regex `^(0\|[1-9]\d*)(\.(0\|[1-9]\d*)){3}$`. Required by Elgato CLI validation. |
+| [`extension/manifest.json`](../extension/manifest.json) | `"version"`<br>`"version_name"` | `"2.0.1.0"`<br>`"2.0.1"` | `version` must be 4-digit for automated update comparisons; `version_name` defines user-facing display. |
+| [`plugin/package.json`](../plugin/package.json) | `"version"` | `"2.0.1.0"` | Synchronized with plugin manifest version. |
+| [`plugin/package-lock.json`](../plugin/package-lock.json) | `"version"` | `"2.0.1.0"` | Synchronized natively via `npm install --package-lock-only` (never edited manually). |
+| [`package.json`](../package.json) | `"version"` | `"2.0.1.0"` | Synchronized monorepo root package version. |
+| [`plugin/src/services/version-control.ts`](../plugin/src/services/version-control.ts) | Fallback constants | `"2.0.1.0"` | Manifest import with synchronized compile-time fallbacks. |
+| [`extension/manifest.json`](../extension/manifest.json) | `"version"`<br>`"version_name"` | `"2.0.1.0"`<br>`"2.0.1"` | **Native SSOT for Extension**: Synchronously read via `chrome.runtime.getManifest()` and bridged to MAIN world DOM dataset; zero static code fallbacks. |
 
 ### Version Semantics:
 - **Major** (`{Major}`): Fundamental architectural overhauls, breaking changes, or SDK major upgrades.

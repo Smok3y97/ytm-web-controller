@@ -400,6 +400,10 @@ const GlobalSettingsComponent = (() => {
 				aElem.target = "_blank";
 				aElem.rel = "noopener noreferrer";
 				aElem.textContent = releaseText;
+				aElem.addEventListener("click", (e) => {
+					e.preventDefault();
+					StreamDeckClient.sendToPlugin({ event: "openUrl", url: aElem.href });
+				});
 
 				warningBanner.appendChild(spanElem);
 				warningBanner.appendChild(document.createTextNode(" "));
@@ -458,6 +462,16 @@ const GlobalSettingsComponent = (() => {
 		} else {
 			if (obsFilePathInput) obsFilePathInput.classList.remove("invalid");
 			if (errorElem) errorElem.style.display = "none";
+		}
+
+		// Prevent FOUC: Mark wrapper ready once global settings and i18n translations are populated
+		if (typeof StreamDeckClient !== "undefined" && StreamDeckClient.setReady) {
+			StreamDeckClient.setReady();
+		} else {
+			const wrapper = document.querySelector(".sdpi-wrapper");
+			if (wrapper) {
+				wrapper.classList.add("sdpi-ready");
+			}
 		}
 	}
 

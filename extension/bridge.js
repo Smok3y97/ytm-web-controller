@@ -25,11 +25,23 @@
     try {
       const api = getApi();
       if (api?.runtime?.getManifest) {
-        return api.runtime.getManifest().version || '2.0.0.0';
+        return api.runtime.getManifest()?.version || '';
       }
     } catch (e) { }
-    return '2.0.0.0';
+    return '';
   }
+
+  function syncDomVersion() {
+    try {
+      const ver = getManifestVersion();
+      if (ver && document.documentElement) {
+        document.documentElement.dataset.ytmExtensionVersion = ver;
+      }
+    } catch (e) { }
+  }
+
+  // Synchronously expose native manifest version (SSOT) to DOM for MAIN world scripts
+  syncDomVersion();
 
   function getStorage() {
     try {
@@ -42,6 +54,7 @@
 
   function sendConfigToPage(port) {
     try {
+      syncDomVersion();
       window.postMessage({
         type: 'YTM_BRIDGE_CONFIG',
         version: getManifestVersion(),
@@ -103,13 +116,14 @@
         dispatchStoredConfig();
       } else if (event.data.type === 'YTM_MISMATCH_STATUS') {
         if (storage) {
+          const api = getApi();
           storage.set({
             isMismatch: !!event.data.isMismatch,
-            requiredPluginVersion: event.data.requiredPluginVersion || '1.8.0.0',
-            currentPluginVersion: event.data.currentPluginVersion || '1.8.0.0',
+            requiredPluginVersion: event.data.requiredPluginVersion || '',
+            currentPluginVersion: event.data.currentPluginVersion || '',
             mismatchMessage: event.data.mismatchMessage || ''
           }, () => {
-            if (chrome?.runtime?.lastError) {
+            if (api?.runtime?.lastError) {
               // Ignore storage errors if extension context was invalidated during async write
             }
           });
@@ -119,7 +133,7 @@
         if (api?.runtime?.sendMessage) {
           try {
             api.runtime.sendMessage({ type: 'YTM_FOCUS_TAB' }, () => {
-              if (chrome?.runtime?.lastError) {
+              if (api?.runtime?.lastError) {
                 // Suppress error if background service worker is inactive or unreachable
               }
             });

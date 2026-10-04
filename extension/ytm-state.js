@@ -10,6 +10,11 @@
 window.YTM = window.YTM || {};
 
 let hasInitializedMediaListeners = false;
+let activeObserver = null;
+let initialObserver = null;
+let mediaEventDebounceTimer = null;
+let mutationDebounceTimer = null;
+let registeredMediaListeners = [];
 
 /**
  * Get current player volume (0 - 100)
@@ -484,9 +489,8 @@ function setupGlobalMediaListeners() {
   if (hasInitializedMediaListeners) return;
   hasInitializedMediaListeners = true;
 
-  let mediaEventDebounceTimer = null;
   let pendingForce = false;
-  const sendSnapshot = (force = true) => {
+  const sendSnapshot = (force = false) => {
     if (force) pendingForce = true;
     if (mediaEventDebounceTimer) {
       clearTimeout(mediaEventDebounceTimer);
@@ -499,33 +503,45 @@ function setupGlobalMediaListeners() {
     }, 25);
   };
 
-  // When track duration or metadata changes, notify immediately and re-check after 150ms
-  // to reliably capture late-arriving navigator.mediaSession.metadata updates from YouTube
+  // When track duration or metadata changes, notify immediately and schedule re-check for late-arriving metadata
   const onTrackTransition = () => {
-    sendSnapshot(true);
-    setTimeout(() => sendSnapshot(false), 150);
+    sendSnapshot(false);
+    if (typeof window.YTM?.scheduleStateUpdates === 'function') {
+      window.YTM.scheduleStateUpdates([75, 250]);
+    }
   };
 
-  // Video playback status events (Strictly event-driven, zero timeupdate overhead)
-  document.addEventListener('play', () => sendSnapshot(true), true);
-  document.addEventListener('playing', () => sendSnapshot(true), true);
-  document.addEventListener('pause', () => sendSnapshot(true), true);
-  document.addEventListener('seeking', () => sendSnapshot(true), true);
-  document.addEventListener('seeked', () => sendSnapshot(true), true);
-  document.addEventListener('durationchange', onTrackTransition, true);
-  document.addEventListener('loadedmetadata', onTrackTransition, true);
-  document.addEventListener('ratechange', () => sendSnapshot(true), true);
-  document.addEventListener('volumechange', () => sendSnapshot(true), true);
-  document.addEventListener('ended', () => sendSnapshot(true), true);
+  const mediaEvents = [
+    'play',
+    'playing',
+    'pause',
+    'seeking',
+    'seeked',
+    'ratechange',
+    'volumechange',
+    'ended'
+  ];
+
+  for (const eventName of mediaEvents) {
+    const handler = () => sendSnapshot(false);
+    document.addEventListener(eventName, handler, true);
+    registeredMediaListeners.push({ type: eventName, handler, useCapture: true });
+  }
+
+  const transitionEvents = ['durationchange', 'loadedmetadata'];
+  for (const eventName of transitionEvents) {
+    const handler = onTrackTransition;
+    document.addEventListener(eventName, handler, true);
+    registeredMediaListeners.push({ type: eventName, handler, useCapture: true });
+  }
 
   // Slim MutationObserver for Like, Dislike, Shuffle, Repeat button states (Debounced & Scoped)
-  let mutationDebounceTimer = null;
   const onMutation = () => {
     if (mutationDebounceTimer) return;
     mutationDebounceTimer = setTimeout(() => {
       mutationDebounceTimer = null;
       notifyState(false);
-    }, 75);
+    }, 60);
   };
 
   const observerOptions = {
@@ -537,17 +553,18 @@ function setupGlobalMediaListeners() {
 
   const playerBar = $('ytmusic-player-bar');
   if (playerBar) {
-    const observer = new MutationObserver(onMutation);
-    observer.observe(playerBar, observerOptions);
+    activeObserver = new MutationObserver(onMutation);
+    activeObserver.observe(playerBar, observerOptions);
   } else {
     // If player-bar not rendered yet, temporarily observe document.body until player-bar appears
-    const initialObserver = new MutationObserver((mutations, obs) => {
+    initialObserver = new MutationObserver((mutations, obs) => {
       const bar = $('ytmusic-player-bar');
       if (bar) {
         // Disconnect from full document and narrow strictly to ytmusic-player-bar
         obs.disconnect();
-        const refinedObserver = new MutationObserver(onMutation);
-        refinedObserver.observe(bar, observerOptions);
+        initialObserver = null;
+        activeObserver = new MutationObserver(onMutation);
+        activeObserver.observe(bar, observerOptions);
       }
       onMutation();
     });
@@ -555,10 +572,44 @@ function setupGlobalMediaListeners() {
   }
 }
 
+/**
+ * Cleanly disconnect MutationObservers and remove global media event listeners
+ */
+function teardownGlobalMediaListeners() {
+  if (activeObserver) {
+    try {
+      activeObserver.disconnect();
+    } catch { }
+    activeObserver = null;
+  }
+  if (initialObserver) {
+    try {
+      initialObserver.disconnect();
+    } catch { }
+    initialObserver = null;
+  }
+  if (mediaEventDebounceTimer) {
+    clearTimeout(mediaEventDebounceTimer);
+    mediaEventDebounceTimer = null;
+  }
+  if (mutationDebounceTimer) {
+    clearTimeout(mutationDebounceTimer);
+    mutationDebounceTimer = null;
+  }
+  for (const item of registeredMediaListeners) {
+    try {
+      document.removeEventListener(item.type, item.handler, item.useCapture);
+    } catch { }
+  }
+  registeredMediaListeners = [];
+  hasInitializedMediaListeners = false;
+}
+
 // Export state methods to YTM namespace
 window.YTM.state = {
   getPlayerVolume,
   getPlayerMuted,
   collectPlaybackState,
-  setupGlobalMediaListeners
+  setupGlobalMediaListeners,
+  teardownGlobalMediaListeners
 };

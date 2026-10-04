@@ -404,9 +404,14 @@ The Stream Deck + integration combines physical rotary encoders with high-densit
 
 ### 🎛️ Touchstrip Layout & Visual Pipeline
 - **Layout Definition (`layouts/dial_layout.json`)**: Single source of truth 4-item LCD layout rendering track artwork/title, artist/album, volume level/progress bar, and playback state icon.
-- **In-Memory Rendering Pipeline**: Dynamic canvas drawings, SVG generation, and album cover processing are executed entirely in RAM (`ImageRenderer`) and output as Base64 Data URLs with zero intermediate disk writes.
-- **Hardware Refresh Limit**: Programmatic LCD touchstrip renders and key updates must not exceed **10 updates per second (10 Hz)** to avoid USB bus congestion and Stream Deck firmware latency.
-- **Marquee Scroller (`MarqueeService`)**: For metadata exceeding LCD slot width, an asynchronous ping-pong bounce scroller smoothly shifts text back and forth.
+- **In-Memory Rendering Pipeline & Memoization**: Dynamic canvas drawings, SVG generation, and album cover processing are executed entirely in RAM (`ImageRenderer`) and output as Base64 Data URLs with zero intermediate disk writes. Bounded in-RAM caches (`overlayCache` in `ImageRenderer` and `warningIconCache` in `warning-icons.ts`) eliminate duplicate SVG string templates and URI encoding allocations across render and marquee ticks.
+- **Hardware Refresh Limit & Settings Caching**: Programmatic LCD touchstrip renders and key updates must not exceed **10 updates per second (10 Hz)** to avoid USB bus congestion and Stream Deck firmware latency. Dial actions cache Property Inspector settings in `actionSettings` maps on `onWillAppear` and `onDidReceiveSettings`, completely eliminating IPC `getSettings()` round-trips during render loops and marquee ticks. `updateAllDials` is debounced by 30ms to coalesce rapid state change events.
+
+### 🔄 10-Hz Dial Rotary Streaming & Settle Lifecycle
+- **Zero-Latency First Detent**: The first rotation detent fires immediately with 0ms latency if the dial was idle ($\ge 100\text{ ms}$ since the previous command dispatch).
+- **Active 10-Hz Streaming**: Continuous rotary encoder spinning spins up an active 100ms interval timer (`rotationStreamTimer`). Accumulated rotation ticks in `pendingTicks` are batched and dispatched at the exact 10-Hz boundary, preventing USB bus flooding or dropped ticks.
+- **Optimistic Target Tracking**: During active rotation, the controller tracks optimistic targets (`lastTargetVolume` / `lastTargetSeconds`). Subsequent ticks increment from the tracked optimistic position rather than stale `StateManager` values pending WebSocket round-trip acknowledgments, preventing dial rubber-banding or display flicker.
+- **Trailing Settle Debounce**: A 110ms trailing debounce timer (`rotationTimer`) fires after rotary movement stops, flushing any final residual ticks, clearing the 10-Hz stream interval, and resetting the optimistic tracking state.
 
 ### ⏱️ Client-Side Time Interpolation
 - YouTube Music does not push continuous WebSocket timestamp ticks during playback (Zero Polling / Zero `timeupdate` over WS).

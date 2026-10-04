@@ -76,6 +76,10 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		this.syncConsumerState(actionId, false);
 		this.activeActions.delete(actionId);
 		this.actionSettings.delete(actionId);
+		if (this.activeActions.size === 0 && this.renderDebounceTimer) {
+			clearTimeout(this.renderDebounceTimer);
+			this.renderDebounceTimer = null;
+		}
 	}
 
 	private syncConsumerState(actionId: string, needsMarquee: boolean): void {

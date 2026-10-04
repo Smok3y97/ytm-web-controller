@@ -29,11 +29,19 @@ const RAW_PATHS: Record<string, string> = {
 		'<path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="#FFFFFF"/><path d="M10.86 15.94H9.72V11.2h-.03l-1.39.95-.44-.8 2-1.35h.99v6zM14.65 10.96c.38.3.57.8.57 1.48v1.65c0 .68-.19 1.18-.57 1.48-.38.3-.92.45-1.61.45s-1.23-.15-1.61-.45c-.38-.3-.57-.8-.57-1.48v-1.65c0-.68.19-1.18.57-1.48.38-.3.92-.45 1.61-.45s1.23.15 1.61.45zm-.82 3.23v-1.85c0-.3-.06-.52-.18-.65-.12-.13-.3-.2-.55-.2s-.43.07-.55.2c-.12.13-.18.35-.18.65v1.85c0 .3.06.52.18.65.12.13.3.2.55.2s.43-.07.55-.2c.12-.13.18-.35.18-.65z" fill="#FFFFFF"/>',
 };
 
+const warningIconCache: Map<string, string> = new Map();
+
 /**
  * Returns a data URL SVG for a keypad action with an overlaid amber warning badge
  */
 export function getActionWarningSvgDataUrl(actionKey: string): string {
-	const iconPath = RAW_PATHS[actionKey.toLowerCase()] || RAW_PATHS.playpause;
+	const key = actionKey.toLowerCase();
+	const cached = warningIconCache.get(key);
+	if (cached) {
+		return cached;
+	}
+
+	const iconPath = RAW_PATHS[key] || RAW_PATHS.playpause;
 
 	const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" width="72" height="72">
   <!-- Base Action Icon (Centered, 48x48 inside 72x72) -->
@@ -48,5 +56,7 @@ export function getActionWarningSvgDataUrl(actionKey: string): string {
   </g>
 </svg>`;
 
-	return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+	const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+	warningIconCache.set(key, dataUrl);
+	return dataUrl;
 }

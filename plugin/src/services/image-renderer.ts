@@ -9,6 +9,7 @@ import streamDeck from "@elgato/streamdeck";
 export class ImageRenderer {
 	private static instance: ImageRenderer;
 	private coverCache: Map<string, string> = new Map();
+	private overlayCache: Map<string, string> = new Map();
 	private inFlightRequests: Map<string, Promise<string | null>> = new Map();
 	private maxCacheSize = 20;
 
@@ -75,6 +76,20 @@ export class ImageRenderer {
 			return coverBase64;
 		}
 
+		if (this.overlayCache.has(coverBase64)) {
+			return this.overlayCache.get(coverBase64)!;
+		}
+
+		// Security guard: Validate coverBase64 format to prevent SVG/XML template injection
+		if (
+			!coverBase64.startsWith("data:image/") ||
+			coverBase64.includes('"') ||
+			coverBase64.includes("<") ||
+			coverBase64.includes(">")
+		) {
+			return "";
+		}
+
 		// When paused, render dimmed overlay with centered white Pause icon (indicates active pause status over cover art)
 		const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 144 144" width="144" height="144">
   <image href="${coverBase64}" xlink:href="${coverBase64}" x="0" y="0" width="144" height="144" preserveAspectRatio="xMidYMid slice"/>
@@ -84,6 +99,15 @@ export class ImageRenderer {
   <rect x="75" y="58" width="6" height="28" fill="#ffffff" rx="1.5"/>
 </svg>`;
 
-		return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+		const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
+		// Evict oldest cached overlay in RAM to maintain memory bounds
+		if (this.overlayCache.size >= this.maxCacheSize) {
+			const firstKey = this.overlayCache.keys().next().value;
+			if (firstKey) this.overlayCache.delete(firstKey);
+		}
+
+		this.overlayCache.set(coverBase64, dataUrl);
+		return dataUrl;
 	}
 }

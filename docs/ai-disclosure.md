@@ -45,7 +45,7 @@ Full transparency and open-source honesty are core principles of the **Controlle
 ## [🛠️ 2. What the AI Created](#top)
 
 1. **Stream Deck Plugin Backend (TypeScript / SDK 3)**:
-   - Full implementation of decoupled backend services (`websocket-server.ts`, `state-manager.ts`, `marquee-service.ts`, `image-renderer.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`, `http-api.ts`).
+   - Full implementation of decoupled backend services (`websocket-server.ts`, `tab-manager.ts`, `state-manager.ts`, `template-engine.ts`, `metadata-sanitizer.ts`, `marquee-service.ts`, `image-renderer.ts`, `warning-icons.ts`, `discord-rpc.ts`, `obs-exporter.ts`, `clipboard.ts`, `http-api.ts`, `window-focus.ts`, `version-control.ts`).
    - Action controllers for dual-state keys, step volume adjustments, dials, and track controls.
 2. **Browser Companion Extension (Manifest V3)**:
    - Modular MAIN-world architecture (`utils.js`, `ytm-actions.js`, `ytm-state.js`, `content.js`) and isolated bridge (`bridge.js`).

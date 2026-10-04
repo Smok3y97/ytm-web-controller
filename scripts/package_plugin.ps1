@@ -22,7 +22,7 @@ if (!(Test-Path (Join-Path $pluginDir "node_modules"))) {
     npm install
 }
 Write-Output "Running Prettier formatting and ESLint checks..."
-npm run lint:fix
+npm run lint
 npm run build
 Pop-Location
 

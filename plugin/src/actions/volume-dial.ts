@@ -131,7 +131,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		const step = Math.min(50, Math.max(1, settings.step || 5));
 		const ticks = this.pendingTicks.get(actionId) || 0;
 		const currentState = StateManager.getInstance().getState();
-		const baseVol = this.lastTargetVolume.get(actionId) ?? (currentState.volume ?? 100);
+		const baseVol = this.lastTargetVolume.get(actionId) ?? currentState.volume ?? 100;
 		const optimisticVolume = Math.min(100, Math.max(0, baseVol + ticks * step));
 		const valueText = currentState.muted ? "MUTED" : `${optimisticVolume}%`;
 		const indicatorValue = currentState.muted ? 0 : optimisticVolume;
@@ -145,9 +145,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		} catch {}
 	}
 
-	private async flushRotation(
-		action: WillAppearEvent<VolumeDialSettings>["action"],
-	): Promise<void> {
+	private async flushRotation(action: WillAppearEvent<VolumeDialSettings>["action"]): Promise<void> {
 		const actionId = action.id;
 		if (this.isPushJitterActive(actionId)) {
 			this.pendingTicks.set(actionId, 0);
@@ -163,7 +161,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		const settings = this.actionSettings.get(actionId) || {};
 		const step = Math.min(50, Math.max(1, settings.step || 5));
 		const currentState = StateManager.getInstance().getState();
-		const baseVol = this.lastTargetVolume.get(actionId) ?? (currentState.volume ?? 100);
+		const baseVol = this.lastTargetVolume.get(actionId) ?? currentState.volume ?? 100;
 		const targetVol = Math.min(100, Math.max(0, baseVol + ticks * step));
 		this.lastTargetVolume.set(actionId, targetVol);
 
@@ -183,9 +181,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		WebSocketService.getInstance().sendCommand("setVolume", { volume: targetVol });
 	}
 
-	private async settleRotation(
-		action: WillAppearEvent<VolumeDialSettings>["action"],
-	): Promise<void> {
+	private async settleRotation(action: WillAppearEvent<VolumeDialSettings>["action"]): Promise<void> {
 		const actionId = action.id;
 		const streamTimer = this.rotationStreamTimer.get(actionId);
 		if (streamTimer) {

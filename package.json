@@ -14,9 +14,9 @@
     "pack": "npm run pack --prefix plugin",
     "lint": "npm run lint --prefix plugin",
     "lint:fix": "npm run lint:fix --prefix plugin",
-    "format": "npm run format --prefix plugin"
+    "format": "npm run format --prefix plugin",
+    "format:check": "npm run format:check --prefix plugin"
   },
-  "prettier": "@elgato/prettier-config",
   "keywords": [
     "streamdeck",
     "elgato",

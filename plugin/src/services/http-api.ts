@@ -72,7 +72,7 @@ export class HttpApiService extends EventEmitter {
 	/**
 	 * Main HTTP request router attached to http.Server
 	 */
-	public handleRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
+	public async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
 		// Set permissive CORS headers for overlay browser sources & external fetchers
 		res.setHeader("Access-Control-Allow-Origin", "*");
 		res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -124,7 +124,7 @@ export class HttpApiService extends EventEmitter {
 			pathname === "/style.css" ||
 			pathname === "/overlay.js"
 		) {
-			this.handleOverlayAssets(pathname, res);
+			await this.handleOverlayAssets(pathname, res);
 			return;
 		}
 
@@ -156,7 +156,7 @@ export class HttpApiService extends EventEmitter {
 	/**
 	 * Serve static files for OBS Browser Overlay (/overlay)
 	 */
-	private handleOverlayAssets(pathname: string, res: http.ServerResponse): void {
+	private async handleOverlayAssets(pathname: string, res: http.ServerResponse): Promise<void> {
 		let relativeFile = pathname.replace(/^\/overlay\/?/, "");
 		if (!relativeFile || relativeFile === "") {
 			relativeFile = "index.html";
@@ -186,7 +186,7 @@ export class HttpApiService extends EventEmitter {
 			else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
 			else if (ext === ".ico") contentType = "image/x-icon";
 
-			const fileContent = fs.readFileSync(filePath);
+			const fileContent = await fs.promises.readFile(filePath);
 			res.writeHead(200, {
 				"Content-Type": contentType,
 				"Cache-Control": "no-cache, no-store, must-revalidate",

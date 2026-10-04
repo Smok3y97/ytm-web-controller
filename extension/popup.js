@@ -156,24 +156,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  let activeTestSocket = null;
+  let activeTestTimeout = null;
+
+  function finishTest() {
+    if (activeTestTimeout) {
+      clearTimeout(activeTestTimeout);
+      activeTestTimeout = null;
+    }
+    if (activeTestSocket) {
+      try { activeTestSocket.close(); } catch (e) { }
+      activeTestSocket = null;
+    }
+    if (testConnectionBtn) {
+      testConnectionBtn.disabled = false;
+    }
+  }
+
   function testConnection(port, notify = true) {
+    finishTest();
+    if (testConnectionBtn) {
+      testConnectionBtn.disabled = true;
+    }
+
     setStatus('connecting');
     const wsUrl = `ws://127.0.0.1:${port}`;
-    let socket = null;
     let didConnect = false;
 
-    const timeout = setTimeout(() => {
+    activeTestTimeout = setTimeout(() => {
       if (!didConnect) {
-        if (socket) {
-          try { socket.close(); } catch (e) { }
-        }
+        finishTest();
         setStatus('disconnected');
         if (notify) showToast(`Cannot reach Stream Deck plugin on port ${port}`, 'error');
       }
     }, 2500);
 
     try {
-      socket = new WebSocket(wsUrl);
+      const socket = new WebSocket(wsUrl);
+      activeTestSocket = socket;
 
       socket.onopen = () => {
         didConnect = true;
@@ -192,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       socket.onmessage = (event) => {
-        clearTimeout(timeout);
         try {
           const data = JSON.parse(event.data);
           const extVersion = getManifestVersion();
@@ -206,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
               }
               setStatus('connected');
               if (notify) showToast(`Connected to Stream Deck Plugin (v${data.version})!`, 'success');
-              try { socket.close(); } catch (e) { }
+              finishTest();
               return;
             }
 
@@ -230,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'error'
               );
             }
-            try { socket.close(); } catch (e) { }
+            finishTest();
             return;
           }
 
@@ -254,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'error'
               );
             }
-            try { socket.close(); } catch (e) { }
+            finishTest();
             return;
           }
         } catch { }
@@ -262,16 +281,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Fallback for non-handshake response
         setStatus('connected');
         if (notify) showToast('Successfully connected to Stream Deck plugin!', 'success');
-        try { socket.close(); } catch (e) { }
+        finishTest();
       };
 
       socket.onerror = () => {
-        clearTimeout(timeout);
+        finishTest();
         setStatus('disconnected');
         if (notify) showToast(`Plugin not running on port ${port}`, 'error');
       };
     } catch (err) {
-      clearTimeout(timeout);
+      finishTest();
       setStatus('disconnected');
       if (notify) showToast(`Connection error: ${err.message}`, 'error');
     }

@@ -118,6 +118,7 @@ const GlobalSettingsComponent = (() => {
           <summary class="sdpi-group-summary">
             <span class="sdpi-group-title" data-i18n="advanced.group.title">Advanced Settings</span>
           </summary>
+          <div class="sdpi-group-content">
             <!-- Language Selection -->
             <div class="sdpi-item">
               <div class="sdpi-item-label" data-i18n="language.label">Language</div>

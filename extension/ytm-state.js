@@ -484,8 +484,19 @@ function setupGlobalMediaListeners() {
   if (hasInitializedMediaListeners) return;
   hasInitializedMediaListeners = true;
 
+  let mediaEventDebounceTimer = null;
+  let pendingForce = false;
   const sendSnapshot = (force = true) => {
-    notifyState(force);
+    if (force) pendingForce = true;
+    if (mediaEventDebounceTimer) {
+      clearTimeout(mediaEventDebounceTimer);
+    }
+    mediaEventDebounceTimer = setTimeout(() => {
+      const isForce = pendingForce;
+      pendingForce = false;
+      mediaEventDebounceTimer = null;
+      notifyState(isForce);
+    }, 25);
   };
 
   // When track duration or metadata changes, notify immediately and re-check after 150ms

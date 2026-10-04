@@ -46,7 +46,7 @@ export function copyToClipboard(text: string): Promise<void> {
 		});
 
 		try {
-			proc.stdin.write(text);
+			proc.stdin.write(text, "utf-8");
 			proc.stdin.end();
 		} catch (err) {
 			hasError = true;

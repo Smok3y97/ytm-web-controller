@@ -17,6 +17,8 @@ let currentPort = DEFAULT_PORT;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
+let isTabClosing = false;
+let lastSentTime = 0;
 let bridgeVersion = '';
 
 let lastSentState = {
@@ -50,6 +52,11 @@ window.YTM.scheduleStateUpdates = scheduleStateUpdates;
  * Notify server when tab is closing
  */
 function notifyTabClosed() {
+  isTabClosing = true;
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
   if (ws && ws.readyState === WebSocket.OPEN) {
     try {
       ws.send(JSON.stringify({
@@ -68,32 +75,34 @@ function sendState(force = false) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
   try {
-    const state = typeof collectPlaybackState === 'function' ? collectPlaybackState() : null;
+    const collector = window.YTM?.state?.collectPlaybackState || (typeof collectPlaybackState === 'function' ? collectPlaybackState : null);
+    const state = collector ? collector() : null;
     if (!state) return;
 
-    if (!force) {
-      const isIdentical = (
-        state.title === lastSentState.title &&
-        state.artist === lastSentState.artist &&
-        state.album === lastSentState.album &&
-        state.paused === lastSentState.paused &&
-        state.duration === lastSentState.duration &&
-        state.volume === lastSentState.volume &&
-        state.muted === lastSentState.muted &&
-        state.isLiked === lastSentState.isLiked &&
-        state.isDisliked === lastSentState.isDisliked &&
-        state.shuffleActive === lastSentState.shuffleActive &&
-        state.repeatMode === lastSentState.repeatMode &&
-        state.coverUrl === lastSentState.coverUrl &&
-        state.trackUrl === lastSentState.trackUrl &&
-        state.artistUrl === lastSentState.artistUrl &&
-        state.albumUrl === lastSentState.albumUrl &&
-        Math.abs(state.currentTime - (lastSentState.currentTime || 0)) < 1.5
-      );
+    const isIdentical = (
+      state.title === lastSentState.title &&
+      state.artist === lastSentState.artist &&
+      state.album === lastSentState.album &&
+      state.paused === lastSentState.paused &&
+      state.duration === lastSentState.duration &&
+      state.volume === lastSentState.volume &&
+      state.muted === lastSentState.muted &&
+      state.isLiked === lastSentState.isLiked &&
+      state.isDisliked === lastSentState.isDisliked &&
+      state.shuffleActive === lastSentState.shuffleActive &&
+      state.repeatMode === lastSentState.repeatMode &&
+      state.coverUrl === lastSentState.coverUrl &&
+      state.trackUrl === lastSentState.trackUrl &&
+      state.artistUrl === lastSentState.artistUrl &&
+      state.albumUrl === lastSentState.albumUrl &&
+      Math.abs(state.currentTime - (lastSentState.currentTime || 0)) < 1.5
+    );
 
-      if (isIdentical) return;
-    }
+    const now = Date.now();
+    if (!force && isIdentical) return;
+    if (force && isIdentical && (now - lastSentTime < 50)) return;
 
+    lastSentTime = now;
     lastSentState = { ...state };
 
     const timestamp = state.timestamp || Date.now();
@@ -236,6 +245,46 @@ function handleCommand(message) {
 }
 
 /**
+ * Send handshake packet to Stream Deck plugin
+ */
+function sendHandshake(version) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  const extVersion = version || bridgeVersion || '';
+  const platform = detectBrowserPlatform();
+  try {
+    ws.send(JSON.stringify({
+      type: 'handshake',
+      version: extVersion,
+      platform: platform,
+      tabId: tabId
+    }));
+  } catch (e) { }
+}
+
+/**
+ * Register client info with Stream Deck plugin
+ */
+function registerClient(version) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  const extVersion = version || bridgeVersion || '';
+  const platform = detectBrowserPlatform();
+  try {
+    const msPlaying = window.YTM.mediaSession?.getPlaybackState?.() === 'playing';
+    const video = (typeof findVideoElement === 'function' ? findVideoElement() : null) || window.YTM?.utils?.findVideoElement?.();
+    const isPlaying = msPlaying || (video ? !video.paused : false);
+    ws.send(JSON.stringify({
+      type: 'REGISTER_CLIENT',
+      client: 'ytm-extension',
+      version: extVersion,
+      platform: platform,
+      url: window.location.href,
+      tabId: tabId,
+      isPlaying: isPlaying
+    }));
+  } catch (e) { }
+}
+
+/**
  * Connect to Stream Deck local WebSocket server
  */
 function connectWebSocket(port) {
@@ -266,33 +315,12 @@ function connectWebSocket(port) {
       lastSentState = {};
 
       const extVersion = bridgeVersion || '';
-      const platform = detectBrowserPlatform();
 
       // 1. Send Handshake packet immediately before any playback events
-      try {
-        ws.send(JSON.stringify({
-          type: 'handshake',
-          version: extVersion,
-          platform: platform,
-          tabId: tabId
-        }));
-      } catch (e) { }
+      sendHandshake(extVersion);
 
       // 2. Register client info
-      try {
-        const msPlaying = window.YTM.mediaSession?.getPlaybackState?.() === 'playing';
-        const video = typeof findVideoElement === 'function' ? findVideoElement() : null;
-        const isPlaying = msPlaying || (video ? !video.paused : false);
-        ws.send(JSON.stringify({
-          type: 'REGISTER_CLIENT',
-          client: 'ytm-extension',
-          version: extVersion,
-          platform: platform,
-          url: window.location.href,
-          tabId: tabId,
-          isPlaying: isPlaying
-        }));
-      } catch (e) { }
+      registerClient(extVersion);
 
       sendState(true);
       scheduleStateUpdates([50, 150, 400]);
@@ -334,6 +362,7 @@ function connectWebSocket(port) {
     ws.onclose = () => {
       isConnecting = false;
       ws = null;
+      if (isTabClosing) return;
       scheduleReconnect();
     };
 
@@ -372,6 +401,7 @@ function scheduleReconnect() {
  * Wake connection from passive standby upon genuine user or media events
  */
 function wakeFromStandby() {
+  isTabClosing = false;
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     return;
   }
@@ -389,8 +419,9 @@ function wakeFromStandby() {
 function init() {
   console.info('[YTM Controller] ⚡ Initializing YouTube Music Content Script...');
 
-  if (typeof setupGlobalMediaListeners === 'function') {
-    setupGlobalMediaListeners();
+  const setupMedia = window.YTM?.state?.setupGlobalMediaListeners || (typeof setupGlobalMediaListeners === 'function' ? setupGlobalMediaListeners : null);
+  if (setupMedia) {
+    setupMedia();
   }
 
   // Deregister tab on close or navigation
@@ -417,9 +448,18 @@ function init() {
     if (event.source !== window || !event.data || typeof event.data !== 'object') return;
 
     if (event.data.type === 'YTM_BRIDGE_CONFIG') {
+      const prevVersion = bridgeVersion;
       if (event.data.version) bridgeVersion = event.data.version;
       const targetPort = event.data.wsPort || DEFAULT_PORT;
-      connectWebSocket(targetPort);
+      if (ws && ws.readyState === WebSocket.OPEN && targetPort === currentPort) {
+        if (bridgeVersion && bridgeVersion !== prevVersion) {
+          sendHandshake(bridgeVersion);
+          registerClient(bridgeVersion);
+          sendState(true);
+        }
+      } else {
+        connectWebSocket(targetPort);
+      }
     } else if (event.data.type === 'YTM_BRIDGE_PORT_UPDATE') {
       const targetPort = event.data.wsPort || DEFAULT_PORT;
       if (targetPort !== currentPort) {

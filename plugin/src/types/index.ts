@@ -27,6 +27,16 @@ export interface YTMPlaybackState {
 	extensionVersion?: string;
 }
 
+export interface ClientTabInfo {
+	tabId?: string;
+	isPlaying: boolean;
+	lastActive: number;
+	isOverlay: boolean;
+	isMismatch?: boolean;
+	version?: string;
+	hasTrackLoaded?: boolean;
+}
+
 export interface HandshakeAckPayload {
 	type: "handshake_ack";
 	version: string;

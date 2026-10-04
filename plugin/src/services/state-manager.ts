@@ -7,6 +7,8 @@ import { EventEmitter } from "events";
 
 import { YTMPlaybackState } from "../types/index.js";
 import { ImageRenderer } from "./image-renderer.js";
+import { MetadataSanitizer } from "./metadata-sanitizer.js";
+import { TemplateEngine } from "./template-engine.js";
 
 export class StateManager extends EventEmitter {
 	private static instance: StateManager;
@@ -54,7 +56,7 @@ export class StateManager extends EventEmitter {
 			state.isVersionMismatch !== undefined ? state.isVersionMismatch : this.currentState.isVersionMismatch;
 		const extVer = state.extensionVersion !== undefined ? state.extensionVersion : this.currentState.extensionVersion;
 
-		const sanitizedAlbum = state.album && !this.isNonAlbumText(state.album) ? state.album.trim() : "";
+		const sanitizedAlbum = MetadataSanitizer.sanitizeAlbum(state.album);
 
 		// Retain existing in-RAM coverBase64 if coverUrl is identical and incoming snapshot has no coverBase64
 		let coverBase64 = state.coverBase64;
@@ -202,82 +204,32 @@ export class StateManager extends EventEmitter {
 	 * Format seconds to standard mm:ss or hh:mm:ss string
 	 */
 	public formatTime(totalSeconds: number): string {
-		if (isNaN(totalSeconds) || totalSeconds < 0 || !isFinite(totalSeconds)) totalSeconds = 0;
-		const hours = Math.floor(totalSeconds / 3600);
-		const minutes = Math.floor((totalSeconds % 3600) / 60);
-		const seconds = Math.floor(totalSeconds % 60);
-
-		const pad = (n: number) => n.toString().padStart(2, "0");
-
-		if (hours > 0) {
-			return `${hours}:${pad(minutes)}:${pad(seconds)}`;
-		}
-		return `${minutes}:${pad(seconds)}`;
+		return TemplateEngine.formatTime(totalSeconds);
 	}
 
 	/**
 	 * Render custom title template with placeholders: {artist}, {title}, {album}
 	 */
 	public formatTitleTemplate(template: string = "{artist} - {title}"): string {
-		const state = this.currentState;
-		if (!state.title && !state.artist) {
-			return "No Media";
-		}
-
-		const titleStr = (state.title || "Unknown Title").trim();
-		const artistStr = (state.artist || "Unknown Artist").trim();
-		const albumStr = (state.album || "").trim();
-
-		let output = (template || "{artist} - {title}")
-			.replace(/{(title|titel|song|track)}/gi, titleStr)
-			.replace(/{(artist|kuenstler|künstler|interpret|author|channel)}/gi, artistStr)
-			.replace(/{(album)}/gi, albumStr);
-
-		// Clean up empty parentheses/brackets if album or variable was empty: e.g. " ()", " []"
-		output = output.replace(/\(\s*\)/g, "").replace(/\[\s*\]/g, "");
-
-		// Collapse multiple spaces
-		output = output.replace(/\s+/g, " ").trim();
-
-		// Clean up dangling leading or trailing dashes / separators
-		output = output
-			.replace(/^[\s\-–—•|:]+/, "")
-			.replace(/[\s\-–—•|:]+$/, "")
-			.trim();
-
-		return output || "No Media";
+		return TemplateEngine.formatTitleTemplate(
+			template,
+			this.currentState.title,
+			this.currentState.artist,
+			this.currentState.album,
+		);
 	}
 
 	/**
 	 * Render custom time template with placeholders: {current}, {duration}, {remaining}, {both}
 	 */
 	public formatTimeTemplate(template: string = "{both}", currentTime?: number, duration?: number): string {
-		const state = this.currentState;
-		const dur = typeof duration === "number" ? duration : state.duration;
-		const cur = typeof currentTime === "number" ? currentTime : this.getInterpolatedCurrentTime();
-
-		if (!state.title && !state.artist && dur <= 0) {
-			return "";
-		}
-
-		const currentStr = this.formatTime(cur);
-		const durationStr = this.formatTime(dur);
-		const bothStr = `${currentStr} / ${durationStr}`;
-
-		let remainingStr = "-0:00";
-		if (dur > 0) {
-			const effectiveCurrent = Math.min(dur, Math.max(0, cur));
-			const remainingSeconds = Math.max(0, dur - effectiveCurrent);
-			remainingStr = "-" + this.formatTime(remainingSeconds);
-		} else if (cur > 0) {
-			remainingStr = currentStr;
-		}
-
-		return (template || "{remaining}")
-			.replace(/{(both|current_duration|current_and_duration|beides)}/gi, bothStr)
-			.replace(/{(current|currentTime|current_time|aktuell|zeit|elapsed|time)}/gi, currentStr)
-			.replace(/{(duration|total|totalTime|total_time|dauer|gesamt|length)}/gi, durationStr)
-			.replace(/{(remaining|remainingTime|remaining_time|rest|restzeit|left)}/gi, remainingStr);
+		return TemplateEngine.formatTimeTemplate(
+			template,
+			currentTime !== undefined ? currentTime : this.getInterpolatedCurrentTime(),
+			duration !== undefined ? duration : this.currentState.duration,
+			this.currentState.title,
+			this.currentState.artist,
+		);
 	}
 
 	/**
@@ -285,147 +237,25 @@ export class StateManager extends EventEmitter {
 	 */
 	public formatTrackText(template?: string, targetState?: YTMPlaybackState): string {
 		const state = targetState || this.currentState;
-		if (!state.title && !state.artist && !state.trackUrl) {
-			return "";
-		}
-
-		const rawTemplate = template !== undefined && template !== null ? template : "{url}";
-		if (!rawTemplate.trim()) {
-			return "";
-		}
-
-		const titleStr = (state.title || "Unknown Title").trim();
-		const artistStr = (state.artist || "Unknown Artist").trim();
-		const albumStr = (state.album || "").trim();
-		const trackUrlStr = (state.trackUrl || "").trim();
 		const curSeconds = targetState ? targetState.currentTime : this.getInterpolatedCurrentTime();
-		const durationStr = this.formatTime(state.duration);
-		const currentStr = this.formatTime(curSeconds);
-		const bothStr = `${currentStr} / ${durationStr}`;
-
-		let remainingStr = "-0:00";
-		if (state.duration > 0) {
-			const effectiveCurrent = Math.min(state.duration, Math.max(0, curSeconds));
-			const remainingSeconds = Math.max(0, state.duration - effectiveCurrent);
-			remainingStr = "-" + this.formatTime(remainingSeconds);
-		} else if (curSeconds > 0) {
-			remainingStr = currentStr;
-		}
-
-		let output = rawTemplate
-			.replace(/\\n/g, "\n")
-			.replace(/{(both|current_duration|current_and_duration|beides)}/gi, bothStr)
-			.replace(/{(title|titel|song|track)}/gi, titleStr)
-			.replace(/{(artist|kuenstler|künstler|interpret|author|channel)}/gi, artistStr)
-			.replace(/{(album)}/gi, albumStr)
-			.replace(/{(url|link|trackUrl|songUrl)}/gi, trackUrlStr)
-			.replace(/{(duration|total|totalTime|total_time|dauer|gesamt|length)}/gi, durationStr)
-			.replace(/{(currentTime|current|current_time|aktuell|zeit|elapsed|time)}/gi, currentStr)
-			.replace(/{(remaining|remainingTime|remaining_time|rest|restzeit|left)}/gi, remainingStr);
-
-		output = output.replace(/\(\s*\)/g, "").replace(/\[\s*\]/g, "");
-		output = output
-			.split("\n")
-			.map((line) => line.replace(/[^\S\r\n]+/g, " ").trim())
-			.join("\n")
-			.trim();
-		output = output
-			.replace(/^[\s\-–—•|:]+/, "")
-			.replace(/[\s\-–—•|:]+$/, "")
-			.trim();
-
-		return output;
+		return TemplateEngine.formatTrackText(template, state, curSeconds);
 	}
 
 	/**
 	 * Render custom volume template with placeholders: {volume}
 	 */
 	public formatVolumeTemplate(template: string = "{volume}%", volume?: number, muted?: boolean): string {
-		const state = this.currentState;
-		const vol = typeof volume === "number" ? volume : (state.volume ?? 100);
-		const isMuted = typeof muted === "boolean" ? muted : state.muted;
-
-		if (isMuted) {
-			if (template.includes("{volume}") || template.includes("{vol}")) {
-				return template.replace(/\{(volume|vol|lautstaerke|lautstärke)\}/gi, "MUTE");
-			}
-			return "MUTE";
-		}
-
-		return (template || "{volume}%").replace(/\{(volume|vol|lautstaerke|lautstärke)\}/gi, String(vol));
+		return TemplateEngine.formatVolumeTemplate(
+			template,
+			volume !== undefined ? volume : this.currentState.volume,
+			muted !== undefined ? muted : this.currentState.muted,
+		);
 	}
 
 	/**
 	 * Render custom seek button template with placeholders: {step}, {seconds}, {sign}
 	 */
 	public formatSeekButtonTemplate(template?: string, step: number = 10, isForward: boolean = true): string {
-		const sign = isForward ? "+" : "-";
-		const defaultTpl = isForward ? "+{step}s" : "-{step}s";
-		const tpl = template && template.trim() ? template : defaultTpl;
-
-		return tpl.replace(/\{(step|seconds|sekunden|sec|s)\}/gi, String(step)).replace(/\{(sign|vorzeichen)\}/gi, sign);
-	}
-
-	/**
-	 * Determine if a text fragment represents non-album metadata (view count, upload date, year, likes, etc.)
-	 */
-	private isNonAlbumText(text: string): boolean {
-		if (!text || typeof text !== "string") return true;
-		const s = text.trim();
-		if (!s) return true;
-
-		// 1. Year only (e.g. "2024", "1998")
-		if (/^\d{4}$/.test(s)) return true;
-
-		// 2. Explicit / parental badge
-		if (/^(e|\[e\])$/i.test(s)) return true;
-
-		// 3. Time duration format (e.g. "3:45", "01:23:45")
-		if (/^\d+:\d+(?::\d+)?$/.test(s)) return true;
-
-		// 4. Track count format (e.g. "12 tracks", "10 Titel", "8 morceaux", "15 canciones")
-		if (/^\d+\s*(?:tracks?|titel|songs?|morceaux|canciones|brani|трек\w*|піс\w*)$/i.test(s)) return true;
-
-		const hasDigits = /\d/.test(s);
-
-		// 5. View count patterns across all YouTube languages
-		// e.g. "20 Mio. Aufrufe", "20M views", "1.2M views", "500 Aufrufe", "1 Aufruf", "20 M de vues", "10 млн просмотров", "500 次观看", "100万回視聴", "1.2만회 조회"
-		const hasViewKeyword =
-			/(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)/i.test(
-				s,
-			);
-		if (hasDigits && hasViewKeyword) return true;
-
-		// 6. Relative upload times across languages
-		// e.g. "vor 3 Jahren", "3 years ago", "il y a 2 ans", "hace 5 meses", "2 anni fa", "3 года назад", "1年前", "3년 전", "há 3 anos"
-		const hasTimeKeyword =
-			/(?:^vor\s|\bago$|^il y a\b|^hace\s|^há\s|\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\s|^pred\s|^acum\s|^πριν\s|^pre\s|לפني|قبل|trước$|ที่แล้ว$|年前|前$|전$)/i.test(
-				s,
-			);
-		if (hasTimeKeyword) return true;
-
-		// 7. Date units with digits (e.g. "3 Jahre", "5 months", "2 days", etc.)
-		const hasDateUnit =
-			/(?:year|jahr|ans?|año|anno|год|лет|рок|month|monat|mois|mes|mese|месяц|місяц|week|woche|semaine|semana|settiman|недел|тижд|day|tag|jour|día|giorno|день|дней|днів|hour|stunde|heure|hora|ora|час|minute|минут|хвилин)/i.test(
-				s,
-			);
-		if (
-			hasDigits &&
-			hasDateUnit &&
-			/(?:vor|ago|hace|há|fa|назад|тому|önce|temu|előtt|sedan|siden|sitten|yang lalu|před|pred|acum|πριν|pre|לפني|قبل|trước|ที่แล้ว)/i.test(
-				s,
-			)
-		) {
-			return true;
-		}
-
-		// 8. Like / reaction / subscriber counts (e.g. "500k likes", "12 Tsd. Gefällt mir", "1.2M subscribers")
-		const hasLikeKeyword =
-			/(?:like|gefällt|gusta|j'aime|mi piace|лайк|좋아요|讚|赞|subscribers?|abonnenten?|abonnés?|suscriptores?|iscritti)/i.test(
-				s,
-			);
-		if (hasDigits && hasLikeKeyword) return true;
-
-		return false;
+		return TemplateEngine.formatSeekButtonTemplate(template, step, isForward);
 	}
 }

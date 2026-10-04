@@ -218,8 +218,11 @@ ytm-web-controller/
 │       ├── services/            # Decoupled backend services layer
 │       │   ├── version-control.ts   # Centralized version control & handshake validator
 │       │   ├── websocket-server.ts  # Unified Server (Port 39865: HTTP + WebSocket)
+│       │   ├── tab-manager.ts       # Connected browser tab lifecycle & multi-tab arbitration
 │       │   ├── http-api.ts          # Read-only HTTP API & overlay static asset router
-│       │   ├── state-manager.ts     # Centralized playback state store
+│       │   ├── state-manager.ts     # Centralized playback state store & interpolation
+│       │   ├── template-engine.ts   # Template parser & placeholder formatting engine
+│       │   ├── metadata-sanitizer.ts # Multi-language YouTube DOM metadata filtering
 │       │   ├── marquee-service.ts   # Centralized Ping-Pong marquee scroller
 │       │   ├── image-renderer.ts    # In-memory RAM base64 canvas renderer
 │       │   ├── warning-icons.ts     # Dynamic SVG warning icon generator for mismatch states
@@ -321,12 +324,16 @@ The browser companion extension runs in the context of `https://music.youtube.co
 
 - **`WebSocketService`**: Hosts local WebSocket & HTTP server on configurable port (default `39865`).
   - **CSWSH Origin Security (`verifyClient`)**: Strictly validates incoming connection origins (`https://music.youtube.com`, `http://127.0.0.1:${port}`, `http://localhost:${port}`, `chrome-extension://*`, `moz-extension://*`, and local tools), rejecting unauthorized web origins with HTTP 403.
-  - **Multi-Tab Orchestration**: Tracks connected tabs by `tabId` and active playback state. Automatically routes hardware commands exclusively to the tab actively playing audio (`!isPaused`), preventing ghost commands to idle tabs and ignoring stale pause events from background tabs.
   - **Broadcast State**: Dispatches state updates to all connected external listeners (e.g. OBS overlay).
+- **`TabManager`**: Decoupled multi-tab arbitration and client registry.
+  - **Multi-Tab Orchestration**: Tracks connected tabs by `tabId` and active playback state. Automatically routes hardware commands exclusively to the tab actively playing audio (`!isPaused`), preventing ghost commands to idle tabs and ignoring stale pause events from background tabs.
+  - **Version Mismatch Evaluation**: Centralizes version compatibility state across active non-overlay tabs.
 - **`HttpApiService`**: Serves read-only GET `/overlay` (OBS Browser Source) and GET `/api/current` (Chatbot plaintext metadata).
-- **`StateManager`**: Stores active playback state, performs local timestamp-based time interpolation (`getInterpolatedCurrentTime()`), handles formatters, and tracks client connectivity status.
+- **`StateManager`**: Stores active playback state, performs local timestamp-based time interpolation (`getInterpolatedCurrentTime()`), and manages state change lifecycle events.
+- **`TemplateEngine`**: Isolated placeholder formatting engine for Track Titles, Times, Formatted Tracks, Volume readouts, and Seek button labels across keypad buttons and LCD touchstrips.
+- **`MetadataSanitizer`**: Multi-language DOM metadata filtering engine that strips out non-album tokens (view counts, upload timestamps, release years, like counts) across internationalized YouTube Music interfaces.
 - **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs.
-- **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs.
+- **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs with bounded in-RAM overlay caching.
 - **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with client-side timeline calculations.
 - **`ObsExporterService`**: Debounced safe writer for OBS Text (GDI+) file sources (`.txt`).
 - **`VersionControlService`**: Dynamic manifest reader and version compatibility validator.

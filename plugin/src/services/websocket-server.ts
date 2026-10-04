@@ -10,27 +10,18 @@ import { EventEmitter } from "events";
 import http from "http";
 import { WebSocket, WebSocketServer } from "ws";
 
-import { WSMessage, YTMPlaybackState } from "../types/index.js";
+import { ClientTabInfo, WSMessage, YTMPlaybackState } from "../types/index.js";
 import { HttpApiService } from "./http-api.js";
 import { StateManager } from "./state-manager.js";
+import { TabManager } from "./tab-manager.js";
 import { VersionControlService } from "./version-control.js";
-
-interface ClientTabInfo {
-	tabId?: string;
-	isPlaying: boolean;
-	lastActive: number;
-	isOverlay: boolean;
-	isMismatch?: boolean;
-	version?: string;
-	hasTrackLoaded?: boolean;
-}
 
 export class WebSocketService extends EventEmitter {
 	private static instance: WebSocketService;
 	private httpServer: http.Server | null = null;
 	private wss: WebSocketServer | null = null;
 	private clients: Set<WebSocket> = new Set();
-	private clientTabs: Map<WebSocket, ClientTabInfo> = new Map();
+	private tabManager: TabManager = new TabManager();
 	private currentPort: number = 39865;
 	private isMismatchActive: boolean = false;
 
@@ -134,7 +125,7 @@ export class WebSocketService extends EventEmitter {
 						isOverlay,
 					};
 					this.clients.add(ws);
-					this.clientTabs.set(ws, tabInfo);
+					this.tabManager.addTab(ws, tabInfo);
 					this.emit("clientConnected", ws);
 
 					// Note: State update and command dispatch are deferred until handshake or registration completes
@@ -143,15 +134,12 @@ export class WebSocketService extends EventEmitter {
 						try {
 							const text = message.toString();
 							const payload = JSON.parse(text) as WSMessage<YTMPlaybackState> & { command?: string };
-							const tabInfo = this.clientTabs.get(ws);
 
-							if (tabInfo) {
-								tabInfo.lastActive = Date.now();
-								if (payload.tabId) tabInfo.tabId = payload.tabId;
-								if (typeof payload.isPlaying === "boolean") {
-									tabInfo.isPlaying = payload.isPlaying;
-								}
-							}
+							this.tabManager.updateTab(ws, {
+								lastActive: Date.now(),
+								...(payload.tabId ? { tabId: payload.tabId } : {}),
+								...(typeof payload.isPlaying === "boolean" ? { isPlaying: payload.isPlaying } : {}),
+							});
 
 							// Handle explicit browser tab unload to clean up client registry and multi-tab arbitration
 							if (payload.type === "TAB_CLOSED") {
@@ -176,11 +164,11 @@ export class WebSocketService extends EventEmitter {
 								const versionService = VersionControlService.getInstance();
 								const validation = versionService.validateHandshake(extVersion);
 
-								if (tabInfo) {
-									if (payload.tabId) tabInfo.tabId = payload.tabId;
-									tabInfo.version = extVersion;
-									tabInfo.isMismatch = !validation.isCompatible;
-								}
+								this.tabManager.updateTab(ws, {
+									...(payload.tabId ? { tabId: payload.tabId } : {}),
+									version: extVersion,
+									isMismatch: !validation.isCompatible,
+								});
 
 								this.evaluateMismatchState();
 
@@ -215,45 +203,36 @@ export class WebSocketService extends EventEmitter {
 
 							const incomingState = payload.data || (payload as { state?: YTMPlaybackState }).state;
 							if (payload.type === "STATE_UPDATE" && incomingState) {
-								if (tabInfo) {
-									tabInfo.isPlaying = !incomingState.paused;
-									tabInfo.hasTrackLoaded = Boolean(
+								this.tabManager.updateTab(ws, {
+									isPlaying: !incomingState.paused,
+									hasTrackLoaded: Boolean(
 										incomingState.title ||
 										incomingState.artist ||
 										(incomingState.duration && incomingState.duration > 0),
-									);
-								}
+									),
+								});
 
 								// Multi-tab arbitration: If this tab is paused, but another tab is currently playing, ignore paused update
-								if (incomingState.paused) {
-									const isAnotherTabPlaying = Array.from(this.clientTabs.entries()).some(
-										([otherWs, otherInfo]) =>
-											otherWs !== ws &&
-											otherWs.readyState === WebSocket.OPEN &&
-											!otherInfo.isOverlay &&
-											otherInfo.isPlaying,
+								if (incomingState.paused && this.tabManager.shouldIgnorePausedUpdate(ws)) {
+									streamDeck.logger.info(
+										`[WebSocket] Ignored paused STATE_UPDATE from inactive tab (${this.tabManager.getTab(ws)?.tabId || "unknown"}) because another tab is actively playing.`,
 									);
-									if (isAnotherTabPlaying) {
-										streamDeck.logger.info(
-											`[WebSocket] Ignored paused STATE_UPDATE from inactive tab (${tabInfo?.tabId || "unknown"}) because another tab is actively playing.`,
-										);
-										return;
-									}
+									return;
 								}
 
 								this.emit("stateUpdate", incomingState);
 							} else if (payload.type === "REGISTER_CLIENT") {
-								if (tabInfo) {
-									if (
-										payload.client === "ytm-overlay" ||
-										payload.client === "obs-overlay" ||
-										(payload.url && payload.url.includes("/overlay"))
-									) {
-										tabInfo.isOverlay = true;
-									}
-									if (payload.tabId) tabInfo.tabId = payload.tabId;
-									if (typeof payload.isPlaying === "boolean") tabInfo.isPlaying = payload.isPlaying;
-								}
+								const isOverlay =
+									payload.client === "ytm-overlay" ||
+									payload.client === "obs-overlay" ||
+									Boolean(payload.url?.includes("/overlay"));
+
+								this.tabManager.updateTab(ws, {
+									...(isOverlay ? { isOverlay: true } : {}),
+									...(payload.tabId ? { tabId: payload.tabId } : {}),
+									...(typeof payload.isPlaying === "boolean" ? { isPlaying: payload.isPlaying } : {}),
+								});
+
 								streamDeck.logger.info(`[WebSocket] Registered client: ${payload.client} (${payload.url || ""})`);
 								const currentState = StateManager.getInstance().getState();
 								this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
@@ -301,7 +280,7 @@ export class WebSocketService extends EventEmitter {
 				} catch {}
 			}
 			this.clients.clear();
-			this.clientTabs.clear();
+			this.tabManager.clear();
 			this.isMismatchActive = false;
 
 			if (this.wss) {
@@ -347,11 +326,8 @@ export class WebSocketService extends EventEmitter {
 			return;
 		}
 
-		const tabInfo = this.clientTabs.get(ws);
-		const wasPlaying = tabInfo?.isPlaying === true;
-
+		const { wasPlaying } = this.tabManager.removeTab(ws);
 		this.clients.delete(ws);
-		this.clientTabs.delete(ws);
 
 		this.evaluateMismatchState();
 
@@ -381,12 +357,7 @@ export class WebSocketService extends EventEmitter {
 	 * Re-evaluates version mismatch state across all active non-overlay tabs
 	 */
 	private evaluateMismatchState(): void {
-		const nonOverlayTabs = Array.from(this.clientTabs.values()).filter((t) => !t.isOverlay);
-		const hasMismatch = nonOverlayTabs.some((t) => t.isMismatch === true);
-
-		const mismatchTab = nonOverlayTabs.find((t) => t.isMismatch === true);
-		const targetVersion =
-			mismatchTab?.version || (nonOverlayTabs.length > 0 ? nonOverlayTabs[0].version : undefined) || "0.0.0.0";
+		const { hasMismatch, targetVersion } = this.tabManager.evaluateMismatchState();
 
 		if (this.isMismatchActive !== hasMismatch) {
 			this.isMismatchActive = hasMismatch;
@@ -399,48 +370,7 @@ export class WebSocketService extends EventEmitter {
 	 * Prioritizes actively playing tabs, then paused tabs with track loaded, then most recently active tabs
 	 */
 	public getActiveTabSocket(): WebSocket | null {
-		// 1. Preference: Tab that is actively playing (isPlaying === true) and OPEN
-		for (const [ws, info] of this.clientTabs.entries()) {
-			if (ws.readyState === WebSocket.OPEN && !info.isOverlay && info.isPlaying) {
-				return ws;
-			}
-		}
-
-		// 2. Preference: Paused non-overlay tab that has a track loaded, ordered by most recently active
-		let latestLoadedWs: WebSocket | null = null;
-		let latestLoadedTime = 0;
-		for (const [ws, info] of this.clientTabs.entries()) {
-			if (ws.readyState === WebSocket.OPEN && !info.isOverlay && info.hasTrackLoaded) {
-				if (info.lastActive > latestLoadedTime) {
-					latestLoadedTime = info.lastActive;
-					latestLoadedWs = ws;
-				}
-			}
-		}
-		if (latestLoadedWs) return latestLoadedWs;
-
-		// 3. Preference: Most recently active non-overlay tab that is OPEN
-		let latestWs: WebSocket | null = null;
-		let latestTime = 0;
-		for (const [ws, info] of this.clientTabs.entries()) {
-			if (ws.readyState === WebSocket.OPEN && !info.isOverlay) {
-				if (info.lastActive > latestTime) {
-					latestTime = info.lastActive;
-					latestWs = ws;
-				}
-			}
-		}
-		if (latestWs) return latestWs;
-
-		// 4. Fallback: Any OPEN client that is not explicitly an overlay
-		for (const ws of this.clients) {
-			const info = this.clientTabs.get(ws);
-			if (ws.readyState === WebSocket.OPEN && (!info || !info.isOverlay)) {
-				return ws;
-			}
-		}
-
-		return null;
+		return this.tabManager.getActiveTabSocket(this.clients);
 	}
 
 	/**
@@ -480,12 +410,7 @@ export class WebSocketService extends EventEmitter {
 	}
 
 	public hasConnectedClients(): boolean {
-		for (const [ws, info] of this.clientTabs.entries()) {
-			if (ws.readyState === WebSocket.OPEN && !info.isOverlay) {
-				return true;
-			}
-		}
-		return false;
+		return this.tabManager.hasConnectedClients();
 	}
 
 	public getPort(): number {

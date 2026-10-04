@@ -98,11 +98,7 @@ export class TemplateEngine {
 	/**
 	 * Render custom track text with placeholders: {url}, {title}, {artist}, {album}, {duration}, {currentTime}, {remaining}, {both}
 	 */
-	public static formatTrackText(
-		template?: string,
-		state?: YTMPlaybackState,
-		currentTime: number = 0,
-	): string {
+	public static formatTrackText(template?: string, state?: YTMPlaybackState, currentTime: number = 0): string {
 		if (!state || (!state.title && !state.artist && !state.trackUrl)) {
 			return "";
 		}
@@ -175,11 +171,7 @@ export class TemplateEngine {
 	/**
 	 * Render custom seek button template with placeholders: {step}, {seconds}, {sign}
 	 */
-	public static formatSeekButtonTemplate(
-		template?: string,
-		step: number = 10,
-		isForward: boolean = true,
-	): string {
+	public static formatSeekButtonTemplate(template?: string, step: number = 10, isForward: boolean = true): string {
 		const sign = isForward ? "+" : "-";
 		const defaultTpl = isForward ? "+{step}s" : "-{step}s";
 		const tpl = template && template.trim() ? template : defaultTpl;

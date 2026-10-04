@@ -103,12 +103,8 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		const step = Math.min(120, Math.max(1, settings.seekStep || 10));
 		const ticks = this.pendingTicks.get(actionId) || 0;
 		const currentState = StateManager.getInstance().getState();
-		const baseSeconds =
-			this.lastTargetSeconds.get(actionId) ?? StateManager.getInstance().getInterpolatedCurrentTime();
-		const optimisticSeconds = Math.min(
-			currentState.duration || Infinity,
-			Math.max(0, baseSeconds + ticks * step),
-		);
+		const baseSeconds = this.lastTargetSeconds.get(actionId) ?? StateManager.getInstance().getInterpolatedCurrentTime();
+		const optimisticSeconds = Math.min(currentState.duration || Infinity, Math.max(0, baseSeconds + ticks * step));
 
 		const indicatorValue =
 			currentState.duration > 0
@@ -134,9 +130,7 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		} catch {}
 	}
 
-	private async flushRotation(
-		action: WillAppearEvent<SeekDialSettings>["action"],
-	): Promise<void> {
+	private async flushRotation(action: WillAppearEvent<SeekDialSettings>["action"]): Promise<void> {
 		const actionId = action.id;
 		if (this.isPushJitterActive(actionId)) {
 			this.pendingTicks.set(actionId, 0);
@@ -154,12 +148,8 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		const deltaSeconds = ticks * step;
 
 		const currentState = StateManager.getInstance().getState();
-		const baseSeconds =
-			this.lastTargetSeconds.get(actionId) ?? StateManager.getInstance().getInterpolatedCurrentTime();
-		const optimisticSeconds = Math.min(
-			currentState.duration || Infinity,
-			Math.max(0, baseSeconds + deltaSeconds),
-		);
+		const baseSeconds = this.lastTargetSeconds.get(actionId) ?? StateManager.getInstance().getInterpolatedCurrentTime();
+		const optimisticSeconds = Math.min(currentState.duration || Infinity, Math.max(0, baseSeconds + deltaSeconds));
 		this.lastTargetSeconds.set(actionId, optimisticSeconds);
 
 		// Render LCD touchstrip feedback at 10-Hz boundary
@@ -188,9 +178,7 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		WebSocketService.getInstance().sendCommand("seekRelative", { seconds: deltaSeconds });
 	}
 
-	private async settleRotation(
-		action: WillAppearEvent<SeekDialSettings>["action"],
-	): Promise<void> {
+	private async settleRotation(action: WillAppearEvent<SeekDialSettings>["action"]): Promise<void> {
 		const actionId = action.id;
 		const streamTimer = this.rotationStreamTimer.get(actionId);
 		if (streamTimer) {

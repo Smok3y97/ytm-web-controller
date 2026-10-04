@@ -27,8 +27,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --prefix plugin
 
-      # 1. Linting & Typecheck (fails fast on syntax/type issues before packaging or system installs)
-      - name: Lint and Typecheck
+      # 1. Linting, Typecheck & Prettier Check (fails fast on syntax/type/style issues before packaging or system installs)
+      - name: Lint, Typecheck and Prettier Check
         run: npm run lint
 
       # 2. Add local plugin node_modules CLI binaries (streamdeck) to PATH

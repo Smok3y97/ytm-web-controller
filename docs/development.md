@@ -69,14 +69,14 @@ The codebase strictly adheres to the official [Elgato Stream Deck Style Guide fo
 
 - **ESLint Configuration**: Uses `@elgato/eslint-config` with flat config format (`plugin/eslint.config.js`).
 - **Prettier Configuration**: Uses `@elgato/prettier-config` across TypeScript, JavaScript, CSS, and JSON files.
-- **Automated Verification**: Enforces `0 errors` and `0 warnings` via `tsc --noEmit && eslint . --max-warnings 0`.
+- **Automated Verification**: Enforces `0 errors` and `0 warnings` via `tsc --noEmit && eslint . --max-warnings 0 && prettier --check .`.
 
 ---
 
 ## [📦 Packaging Pipeline (`scripts/package_plugin.ps1`)](#top)
 
 The automated packaging script executes a complete quality assurance and deployment pipeline:
-1. **Automated Formatting & Linting**: Runs `npm run lint:fix` (Prettier code formatting and ESLint auto-fix) on the codebase.
+1. **Automated Verification & Linting**: Runs `npm run lint` (TypeScript typecheck, ESLint checks with 0 warnings, and Prettier formatting verification) on the codebase.
 2. **Bundle Compilation**: Compiles the plugin bundle with Rollup directly to `plugin/com.smok3y97.ytmusicweb.sdPlugin/bin/plugin.js`.
 3. **Asset Generation**: Generates all vector SVGs and PNG raster badges using `scripts/generate_assets.ps1` (or `npm run assets`) into `plugin/com.smok3y97.ytmusicweb.sdPlugin/assets/`.
 4. **Plugin Distribution Package**: Creates `release/com.smok3y97.ytmusicweb.streamDeckPlugin` release archive directly from `plugin/com.smok3y97.ytmusicweb.sdPlugin` via `streamdeck pack`.

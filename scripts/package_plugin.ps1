@@ -83,7 +83,7 @@ if (Get-Command "streamdeck" -ErrorAction SilentlyContinue) {
 }
 
 if ($streamdeckCmd) {
-    & $streamdeckCmd pack $sdPluginDir -o $releaseDir --force
+    & $streamdeckCmd pack $releaseSdPlugin -o $releaseDir --force
 }
 
 if (!(Test-Path $archivePath)) {

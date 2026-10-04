@@ -40,16 +40,52 @@ let lastSentState = {
   repeatMode: 'OFF'
 };
 
+let scheduledTimers = [];
+let microtaskScheduled = false;
+let pendingForceSend = false;
+
 /**
- * Schedule state broadcasts at staggered intervals
+ * Cancel any pending staggered update checks
  */
-function scheduleStateUpdates(delays = [50, 150, 350]) {
-  delays.forEach(d => setTimeout(() => sendState(true), d));
+function clearScheduledUpdates() {
+  while (scheduledTimers.length > 0) {
+    clearTimeout(scheduledTimers.pop());
+  }
+}
+
+/**
+ * Schedule state checks at staggered intervals for late-arriving DOM/MediaSession metadata
+ * Evaluates dirty-checking so identical state is not transmitted
+ */
+function scheduleStateUpdates(delays = [60, 200, 450]) {
+  clearScheduledUpdates();
+  delays.forEach(d => {
+    const timer = setTimeout(() => {
+      sendState(false);
+    }, d);
+    scheduledTimers.push(timer);
+  });
 }
 window.YTM.scheduleStateUpdates = scheduleStateUpdates;
 
 /**
- * Notify server when tab is closing
+ * Coalesce multiple synchronous state notification triggers into a single atomic microtask snapshot
+ */
+function queueStateSnapshot(force = false) {
+  if (force) pendingForceSend = true;
+  if (microtaskScheduled) return;
+  microtaskScheduled = true;
+  queueMicrotask(() => {
+    microtaskScheduled = false;
+    const isForce = pendingForceSend;
+    pendingForceSend = false;
+    sendState(isForce);
+  });
+}
+window.YTM.queueStateSnapshot = queueStateSnapshot;
+
+/**
+ * Notify server when tab is closing and cleanly detach observers
  */
 function notifyTabClosed() {
   isTabClosing = true;
@@ -57,6 +93,15 @@ function notifyTabClosed() {
     clearTimeout(reconnectTimeout);
     reconnectTimeout = null;
   }
+  clearScheduledUpdates();
+
+  // Cleanly detach MutationObservers and Media Listeners
+  if (typeof window.YTM?.state?.teardownGlobalMediaListeners === 'function') {
+    try {
+      window.YTM.state.teardownGlobalMediaListeners();
+    } catch { }
+  }
+
   if (ws && ws.readyState === WebSocket.OPEN) {
     try {
       ws.send(JSON.stringify({
@@ -100,7 +145,7 @@ function sendState(force = false) {
 
     const now = Date.now();
     if (!force && isIdentical) return;
-    if (force && isIdentical && (now - lastSentTime < 50)) return;
+    if (force && isIdentical && (now - lastSentTime < 250)) return;
 
     lastSentTime = now;
     lastSentState = { ...state };
@@ -434,6 +479,7 @@ function init() {
       if (!ws || ws.readyState !== WebSocket.OPEN) {
         wakeFromStandby();
       } else {
+        lastSentState = {};
         sendState(true);
       }
     }

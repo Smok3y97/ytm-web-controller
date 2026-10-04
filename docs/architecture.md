@@ -300,11 +300,12 @@ The browser companion extension runs in the context of `https://music.youtube.co
    - Primary metadata extraction via `navigator.mediaSession.metadata` (title, artist, album, artwork).
    - High-precision timing snapshot via `window.YTM.playerApi.getCurrentTime()` and `window.YTM.playerApi.getDuration()`.
    - Event-driven snapshot broadcasting on state transitions (`play`, `pause`, `seeking`, `seeked`, `durationchange`, `loadedmetadata`, `ratechange`, `volumechange`, `ended`) with zero periodic `timeupdate` WebSocket flood.
-   - Scoped `MutationObserver` on player bar elements for immediate state broadcast on like, dislike, shuffle, and repeat clicks.
+   - Scoped `MutationObserver` on player bar elements for immediate state broadcast on like, dislike, shuffle, and repeat clicks with clean lifecycle detachment (`teardownGlobalMediaListeners`).
 
 10. **WebSocket Orchestrator ([`extension/content.js`](../extension/content.js))**:
     - Generates unique session `tabId` to participate in multi-tab arbitration.
-    - Dispatches `TAB_CLOSED` on `beforeunload` and `pagehide` to cleanly deregister tabs.
+    - Centralized atomic microtask coalescing (`queueStateSnapshot`) and dirty-checking snapshot dispatcher to eliminate redundant WebSocket frames.
+    - Dispatches `TAB_CLOSED` on `beforeunload` and `pagehide` to cleanly deregister tabs and teardown observers.
     - Automatically synchronizes playback state on `visibilitychange` when returning to background tabs.
     - Handles bounded reconnect with passive standby, bidirectional version handshake, and routes Stream Deck commands to `window.YTM.actions`.
 

@@ -109,23 +109,23 @@ function isButtonActive(elem, deactivateKeywords = []) {
 }
 
 /**
- * Unified State Notification Trigger
+ * Unified State Notification Trigger (Coalesced & Batched)
  */
-function notifyState(force = true, delays = []) {
+function notifyState(force = false, delays = []) {
   if (Array.isArray(delays) && delays.length > 0) {
     if (typeof window.YTM.scheduleStateUpdates === 'function') {
       window.YTM.scheduleStateUpdates(delays);
     } else if (typeof scheduleStateUpdates === 'function') {
       scheduleStateUpdates(delays);
-    } else if (typeof window.YTM.sendState === 'function') {
-      window.YTM.sendState(force);
     }
-  } else {
-    if (typeof window.YTM.sendState === 'function') {
-      window.YTM.sendState(force);
-    } else if (typeof sendState === 'function') {
-      sendState(force);
-    }
+  }
+
+  if (typeof window.YTM.queueStateSnapshot === 'function') {
+    window.YTM.queueStateSnapshot(force);
+  } else if (typeof window.YTM.sendState === 'function') {
+    window.YTM.sendState(force);
+  } else if (typeof sendState === 'function') {
+    sendState(force);
   }
 }
 

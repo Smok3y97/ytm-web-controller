@@ -16,7 +16,7 @@ function triggerStateNotification(delays = [50, 150]) {
     ? notifyState
     : window.YTM.utils?.notifyState;
   if (typeof notify === 'function') {
-    notify(true, delays);
+    notify(false, delays);
   }
 }
 

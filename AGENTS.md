@@ -42,25 +42,37 @@ Consult the specialized documentation before modifying components:
 
 ## 🛑 4. Definition of Done (Task Checklist)
 
-Every pull request or task completion must verify:
+Every pull request or task completion modifying the Stream Deck plugin (`plugin/**`) must verify:
 1. **Typecheck & Bundle:** `npx --prefix plugin tsc --noEmit -p plugin/tsconfig.json` passes with 0 errors, followed by successful `npm run build`.
 2. **Linting:** `npm run lint` completes with 0 errors and 0 warnings.
 3. **Elgato CLI Schema:** `npm run validate` passes official Elgato SDK schema validation with 0 errors and 0 warnings.
 4. **Clean Production Code:** No orphaned `console.log()` statements left in production code (use dedicated plugin/extension loggers).
 5. **Documentation Sync:** Any addition or modification to services, routes, settings, or CLI commands must be reflected in `docs/` and `README.md` within the same turn.
 
+> [!NOTE]
+> **Plugin-Only Scope for Lint & Validation:** `npm run lint`, `npm run build`, and `npm run validate` are strictly required **only when files in the Stream Deck plugin (`plugin/**`) are modified**.
+> They play no role, are not required, and must be skipped for:
+> - Companion Browser Extension (`extension/**`)
+> - Root helper, tooling, and packaging scripts (`scripts/**`)
+> - Agent skills and configurations (`.agents/**`)
+> - Documentation, guides, and markdown files (`docs/**`, `README.md`, `*.md`)
+
 ---
 
 ## 📦 5. Git & Workflow Discipline
 
-- **Structured Commit Messages:** Commits must follow Conventional Commits with a mandatory body:
+- **Structured Commit Messages & Category Emojis:** Commits must follow Conventional Commits with a mandatory body:
   ```text
   <type>(<scope>): <short imperative summary>
 
   - <bullet point explaining what changed>
   - <bullet point explaining why the change was made>
   ```
-- **Conditional Builds:** Run packaging and validation (`npm run package` / `npm run validate`) only when code, assets, UI, or manifests are modified. Skip build/validation for documentation-only changes.
+  All commit types (e.g. `feat`, `fix`, `perf`, `refactor`), category emojis, descriptions, and release note mappings are centrally governed by the Single Source of Truth (SSOT) in [`.agents/skills/changelog-gen/resources/commit-conventions.json`](.agents/skills/changelog-gen/resources/commit-conventions.json) and rendered for human contributors in [`docs/commit-conventions.md`](docs/commit-conventions.md). Both agents and human contributors must consult this guide for valid types and scopes.
+
+
+
+- **Conditional Builds & Verification:** Run packaging, linting, building, and validation (`npm run lint`, `npm run build`, `npm run package`, `npm run validate`) only when code, assets, UI, or manifests in `plugin/**` are modified. Completely skip lint/build/validation for changes restricted to `extension/**`, `scripts/**`, `.agents/**`, or documentation (`*.md`).
 - **Documentation Priority Hierarchy:**
   1. [`docs/architecture.md`](docs/architecture.md) (Highest Priority): Backend services, WebSocket/HTTP routes, sequence diagrams.
   2. [`docs/obs-setup.md`](docs/obs-setup.md), [`docs/features.md`](docs/features.md), [`docs/configuration.md`](docs/configuration.md): Action tables, chatbot routes, and user settings.

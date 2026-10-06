@@ -10,7 +10,7 @@ This document outlines the local development setup, build scripts, testing proce
 - [🛠️ Prerequisites](#-prerequisites)
 - [🚀 Build & Packaging Commands](#-build--packaging-commands)
 - [✨ Elgato SDK Linting & Code Style Guide](#-elgato-sdk-linting--code-style-guide)
-- [📦 Packaging Pipeline (`scripts/package_plugin.ps1`)](#-packaging-pipeline-scriptspackage_pluginps1)
+- [📦 Packaging Pipeline (`scripts/package_plugin.ps1`)](#-packaging-pipeline-scriptspackagepluginps1)
 - [🏷️ Versioning Scheme](#-versioning-scheme)
 - [🤖 CI/CD & Automated GitHub Releases](#-cicd--automated-github-releases)
 
@@ -36,8 +36,11 @@ npm run build
 
 # 2. Run TypeScript typechecking & official Elgato ESLint check
 npm run lint
-# Or auto-fix and format with Prettier:
+# Auto-fix lint issues:
 npm run lint:fix
+# Format source code or verify formatting with Prettier:
+npm run format
+npm run format:check
 
 # 3. Package release archive & automatically deploy to local Stream Deck plugins folder
 npm run package
@@ -59,7 +62,16 @@ npx streamdeck restart com.smok3y97.ytmusicweb
 
 # Optional: Watch mode for active live development
 npm run watch
+
+# Quality assurance & agent skill tooling
+npm run docs:audit         # Run full documentation hygiene, link & anchor audit
+npm run docs:sync          # Verify code-to-documentation and version synchronization
+npm run audit:guardrails   # Statically audit architectural constraints & guardrails
+npm run assets:validate    # Validate icon assets, extensions & touch target specs
+npm run changelog          # Generate release notes from git commits
+npm run docs:conventions   # Synchronize docs/commit-conventions.md from JSON configuration
 ```
+
 
 ---
 
@@ -70,6 +82,10 @@ The codebase strictly adheres to the official [Elgato Stream Deck Style Guide fo
 - **ESLint Configuration**: Uses `@elgato/eslint-config` with flat config format (`plugin/eslint.config.js`).
 - **Prettier Configuration**: Uses `@elgato/prettier-config` across TypeScript, JavaScript, CSS, and JSON files.
 - **Automated Verification**: Enforces `0 errors` and `0 warnings` via `tsc --noEmit && eslint . --max-warnings 0 && prettier --check .`.
+
+> [!NOTE]
+> **Plugin-Only Scope for Linting & Validation:** `npm run lint`, `npm run build`, and `npm run validate` are strictly scoped to the Stream Deck plugin (`plugin/**`). When changes only affect the companion browser extension (`extension/**`), helper scripts (`scripts/**`), agent skills (`.agents/**`), or Markdown documentation (`*.md`, `docs/**`), running local linting, bundle compilation, and Elgato CLI validation is not required and should be skipped.
+
 
 ---
 
@@ -117,13 +133,24 @@ Running `npm run bump` automatically updates and synchronizes all required files
 | [`plugin/package-lock.json`](../plugin/package-lock.json) | `"version"` | `"2.0.1.0"` | Synchronized natively via `npm install --package-lock-only` (never edited manually). |
 | [`package.json`](../package.json) | `"version"` | `"2.0.1.0"` | Synchronized monorepo root package version. |
 | [`plugin/src/services/version-control.ts`](../plugin/src/services/version-control.ts) | Fallback constants | `"2.0.1.0"` | Manifest import with synchronized compile-time fallbacks. |
-| [`extension/manifest.json`](../extension/manifest.json) | `"version"`<br>`"version_name"` | `"2.0.1.0"`<br>`"2.0.1"` | **Native SSOT for Extension**: Synchronously read via `chrome.runtime.getManifest()` and bridged to MAIN world DOM dataset; zero static code fallbacks. |
+| [`extension/manifest.json`](../extension/manifest.json) | `"version"`<br>`"version_name"` | `"2.0.1.0"`<br>`"2.0.1"` | **Native SSOT for Extension**: Synchronously read via `chrome.runtime.getManifest()` and bridged to MAIN World DOM dataset; zero static code fallbacks. |
 
 ### Version Semantics:
 - **Major** (`{Major}`): Fundamental architectural overhauls, breaking changes, or SDK major upgrades.
 - **Minor** (`{Minor}`): Substantial new user features or hardware integrations (e.g., adding dial actions, new background services, or handshake systems).
 - **Patch** (`{Patch}`): Bug fixes, icon styling adjustments, code refactoring, and string corrections.
 - **Build** (`{Build}`): Internal marketplace submission counter. Allows resubmissions without changing the public release version.
+
+### 🏷️ GitHub Tagging & Release Rules
+
+- **Mandatory `v` Prefix for Tags:**  
+  While GitHub suggests prefixing tags with `v` as common practice, in `ytm-web-controller` it is **mandatory**. The automated release pipeline ([`.github/workflows/release.yml`](../.github/workflows/release.yml)) strictly listens to tags matching `v*` (e.g. `v2.0.2.0`). Tags pushed without the `v` prefix will **not** trigger release compilation or binary packaging.
+- **Elgato 4-Part Constraint vs. Semantic Pre-Release Suffixes:**  
+  Standard semantic versioning often uses textual prerelease suffixes (e.g. `v1.0.0-alpha` or `v2.0.0-beta.1`).  
+  > [!WARNING]  
+  > **Do not use textual prerelease suffixes like `-alpha` or `-beta` in project version files.** The Elgato Stream Deck CLI (`npm run validate`) strictly enforces a 4-part numeric regex `^(0|[1-9]\d*)(\.(0|[1-9]\d*)){3}$`. Suffixes will fail official marketplace schema validation. For test builds or marketplace revisions, increment the fourth `{Build}` digit instead (e.g. `2.1.0.1`).
+- **Automatic "Latest Release" Labeling:**  
+  GitHub automatically assigns the **Latest Release** badge to newly published releases with the highest version number. Production releases automatically receive this status upon tag push.
 
 ---
 
@@ -132,7 +159,7 @@ Running `npm run bump` automatically updates and synchronizes all required files
 The repository utilizes GitHub Actions and Dependabot to automate testing, quality validation, release distribution, and dependency management.
 
 ### 1. Continuous Integration (`.github/workflows/ci.yml`)
-- **Triggers**: On every `push` and `pull_request` against `main` and `master`.
+- **Triggers**: On every `push` and `pull_request` against `main` and `master` (path-filtered to code, extensions, scripts, and manifests; Markdown documentation changes do not trigger CI runs).
 - **Pipeline Tasks**:
   1. Installs monorepo and plugin dependencies (`npm ci`).
   2. Runs TypeScript typechecking and ESLint checks (`npm run lint`).
@@ -199,6 +226,14 @@ Commits must follow Conventional Commits with a mandatory descriptive body:
 - <bullet point explaining what changed>
 - <bullet point explaining why the change was made>
 ```
+
+All allowed commit types (e.g. `feat`, `fix`, `perf`, `refactor`), category emojis, descriptions, and release note mappings are documented in **[Commit Conventions & Categories (`docs/commit-conventions.md`)](commit-conventions.md)** (defined in [`.agents/skills/changelog-gen/resources/commit-conventions.json`](../.agents/skills/changelog-gen/resources/commit-conventions.json)).
+
+
+*(Automated release note generator: `npm run changelog` or `node .agents/skills/changelog-gen/scripts/generate-changelog.mjs`).*
+
+
+
 
 ---
 

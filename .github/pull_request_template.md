@@ -22,11 +22,14 @@ Fixes #(issue) <!-- Replace with issue number if applicable -->
 - [ ] **Zero Disk Footprint**: Cover artwork and canvas layouts are generated purely in memory (Base64 data URLs).
 - [ ] **10 Hz Rate Limit**: Stream Deck hardware programmatic updates do not exceed 10 updates per second.
 - [ ] **Property Inspector Auto-Save**: All Property Inspector settings save automatically on input change (`setSettings` / `setGlobalSettings`) with no manual save buttons.
-- [ ] **i18n & Localization**: UI strings and keys are maintained in `plugin/en.json` (and `plugin/de.json`).
+- [ ] **i18n & Localization**: UI strings and keys are maintained in `plugin/com.smok3y97.ytmusicweb.sdPlugin/en.json` (and `plugin/com.smok3y97.ytmusicweb.sdPlugin/de.json`).
 
 ---
 
 ## 🧪 Quality Assurance & Testing Checklist
+
+> [!NOTE]
+> `npm run lint`, `npm run build`, and `npm run validate` are strictly required only when files in `plugin/**` are modified. Skip these checks for extension, documentation, tooling, or skill changes.
 
 - [ ] Run typechecking and linting: `npm run lint` (`0 errors, 0 warnings`)
 - [ ] Run plugin build: `npm run build`

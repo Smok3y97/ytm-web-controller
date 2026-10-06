@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Commit Conventions & Release Categories (SSOT)",
+  "description": "Single Source of Truth for Conventional Commit types, category emojis, and release note mappings in ytm-web-controller.",
+  "format": {
+    "summary": "<type>(<scope>): <short imperative summary>",
+    "body_required": true,
+    "body_template": [
+      "- <bullet point explaining what changed>",
+      "- <bullet point explaining why the change was made>"
+    ]
+  },
+  "types": {
+    "feat": {
+      "emoji": "🚀",
+      "section": "New Features",
+      "description": "New Stream Deck actions, dials, WebSocket features, or UI settings.",
+      "scope_examples": ["actions", "dial"]
+    },
+    "fix": {
+      "emoji": "🐛",
+      "section": "Bug Fixes",
+      "description": "Resolved DOM extraction issues, reconnection fixes, or UI bugs.",
+      "scope_examples": ["core", "extension"]
+    },
+    "perf": {
+      "emoji": "⚡",
+      "section": "Performance & Hardware Protection",
+      "description": "Hardware 10-Hz rate-limit compliance, canvas caching, memory leak fixes.",
+      "scope_examples": ["plugin", "state"]
+    },
+    "refactor": {
+      "emoji": "♻️",
+      "section": "Code Refactoring & Architecture",
+      "description": "Structural cleanups without behavior or API changes.",
+      "scope_examples": ["services", "tab"]
+    },
+    "docs": {
+      "emoji": "📚",
+      "section": "Documentation",
+      "description": "Updates to docs/, README.md, or architecture diagrams.",
+      "scope_examples": ["architecture", "development"]
+    },
+    "style": {
+      "emoji": "🎨",
+      "section": "Code Style & Formatting",
+      "description": "Code formatting, comment alignment, whitespace adjustments.",
+      "scope_examples": ["comments", "formatting"]
+    },
+    "test": {
+      "emoji": "🧪",
+      "section": "Testing & Quality Assurance",
+      "description": "Test suites, validation scenarios, and mock fixtures.",
+      "scope_examples": ["validation", "mocks"]
+    },
+    "chore": {
+      "emoji": "🔧",
+      "section": "Tooling, CI & Maintenance",
+      "description": "Dependency updates, packaging scripts, and GitHub Actions pipelines.",
+      "scope_examples": ["release", "deps"]
+    }
+  },
+  "aliases": {
+    "ci": "chore",
+    "build": "chore",
+    "deps": "chore"
+  },
+  "breaking": {
+    "emoji": "⚠️",
+    "section": "Breaking Changes",
+    "description": "Incompatible API, handshake protocol, or hardware changes."
+  }
+}

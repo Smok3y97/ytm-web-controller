@@ -2,7 +2,7 @@
 
 # Feature Matrix & Action Reference (`docs/features.md`)
 
-This document provides a comprehensive technical breakdown of all available actions, hardware controllers, dynamic visual feedbacks, and background integrations in **Controller for YouTube Music Web**.
+This document describes all buttons, dials, visual feedback states, and streaming integrations available in **Controller for YouTube Music Web**.
 
 ---
 
@@ -16,49 +16,50 @@ This document provides a comprehensive technical breakdown of all available acti
 
 ## [🎛️ Stream Deck + Dials & LCD Touchstrips](#top)
 
-Stream Deck + provides 4 continuous dials with integrated push buttons and a capacitive color LCD touchstrip (`200 × 100 px` per dial slot).
+Stream Deck + features 4 rotary dials with push buttons and an interactive color LCD touchstrip screen.
 
-| Action | Control Type | Hardware Feedback | Description |
+| Action | Control Type | Visual Feedback | Description |
 | :--- | :--- | :--- | :--- |
-| **Track Controller** | Dial + LCD Tap | Auto-scrolling title/artist marquee, cover thumbnail, live time & track progress bar | Rotate to skip tracks (Next / Previous). Push dial or tap LCD touchstrip to toggle Play/Pause. Includes push-jitter suppression. |
-| **Volume Controller** | Dial + LCD Tap | Real-time volume bar, percentage readout (`100%`, `MUTED`), cover thumbnail | Rotate to adjust volume (1% – 50% step, via range slider). Push dial or tap LCD touchstrip to toggle Mute / Unmute. |
-| **Seek Controller** | Dial + LCD Tap | Real-time track progress bar, `{current} / {duration}` time display, cover thumbnail | Rotate to scrub forward/backward in track (1s – 120s step, via range slider, default 10s). Push dial or tap LCD touchstrip to toggle Play/Pause. |
+| **Track Controller** | Dial + LCD Tap | Auto-scrolling song/artist marquee, cover thumbnail, live time & track progress bar | Rotate to skip tracks (Next / Previous). Push dial or tap LCD screen to toggle Play/Pause. Includes accidental turn protection when pressing down. |
+| **Volume Controller** | Dial + LCD Tap | Real-time volume bar, percentage readout (`100%`, `MUTED`), cover thumbnail | Rotate to adjust volume (1% – 50% step via slider). Push dial or tap LCD screen to toggle Mute / Unmute. |
+| **Seek Controller** | Dial + LCD Tap | Real-time track progress bar, `{current} / {duration}` time display, cover thumbnail | Rotate to jump forward or backward in track (1s – 120s step via slider, default 10s). Push dial or tap LCD screen to toggle Play/Pause. |
 
 ---
 
 ## [🔘 Keypad Actions](#top)
 
-Standard 72×72 px Stream Deck keys supporting dual-state, tri-state, single-action, dynamic vector rendering, and in-memory album art background drawing.
+Interactive buttons for standard Stream Deck keys (Stream Deck MK.2, Mini, XL, and Neo) with live album art backgrounds, crisp status icons, and real-time text displays.
 
-| Action | Key Type | Dynamic Feedback | Description |
+| Action | Button Type | Visual Feedback | Description |
 | :--- | :--- | :--- | :--- |
-| **Play / Pause** | Dynamic Key | Dynamic Play/Pause vector state, live **Song Cover as button background**, and optional song info / time text readout | Toggles playback state on short press. Long press (hold) brings the YouTube Music browser tab or PWA window to the foreground. Song cover art is rendered directly in RAM with zero disk I/O, with optional customizable text overlay (`{artist}`, `{title}`, `{both}`, `{current}`, `{duration}`). |
-| **Volume Up** | Single Key | Live `{volume}%` text readout | Increases playback volume by configurable step (1% – 50%). Fully stylable via native Title Styler. |
-| **Volume Down** | Single Key | Live `{volume}%` text readout | Decreases playback volume by configurable step (1% – 50%). Fully stylable via native Title Styler. |
-| **Mute / Unmute** | Dual-State | Dynamic Unmuted / Muted speaker icons | Toggles mute status for active playback. |
-| **Next Track** | Single Key | Official vector Next icon | Skips to the next track in current queue. |
-| **Previous Track** | Single Key | Official vector Previous icon | Skips to previous track or restarts current track. |
-| **Like Track** | Dual-State | Dynamic active/inactive thumbs-up highlight (`#FF0033`) | Toggles like rating on current song. |
-| **Dislike Track** | Dual-State | Dynamic active/inactive thumbs-down highlight (`#FF0033`) | Toggles dislike rating on current song. |
-| **Shuffle** | Dual-State | Dynamic active/inactive shuffle highlight (`#FF0033`) | Toggles queue shuffle mode on/off. |
-| **Repeat Mode** | Tri-State | Dynamic cycle icons: **Off** ➔ **All** ➔ **One (1)** | Cycles playlist repeat modes. |
-| **Fast Forward** | Single Key | Live `+{step}s` text readout | Fast forwards playback by configurable seconds (5s – 120s, default 10s). Fully stylable via native Title Styler. |
-| **Rewind** | Single Key | Live `-{step}s` text readout | Rewinds playback by configurable seconds (5s – 120s, default 10s). Fully stylable via native Title Styler. |
-| **Copy Song URL** | Single Key | Visual checkmark confirmation on key | Copies current track URL or custom formatted track info (`{url}`, `{title}`, `{artist}`, `{album}`) directly to clipboard. |
+| **Play / Pause** | Button | Live Play/Pause icon, album art background, or song info readout | Short press toggles Play/Pause. Long press brings the YouTube Music window or tab to the front. Album cover is drawn directly without creating temporary files, with optional text overlay. |
+| **Volume Up** | Button | Live `{volume}%` text display | Increases playback volume by configurable step (1% – 50%). Stylable via Stream Deck Title Styler. |
+| **Volume Down** | Button | Live `{volume}%` text display | Decreases playback volume by configurable step (1% – 50%). Stylable via Stream Deck Title Styler. |
+| **Mute / Unmute** | Toggle Button | Muted / Unmuted speaker icons | Toggles mute on or off for active music playback. |
+| **Next Track** | Button | Next track icon | Skips to the next song in your queue. |
+| **Previous Track** | Button | Previous track icon | Skips to previous song or restarts current track. |
+| **Like Track** | Toggle Button | Highlights red when liked | Toggles like rating on the current song. |
+| **Dislike Track** | Toggle Button | Highlights red when disliked | Toggles dislike rating on the current song. |
+| **Shuffle** | Toggle Button | Highlights red when shuffle is on | Toggles playlist shuffle mode on or off. |
+| **Repeat Mode** | Cycle Button | Cycles icons: **Off** ➔ **All** ➔ **One (1)** | Cycles through playlist repeat modes. |
+| **Fast Forward** | Button | Live `+{step}s` text display | Fast forwards playback by configurable seconds (5s – 120s, default 10s). Stylable via Title Styler. |
+| **Rewind** | Button | Live `-{step}s` text display | Rewinds playback by configurable seconds (5s – 120s, default 10s). Stylable via Title Styler. |
+| **Copy Song URL** | Button | Green checkmark confirmation | Copies the current track link or custom formatted song text directly to your clipboard. |
 
 ---
 
 ## [📡 Integrations & Background Services](#top)
 
-Background services run locally inside the Stream Deck plugin process on port `39865` with zero external dependencies or open firewall ports.
+These features run 100% locally on your PC inside the Stream Deck plugin without external servers or cloud accounts.
 
-| Feature | Target App | Key Capabilities |
+| Feature | Target App | What It Does |
 | :--- | :--- | :--- |
-| **Discord Rich Presence (RPC)** | Discord Desktop & Mobile | Real-time status, album art, and animated timeline progress across Desktop & Mobile (interactive clickable song buttons available on Discord Desktop client). |
-| **OBS Browser Overlay** | OBS Studio / Streamlabs | Real-time interactive browser source widget (`http://localhost:39865/overlay`) with themes (`card`, `compact`, `pill`), visual styling engine, live album art, and smooth 60-FPS client-side progress interpolation. |
-| **Chatbot API (`!song`)** | Streamer.bot / MixItUp / Local Bots | Instant read-only HTTP endpoint for current song info (`http://localhost:39865/api/current`) with customizable placeholders (`{artist}`, `{title}`, `{album}`, `{url}`). |
-| **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live track metadata (`{artist}`, `{title}`, `{album}`) to a selected `.txt` file for OBS Text (GDI+) overlay sources. Requires selecting target file on activation; optional clear-on-pause. |
-| **Internationalization (i18n)** | Stream Deck & Property Inspector | Built-in localization support for **English (Default)** and **German (`de`)**. All action names, tooltips, encoder descriptions, and Property Inspector settings adapt automatically to the Stream Deck language. |
+| **Discord Rich Presence (RPC)** | Discord Desktop & Mobile | Shows live song title, artist, album art, and animated timeline progress in your Discord status. |
+| **OBS Browser Overlay** | OBS Studio / Streamlabs | Animated stream overlay (`http://localhost:39865/overlay`) with themes (`card`, `compact`, `pill`), custom colors, live album art, and smooth 60-FPS progress bar. |
+| **Chatbot API (`!song`)** | Streamer.bot / MixItUp / Local Bots | Local web address for current song info (`http://localhost:39865/api/current`) for Twitch and YouTube chat bots with customizable format templates. |
+| **OBS Text Export (.txt)** | OBS Studio / Streamlabs | Automatically writes live song info to a selected `.txt` file for classic OBS text sources. Optional auto-clear on pause. |
+| **Internationalization (i18n)** | Stream Deck & Property Inspector | Built-in support for **English (Default)** and **German (`de`)**. All button names, descriptions, and settings adapt automatically to your Stream Deck language. |
+
 
 ---
 

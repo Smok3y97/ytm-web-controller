@@ -10,6 +10,7 @@ This guide provides a comprehensive walkthrough of all user-facing configuration
 - [🌐 1. Global Plugin Integrations (Plugin-Wide)](#-1-global-plugin-integrations-plugin-wide)
 - [🎛️ 2. Stream Deck + Dials & LCD Customization](#-2-stream-deck--dials--lcd-customization)
 - [🔘 3. Keypad Action Customization](#-3-keypad-action-customization)
+- [🔤 4. Template Tokens & Formatting Placeholders](#-4-template-tokens--formatting-placeholders)
 
 ---
 
@@ -121,4 +122,43 @@ Global settings are accessible in the Property Inspector of **every single butto
 - **Show seek text on key**: Toggles real-time step readout directly on the key (Default: enabled).
 - **Title Format**: Template for seek text (`+{step}s`, `-{step}s`, `{sign}{step}s`). Leave blank for automatic formatting based on action direction.
 - **Native Title Styler ("T")**: Use Stream Deck's native **"T" (Title Styler)** button above the Property Inspector to customize font, size, color, and positioning.
+
+---
+
+## [🔤 4. Template Tokens & Formatting Placeholders](#top)
+
+All string templates across Stream Deck keys, dials, clipboard copies, OBS overlays, and chatbot responses are formatted by the centralized [`TemplateEngine`](../plugin/src/services/template-engine.ts). This reference outlines all supported tokens, aliases, and formatting capabilities.
+
+
+### 📋 Master Token Reference Matrix
+
+| Token | Category | Description | Example Output | Aliases |
+| :--- | :--- | :--- | :--- | :--- |
+| `{title}` | Metadata | Current track or video title | `Starboy` | `{song}`, `{track}`, `{titel}` |
+| `{artist}` | Metadata | Performing artist or channel | `The Weeknd` | `{channel}`, `{author}`, `{interpret}`, `{kuenstler}` |
+| `{album}` | Metadata | Album or single release name | `Starboy` | — |
+| `{url}` | Metadata | Direct YouTube Music track URL | `https://music.youtube.com/watch?v=...` | `{link}`, `{trackUrl}`, `{songUrl}` |
+| `{current}` | Time | Elapsed playback time formatted as `mm:ss` or `hh:mm:ss` | `1:45` | `{currentTime}`, `{current_time}`, `{time}`, `{elapsed}`, `{zeit}` |
+| `{duration}` | Time | Total song duration formatted as `mm:ss` or `hh:mm:ss` | `3:50` | `{total}`, `{totalTime}`, `{total_time}`, `{length}`, `{dauer}` |
+| `{remaining}` | Time | Remaining playback time with a leading minus sign | `-2:05` | `{remainingTime}`, `{remaining_time}`, `{rest}`, `{left}` |
+| `{both}` | Time | Combined elapsed and total duration | `1:45 / 3:50` | `{current_duration}`, `{current_and_duration}`, `{beides}` |
+| `{volume}` | Volume | Current volume level as integer `0`–`100` (or `MUTE` if muted) | `75` | `{vol}`, `{lautstaerke}` |
+| `{step}` | Seek | Configured seek step in seconds | `10` | `{seconds}`, `{sec}`, `{s}` |
+| `{sign}` | Seek | Relative seek direction indicator (`+` or `-`) | `+` | `{vorzeichen}` |
+
+### 💡 Formatting Rules & Capabilities
+1. **Multiline Formatting:** Use `\n` or press Enter in multi-line Property Inspector textareas (e.g. Play/Pause key text).
+2. **Automatic Separator Cleanup:** If optional metadata like `{album}` is empty, the template engine automatically removes dangling parentheses `()` or brackets `[]` and trims orphaned hyphens/separators (e.g. `The Weeknd - Starboy - ` becomes `The Weeknd - Starboy`).
+3. **Case-Insensitive:** All tokens are case-insensitive (e.g. `{Title}` and `{title}` resolve identically).
+
+### 📍 Where Tokens Are Used
+- **Play / Pause Key Text Overlay:** `{artist}`, `{title}`, `{both}`, `{current}`, `{duration}`, `{remaining}`, `{album}`.
+- **Copy Song URL:** `{url}`, `{title}`, `{artist}`, `{album}`, `{currentTime}`, `{duration}`, `{both}`.
+- **Track Dial LCD Display:** `{artist}`, `{title}`, `{album}` (Title Banner); `{both}`, `{current}`, `{duration}`, `{remaining}` (Time readout).
+- **Volume Key / Dial:** `{volume}%`.
+- **Fast Forward / Rewind Keys:** `+{step}s`, `-{step}s`, `{sign}{step}s`.
+- **Chatbot API (`/api/current?format=...`):** Any metadata and time tokens (see [`docs/obs-setup.md`](obs-setup.md#chatbot-api)).
+- **OBS Browser Overlay (`/overlay?template=...`):** `{title}`, `{artist}`, `{album}` (see [`docs/obs-setup.md`](obs-setup.md#obs-browser-overlay)).
+- **OBS Text File Export (`.txt`):** Any metadata and time tokens.
+
 

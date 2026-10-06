@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "project": "ytm-web-controller",
+  "version_format": "^(0|[1-9]\\d*)(\\.(0|[1-9]\\d*)){3}$",
+  "version_semantics": "Major.Minor.Patch.Build",
+  "managed_files": [
+    {
+      "path": "version.json",
+      "field": "version",
+      "role": "Monorepo Single Source of Truth"
+    },
+    {
+      "path": "package.json",
+      "field": "version",
+      "role": "Root NPM package"
+    },
+    {
+      "path": "plugin/package.json",
+      "field": "version",
+      "role": "Stream Deck Plugin NPM package"
+    },
+    {
+      "path": "plugin/package-lock.json",
+      "field": "version",
+      "role": "Plugin lockfile (managed natively via npm install --package-lock-only)"
+    },
+    {
+      "path": "plugin/com.smok3y97.ytmusicweb.sdPlugin/manifest.json",
+      "field": "Version",
+      "role": "Elgato Marketplace Plugin Manifest (strict 4 digits)"
+    },
+    {
+      "path": "extension/manifest.json",
+      "field": "version",
+      "role": "Chrome Extension Manifest V3"
+    },
+    {
+      "path": "plugin/src/services/version-control.ts",
+      "field": "FALLBACK_PLUGIN_VERSION",
+      "role": "Compile-time manifest fallback constant"
+    }
+  ]
+}

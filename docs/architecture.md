@@ -13,7 +13,7 @@ This document provides an in-depth technical overview of the **Controller for Yo
 - [🌐 4. Browser Companion Extension Layer (`extension/`)](#-4-browser-companion-extension-layer-extension)
 - [🔌 5. Backend Services Layer (`plugin/src/services/`)](#-5-backend-services-layer-pluginsrcservices)
 - [🕹️ 6. Action Controllers Layer (`plugin/src/actions/`)](#-6-action-controllers-layer-pluginsrcactions)
-- [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/.../ui/`)](#-7-property-inspector-pi-modular-architecture-plugincomsmok3y97ytmusicwebsdpluginui)
+- [🎨 7. Property Inspector (PI) Modular Architecture (`plugin/.../ui/`)](#-7-property-inspector-pi-modular-architecture-pluginui)
 - [🔒 8. Version Handshake & Incompatibility Warning Protocol](#-8-version-handshake--incompatibility-warning-protocol)
 - [⚡ 9. Stream Deck + Dial & LCD Handling](#-9-stream-deck--dial--lcd-handling)
 - [🎥 10. OBS Overlay & Chatbot HTTP Architecture](#-10-obs-overlay--chatbot-http-architecture)
@@ -118,139 +118,182 @@ graph LR
 
 ## [🏗️ 3. Complete Monorepo Structure](#top)
 
-```
+The repository is structured as a decoupled monorepo separating runtime environments: the Node.js Stream Deck backend, the in-browser extension, automated agent skills, and developer tooling.
+
+### 🏛️ High-Level Monorepo Overview
+
+```text
 ytm-web-controller/
-├── version.json                 # Single Source of Truth for project version
-├── package.json                 # Monorepo root package configuration & npm scripts
-├── AGENTS.md                    # Persistent Developer & AI Agent Guidelines
-├── CONTRIBUTING.md              # Community contribution guidelines & coding standards
-├── CODE_OF_CONDUCT.md           # Contributor Covenant v2.1 community pledge
-├── SECURITY.md                  # Security architecture, local-first policy & disclosure
-├── PRIVACY.md                   # Privacy policy & Chrome Web Store single-purpose disclosure
-├── LICENSE                      # MIT License
-├── README.md                    # User guide, installation walkthrough & setup documentation
-├── .github/                     # GitHub repository governance & CI/CD workflows
-│   ├── dependabot.yml           # Automated weekly dependency scan configuration
+├── .agents/                 # Automated Antigravity AI Agent Skills & Tooling
+├── .github/                 # GitHub CI/CD workflows, issue templates & PR policies
+├── docs/                    # Architectural specifications, feature matrices & developer guides
+├── extension/               # Manifest V3 browser companion extension (Chrome, Brave, Edge)
+├── plugin/                  # Stream Deck Plugin (Node.js SDK v3, Rollup bundle & Property Inspector)
+├── screenshots/             # Visual previews & documentation assets
+├── scripts/                 # Workspace build, packaging & version management scripts
+├── AGENTS.md                # Persistent directives and non-negotiable guardrails
+├── CONTRIBUTING.md          # Community contribution guidelines & coding standards
+├── CODE_OF_CONDUCT.md       # Contributor Covenant v2.1 pledge
+├── LICENSE                  # MIT License
+├── package.json             # Root monorepo configuration & aggregated npm scripts
+├── PRIVACY.md               # Extension privacy disclosure
+├── README.md                # Public documentation & setup walkthrough
+├── SECURITY.md              # Security policies & local-first disclosure
+└── version.json             # Single Source of Truth for project version
+```
+
+### 🤖 1. Antigravity Agent Skills (`.agents/skills/`)
+
+Automated agent capabilities equipped with specialized executable scripts, JSON schemas/resources, and reference examples:
+
+```text
+.agents/skills/
+├── changelog-gen/           # Grouped conventional changelog generator
+│   ├── SKILL.md             # Execution instructions & editorial guidelines
+│   ├── resources/           # commit-conventions.json (SSOT for types, emojis & scopes)
+│   ├── scripts/             # generate-changelog.mjs & sync-conventions-doc.mjs
+│   └── examples/            # sample-release-notes.md
+├── code-audit/              # Read-only architectural & performance auditor
+│   ├── SKILL.md             # Quality baseline & audit guidelines
+│   ├── resources/           # guardrails-catalog.json (machine-readable constraints)
+│   ├── scripts/             # audit-guardrails.mjs (static scanner for AGENTS.md rules)
+│   └── examples/            # sample-audit-report.md
+├── create-pr/               # Automated branch preparation, commit & PR workflow
+│   ├── SKILL.md             # Quality gates & semantic branch rules
+│   ├── resources/           # branch-naming-rules.json
+│   └── examples/            # pr-template.md
+├── docs-review/             # Documentation hygiene & link verification auditor
+│   ├── SKILL.md             # Styleguide & syntax hygiene standards
+│   ├── resources/           # glossary.json (preferred & forbidden terminology)
+│   ├── scripts/             # audit-docs.mjs (link, TOC, buzzword & alert scanner)
+│   └── examples/            # sample-docs-audit-report.md
+├── generate-assets/         # Asset generator & marketplace compliance auditor
+│   ├── SKILL.md             # Dimension & DPI specifications
+│   ├── resources/           # asset-specs.json (icon dimensions & touch target rules)
+│   ├── scripts/             # validate-assets.mjs (asset presence & layout validator)
+│   └── examples/            # sample-icon.svg
+├── publish-release/         # 4-digit version release pipeline trigger
+│   ├── SKILL.md             # Bump, tag & push instructions
+│   ├── resources/           # release-manifest-targets.json (7 synchronized files)
+│   └── examples/            # sample-release-workflow.md
+└── sync-docs/               # Code-to-documentation synchronization auditor
+    ├── SKILL.md             # Documentation tier hierarchy & sync matrix
+    ├── resources/           # doc-mapping.json (source-to-docs relationship mapping)
+    ├── scripts/             # audit-sync.mjs (version, action UUID & npm script validator)
+    └── examples/            # sample-sync-report.md
+```
+
+### 🌐 2. Browser Companion Extension Layer (`extension/`)
+
+Runs within `https://music.youtube.com/*` with strict context boundary separation (`MAIN` vs `ISOLATED` World):
+
+```text
+extension/
+├── manifest.json            # Manifest V3 configuration with sequential MAIN-world scripts
+├── background.js            # MV3 service worker for tab foreground activation
+├── bridge.js                # ISOLATED World bridge for chrome.storage & manifest version
+├── content.js               # WebSocket client orchestrator, command router & lifecycle
+├── popup.html/.css/.js      # Toolbar popup UI (status, port configuration & live tester)
+├── ytm-actions.js           # Action dispatcher: Playback (MediaSession -> Player API) & UI controls
+├── ytm-fallback.js          # UI toggles (Like/Dislike/Shuffle/Repeat) & <video> volume fallbacks
+├── ytm-media-session.js     # W3C Media Session API hooks (setActionHandler / metadata)
+├── ytm-player-api.js        # YouTube Player API bridge (#movie_player)
+├── ytm-selectors.js         # Single Source of Truth for YouTube Music DOM element selectors
+├── ytm-state.js             # Reactive HTML5 <video> observer & playback state collector
+├── utils.js                 # DOM query helpers, time parsers & artwork URL resolution
+└── icons/                   # Extension toolbar & store icons (16, 48, 128 px PNG)
+```
+
+### 🎛️ 3. Stream Deck Plugin (`plugin/`)
+
+Node.js SDK v3 backend, compiled Rollup bundle, and modular Property Inspector:
+
+```text
+plugin/
+├── com.smok3y97.ytmusicweb.sdPlugin/ # Official Elgato distribution directory
+│   ├── manifest.json        # Stream Deck Plugin Manifest (com.smok3y97.ytmusicweb)
+│   ├── de.json / en.json    # Localized action titles, tooltips & UI strings
+│   ├── assets/              # Icons (plugin, category, key states) & OBS overlay web app
+│   │   ├── category-icon.svg # Monochromatic action list icon (28×28 / 56×56 px)
+│   │   ├── plugin-icon.png  # Brand-compliant circular badge (256×256 / 512×512 px)
+│   │   ├── actions/         # SVG action glyphs (white default, red active state)
+│   │   └── overlay/         # OBS Studio Browser Source web widget (/overlay)
+│   ├── bin/                 # Compiled plugin bundle (plugin.js) & native helper (ytm-focus.exe)
+│   ├── layouts/             # Stream Deck + Dial LCD JSON layouts (dial_layout.json)
+│   └── ui/                  # Modular Property Inspector (PI) HTML/JS Frontend
+│       ├── common.html/.js  # Dynamic inspector for stateless/trigger keypad actions
+│       ├── copy-url.html/.js # Copy Song URL inspector with template builder
+│       ├── global-settings.js # Shared global settings drawer (Discord / OBS / Port)
+│       ├── playpause.html/.js # Play/Pause inspector (Cover background toggle)
+│       ├── track-dial.html/.js # Track Controller dial inspector
+│       ├── volume-dial.html/.js # Volume Controller dial inspector
+│       ├── seek-dial.html/.js # Seek Controller dial inspector
+│       └── css/sdpi.css     # Stream Deck Property Inspector stylesheet
+├── src/                     # TypeScript Source Code
+│   ├── index.ts             # Plugin entry point & action registration
+│   ├── types/               # TypeScript interfaces, settings & event payloads
+│   ├── services/            # Decoupled backend services layer
+│   │   ├── websocket-server.ts  # Unified Server (Port 39865: HTTP + WebSocket)
+│   │   ├── http-api.ts          # Read-only HTTP API (/api/current) & overlay asset server
+│   │   ├── state-manager.ts     # Playback state caching & progress interpolation
+│   │   ├── version-control.ts   # Handshake protocol & incompatibility detection
+│   │   ├── tab-manager.ts       # Connected browser tab lifecycle & arbitration
+│   │   ├── image-renderer.ts    # In-memory RAM base64 canvas renderer (zero disk I/O)
+│   │   ├── marquee-service.ts   # Centralized Ping-Pong text marquee scroller
+│   │   ├── template-engine.ts   # Placeholder token replacement engine ({title}, {artist})
+│   │   ├── metadata-sanitizer.ts # YouTube Music DOM metadata cleaner
+│   │   ├── discord-rpc.ts       # Discord Rich Presence desktop IPC client
+│   │   ├── obs-exporter.ts      # Live .txt track info exporter for OBS text sources
+│   │   ├── window-focus.ts      # Native Win32 foreground window activation
+│   │   └── clipboard.ts         # System clipboard writer for song URLs
+│   └── actions/             # Independent Action Controllers
+│       ├── base-state-action.ts  # Base class for stateful keypad buttons
+│       ├── base-volume-action.ts # Base class for volume keypad buttons
+│       ├── base-seek-action.ts   # Base class for seek keypad buttons
+│       ├── base-dial-action.ts   # Base class for Stream Deck + dials & LCD touchstrips
+│       ├── play-pause.ts    # Play / Pause dynamic key handler (cover & icon)
+│       ├── track-dial.ts    # Track Controller (Dial rotation & LCD touch)
+│       ├── volume-dial.ts   # Volume Controller (Dial rotation & LCD touch)
+│       ├── seek-dial.ts     # Seek Controller (Dial rotation & LCD touch)
+│       ├── volume-up.ts / volume-down.ts # Volume stepping keys
+│       ├── seek-forward.ts / seek-backward.ts # Track seek stepping keys
+│       ├── mute.ts          # Mute / Unmute toggle key
+│       ├── next.ts / previous.ts # Track skipping keys
+│       ├── like.ts / dislike.ts  # Rating toggle keys
+│       ├── shuffle.ts / repeat.ts # Queue mode toggle keys
+│       └── copy-url.ts      # Copy Song URL key
+├── package.json             # Plugin dependencies & rollup build scripts
+├── rollup.config.mjs        # Rollup bundler configuration
+├── tsconfig.json            # TypeScript compiler configuration (ES2023)
+└── eslint.config.js         # Official Elgato ESLint flat configuration
+```
+
+### 📚 4. Documentation, Tooling & Governance (`docs/`, `scripts/`, `.github/`)
+
+Technical specifications, build scripts, and CI/CD pipelines:
+
+```text
+├── docs/                    # Technical specifications & developer documentation
+│   ├── ai-disclosure.md     # AI development transparency disclosure
+│   ├── architecture.md      # Complete system architecture specification & diagrams
+│   ├── commit-conventions.md # Conventional Commits guide (rendered from SSOT)
+│   ├── configuration.md     # Configuration options & template format guide
+│   ├── development.md       # Developer workflow, build & bump commands
+│   ├── features.md          # Complete feature matrix & action reference
+│   ├── obs-setup.md         # OBS Studio & Chatbot stream setup guide
+│   └── plugin-guideline.md  # Elgato Marketplace compliance guidelines
+├── scripts/                 # Workspace automation & deployment scripts
+│   ├── bump-version.mjs     # Centralized 7-file version synchronization script
+│   ├── generate_assets.ps1  # Automated asset generator script (PNG & invokes SVG generator)
+│   ├── generate_svgs.mjs    # SVG vector icons generator
+│   ├── package_plugin.ps1   # Packaging, asset generation & Stream Deck deployment script
+│   └── ytm-focus.cs         # Standalone C# source for native Win32 window focus binary
+├── .github/                 # GitHub repository governance & CI/CD workflows
+│   ├── dependabot.yml       # Automated weekly dependency scan configuration
 │   ├── pull_request_template.md # Standard PR checklist & compliance template
-│   ├── workflows/               # Automated GitHub Actions pipelines
-│   │   ├── ci.yml               # Automated linting, typecheck, packaging & validation
-│   │   └── release.yml          # Automated release building, tagging & asset publishing
-│   └── ISSUE_TEMPLATE/          # Structured issue intake forms
-│       ├── bug_report.yml       # Standardized bug reporting form (OS, Browser, HW)
-│       ├── feature_request.yml  # Feature & action request form
-│       └── config.yml           # Contact links & blank issue policy
-├── scripts/                     # Workspace automation & deployment scripts
-│   ├── bump-version.mjs         # Centralized version synchronization script
-│   ├── generate_assets.ps1      # Automated asset generator script (PNG & invokes SVG generator)
-│   ├── generate_svgs.mjs        # SVG vector icons generator
-│   ├── package_plugin.ps1       # Packaging, asset generation & Stream Deck deployment script
-│   └── ytm-focus.cs             # Standalone C# source for native Win32 window focus binary
-├── docs/                        # Technical specifications & developer documentation
-│   ├── ai-disclosure.md         # AI development transparency disclosure
-│   ├── architecture.md          # Complete system architecture specification & diagrams
-│   ├── configuration.md         # Configuration options & template format guide
-│   ├── development.md           # Developer workflow, build & bump commands
-│   ├── features.md              # Complete feature matrix & action reference
-│   ├── obs-setup.md             # OBS Studio & Chatbot stream setup guide
-│   └── plugin-guideline.md      # Elgato Marketplace compliance guidelines
-├── screenshots/                 # Preview assets & documentation screenshots
-│   ├── Banner.png               # GitHub repository hero banner
-│   ├── StreamDeck.png           # Stream Deck action configuration preview
-│   ├── OBS-Browser-Overlay.png  # OBS Studio Browser Source overlay preview
-│   ├── Discord-Desktop-RPC.png  # Discord Desktop Rich Presence preview
-│   └── Discord-Mobile-RPC.png   # Discord Mobile App Rich Presence preview
-├── extension/                   # Manifest V3 Browser Companion Extension
-│   ├── manifest.json            # MV3 Manifest with sequential MAIN-world scripts & Gecko compatibility
-│   ├── background.js            # MV3 service worker for tab and window foreground activation
-│   ├── bridge.js                # ISOLATED world bridge for chrome.storage & manifest version
-│   ├── ytm-selectors.js         # Single Source of Truth for all YouTube Music DOM element selectors
-│   ├── ytm-media-session.js     # Tier 1 W3C Media Session API hooks (setActionHandler / metadata)
-│   ├── utils.js                 # DOM helpers, text/time parsers & artwork URL extraction
-│   ├── ytm-player-api.js        # YouTube Player API interaction (#movie_player)
-│   ├── ytm-fallback.js          # UI toggles (Like/Dislike/Shuffle/Repeat) & <video> volume fallbacks
-│   ├── ytm-actions.js           # Action dispatcher: Playback (MediaSession -> Player API) & UI controls
-│   ├── ytm-state.js             # Metadata parser, state collector & reactive media observers
-│   ├── content.js               # WebSocket client orchestrator, command router & initialization
-│   ├── popup.html               # Extension status, version diagnostics & port configuration UI
-│   ├── popup.css                # Extension popup dark theme stylesheet
-│   ├── popup.js                 # Port storage & live connection diagnostic tester
-│   └── icons/                   # Extension toolbar icons (16, 48, 128 px)
-├── plugin/                      # Stream Deck Plugin (Node.js SDK 3)
-│   ├── com.smok3y97.ytmusicweb.sdPlugin/ # Official Elgato distribution directory
-│   │   ├── manifest.json        # Stream Deck Plugin Manifest (com.smok3y97.ytmusicweb)
-│   │   ├── de.json              # German localization manifest & action strings
-│   │   ├── en.json              # English default localization reference strings
-│   │   ├── bin/                 # Compiled plugin artifacts
-│   │   │   ├── plugin.js        # Node.js Rollup bundle
-│   │   │   └── ytm-focus.exe    # Native 7 KB Win32 foreground activation binary
-│   │   ├── assets/              # High-resolution vector & raster assets
-│   │   │   ├── category-icon.svg # Monochromatic category icon (28x28 / 56x56)
-│   │   │   ├── plugin-icon.png  # Brand-compliant circular badge (256x256)
-│   │   │   ├── plugin-icon@2x.png # High-DPI circular badge (512x512)
-│   │   │   ├── plugin-icon.svg  # Vector source for plugin badge
-│   │   │   ├── overlay/         # OBS Studio Browser Source overlay assets (/overlay)
-│   │   │   │   ├── index.html   # Transparent overlay widget DOM structure
-│   │   │   │   ├── style.css    # Responsive frosted dark theme & animation styles
-│   │   │   │   └── overlay.js   # Live WebSocket client & URL parameter parser
-│   │   │   └── actions/         # SVG action icons (playpause, trackdial, volume, etc.)
-│   │   ├── layouts/             # Stream Deck + Dial LCD JSON layouts
-│   │   │   └── dial_layout.json # Single-source-of-truth 4-item LCD strip layout
-│   │   └── ui/                  # Modular Property Inspector (PI) Frontend
-│   │       ├── i18n.js          # Property Inspector internationalization helper (DE/EN)
-│   │       ├── streamdeck-client.js # Low-level Stream Deck WebSocket SDK bridge
-│   │       ├── global-settings.js # Global settings UI component (Discord / OBS / Port)
-│   │       ├── common.html/.js  # Standard inspector for stateless/trigger keys (Dynamic action descriptions)
-│   │       ├── track-dial.html/.js # Track Controller Dial inspector
-│   │       ├── volume-dial.html/.js # Volume Controller Dial inspector
-│   │       ├── seek-dial.html/.js # Seek Controller Dial inspector
-│   │       ├── playpause.html/.js # Play/Pause inspector (Album cover toggle)
-│   │       ├── volume.html/.js  # Volume Up & Down keys inspector
-│   │       ├── seek.html/.js    # Seek Forward & Rewind keys inspector
-│   │       ├── copy-url.html/.js # Copy Song URL inspector (Custom format template)
-│   │       └── css/sdpi.css     # Stream Deck Property Inspector stylesheet
-│   ├── package.json             # Plugin dependencies & rollup build scripts
-│   ├── eslint.config.js         # Official Elgato ESLint flat configuration
-│   ├── rollup.config.mjs        # Rollup bundler configuration
-│   ├── tsconfig.json            # TypeScript compiler configuration (ES2023)
-│   └── src/                     # Backend Source Code (TypeScript)
-│       ├── index.ts             # Plugin entry point & action registration
-│       ├── types/               # TypeScript interfaces & event payloads
-│       ├── services/            # Decoupled backend services layer
-│       │   ├── version-control.ts   # Centralized version control & handshake validator
-│       │   ├── websocket-server.ts  # Unified Server (Port 39865: HTTP + WebSocket)
-│       │   ├── tab-manager.ts       # Connected browser tab lifecycle & multi-tab arbitration
-│       │   ├── http-api.ts          # Read-only HTTP API & overlay static asset router
-│       │   ├── state-manager.ts     # Centralized playback state store & interpolation
-│       │   ├── template-engine.ts   # Template parser & placeholder formatting engine
-│       │   ├── metadata-sanitizer.ts # Multi-language YouTube DOM metadata filtering
-│       │   ├── marquee-service.ts   # Centralized Ping-Pong marquee scroller
-│       │   ├── image-renderer.ts    # In-memory RAM base64 canvas renderer
-│       │   ├── warning-icons.ts     # Dynamic SVG warning icon generator for mismatch states
-│       │   ├── discord-rpc.ts       # Isolated Discord Rich Presence client
-│       │   ├── obs-exporter.ts      # Live .txt track info exporter for OBS
-│       │   ├── window-focus.ts      # Win32 & OS window focus helper for YouTube Music / PWA
-│       │   └── clipboard.ts         # Native clipboard bridge for song URL copying
-│       └── actions/             # Independent Action Controllers
-│           ├── base-state-action.ts  # Base class for stateful keypad buttons
-│           ├── base-volume-action.ts # Base class for volume keypad buttons
-│           ├── base-seek-action.ts   # Base class for seek keypad buttons
-│           ├── base-dial-action.ts   # Base class for Stream Deck + dials & LCDs
-│           ├── play-pause.ts    # Play / Pause dynamic key handler (cover & icon)
-│           ├── track-dial.ts    # Track Controller (Dial & LCD)
-│           ├── volume-dial.ts   # Volume Controller (Dial & LCD)
-│           ├── seek-dial.ts     # Seek Controller (Dial & LCD)
-│           ├── volume-up.ts     # Volume Up key
-│           ├── volume-down.ts   # Volume Down key
-│           ├── seek-forward.ts  # Fast Forward key
-│           ├── seek-backward.ts # Rewind key
-│           ├── mute.ts          # Mute / Unmute toggle key
-│           ├── next.ts          # Next Track key
-│           ├── previous.ts      # Previous Track key
-│           ├── like.ts          # Like Track key
-│           ├── dislike.ts       # Dislike Track key
-│           ├── shuffle.ts       # Shuffle toggle key
-│           ├── repeat.ts        # Repeat mode cycle key
-│           └── copy-url.ts      # Copy Song URL key
+│   ├── workflows/           # Automated GitHub Actions pipelines (ci.yml, release.yml)
+│   └── ISSUE_TEMPLATE/      # Structured issue intake forms (bug_report, feature_request)
+└── screenshots/             # Hero banners, hardware previews & overlay screenshots
 ```
 
 ---
@@ -266,7 +309,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
    - Fully compatible with **Chromium** and **Gecko** (Mozilla Firefox).
    - Sequentially loads modular scripts in page `"world": "MAIN"` context (`ytm-selectors.js` → `ytm-media-session.js` → `utils.js` → `ytm-player-api.js` → `ytm-fallback.js` → `ytm-actions.js` → `ytm-state.js` → `content.js`) at `document_start` to intercept MediaSession handlers before YouTube Music scripts initialize.
 
-2. **Isolated World Bridge ([`extension/bridge.js`](../extension/bridge.js))**:
+2. **ISOLATED World Bridge ([`extension/bridge.js`](../extension/bridge.js))**:
    - Injected into `music.youtube.com` with default `ISOLATED` world execution at `document_start`.
    - Bridges manifest version, custom WebSocket port, and version mismatch status bidirectionally to `content.js` via `window.postMessage`.
 
@@ -315,8 +358,8 @@ The browser companion extension runs in the context of `https://music.youtube.co
 ### 🌐 Extension Context Boundaries (MAIN vs. ISOLATED World)
 
 - **MAIN World (`extension/ytm-*.js`, `extension/content.js`):** Interacts directly with the YouTube Music DOM, Polymer UI components, and the `#movie_player` API. It has **zero direct access** to Chrome Extension runtime APIs (`chrome.storage`, `chrome.runtime`).
-- **ISOLATED World (`extension/bridge.js`):** Bridges manifest metadata and stored port configurations from `chrome.storage.local`. It communicates with the MAIN world exclusively via bidirectional `window.postMessage`.
-- **Strict Boundary Rule:** Never attempt to call `chrome.*` APIs inside MAIN world scripts, and never query YouTube player internals or the DOM directly inside `bridge.js`.
+- **ISOLATED World (`extension/bridge.js`):** Bridges manifest metadata and stored port configurations from `chrome.storage.local`. It communicates with the MAIN World exclusively via bidirectional `window.postMessage`.
+- **Strict Boundary Rule:** Never attempt to call `chrome.*` APIs inside MAIN World scripts, and never query YouTube player internals or the DOM directly inside `bridge.js`.
 
 ---
 
@@ -410,7 +453,7 @@ The Property Inspector frontend uses a modular architecture with centralized int
 The Stream Deck + integration combines physical rotary encoders with high-density LCD touchstrips (`200 × 100 px` per dial slot).
 
 ### 🎛️ Touchstrip Layout & Visual Pipeline
-- **Layout Definition (`layouts/dial_layout.json`)**: Single source of truth 4-item LCD layout rendering track artwork/title, artist/album, volume level/progress bar, and playback state icon.
+- **Layout Definition (`layouts/dial_layout.json`)**: Single Source of Truth 4-item LCD layout rendering track artwork/title, artist/album, volume level/progress bar, and playback state icon.
 - **In-Memory Rendering Pipeline & Memoization**: Dynamic canvas drawings, SVG generation, and album cover processing are executed entirely in RAM (`ImageRenderer`) and output as Base64 Data URLs with zero intermediate disk writes. Bounded in-RAM caches (`overlayCache` in `ImageRenderer` and `warningIconCache` in `warning-icons.ts`) eliminate duplicate SVG string templates and URI encoding allocations across render and marquee ticks.
 - **Hardware Refresh Limit & Settings Caching**: Programmatic LCD touchstrip renders and key updates must not exceed **10 updates per second (10 Hz)** to avoid USB bus congestion and Stream Deck firmware latency. Dial actions cache Property Inspector settings in `actionSettings` maps on `onWillAppear` and `onDidReceiveSettings`, completely eliminating IPC `getSettings()` round-trips during render loops and marquee ticks. `updateAllDials` is debounced by 30ms to coalesce rapid state change events.
 

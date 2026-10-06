@@ -15,176 +15,140 @@
   <a href="https://developer.chrome.com/docs/extensions/mv3/intro/"><img src="https://img.shields.io/badge/Extension-Manifest%20V3-green.svg" alt="Manifest V3"></a>
 </p>
 
-A lightweight, event-driven open-source controller bridge connecting the official [YouTube Music Web App](https://music.youtube.com) directly to your **Elgato Stream Deck** (including **Stream Deck + Dials & LCD Touchstrips**).
+Control the official [YouTube Music Web Player](https://music.youtube.com) directly from your **Elgato Stream Deck** — without running bulky third-party desktop wrappers. Featuring live album cover art, rotary dial controls for **Stream Deck +**, customizable **OBS Studio stream overlays**, and **Discord** status.
+
+> [!IMPORTANT]
+> **Browser Companion Extension Required:**  
+> To connect YouTube Music in your browser to Stream Deck, this setup requires **both** the Stream Deck Plugin and the lightweight **Companion Browser Extension** (for Google Chrome, Brave, Microsoft Edge, and other Chromium browsers). Follow the 3-step [Quickstart & Setup](#-quickstart--setup) below to get started in minutes!
 
 > [!NOTE]
-> **Legal Disclaimer**: YouTube Music is a trademark of Google LLC. This project is an independent open-source tool and is not affiliated with, sponsored, or endorsed by Google LLC.
+> **Legal Disclaimer:** YouTube Music is a trademark of Google LLC. This project is an independent open-source tool developed by Smok3y97 and is not affiliated with, sponsored, or endorsed by Google LLC.
+
 
 ---
 
 ## 📑 Table of Contents
-- [🌟 Why This Exists](#why-this-exists)
-- [✨ Key Features](#key-features)
-- [🎥 Streamer & Creator Features](#streamer--creator-features)
-- [📦 Quickstart & Installation](#quickstart--installation)
-- [📚 Documentation & Guides](#documentation--guides)
-- [🤖 AI Collaboration & Transparency](#ai-collaboration--transparency)
-- [🧪 Tested Environments & Hardware](#tested-environments--hardware)
-- [🗺️ Roadmap & Future Ideas](#roadmap)
-- [⚖️ Legal & Trademark Disclaimer](#disclaimer)
-- [🔒 Privacy Policy](PRIVACY.md)
-- [📄 License](#license)
+- [💡 Why This Plugin?](#-why-this-plugin)
+- [🎛️ What You Can Do](#-what-you-can-do)
+  - [Stream Deck Keys & Dials](#stream-deck-keys--dials)
+  - [Live Streaming & OBS Studio](#live-streaming--obs-studio)
+  - [Discord Status](#discord-status)
+- [📦 Quickstart & Setup](#-quickstart--setup)
+- [📚 Detailed Documentation & Guides](#-detailed-documentation--guides)
+- [🤖 AI Collaboration & Transparency](#-ai-collaboration--transparency)
+- [🧪 Verified Environments & Hardware](#-verified-environments--hardware)
+- [🗺️ Project Roadmap](#-project-roadmap)
+- [🔒 Privacy & Local Security](#-privacy--local-security)
+- [📄 License](#-license)
 
 ---
 
-<a id="why-this-exists"></a>
+## 💡 Why This Plugin?
 
-## [🌟 Why This Exists](#top)
+Most YouTube Music desktop integrations force you to install heavy third-party desktop apps that drain your RAM and CPU. **Controller for YouTube Music Web** works directly with your existing browser (Chrome, Brave, Edge):
 
-Most YouTube Music desktop solutions require third-party desktop wrappers that use extra memory and background processes.
-
-**Controller for YouTube Music Web** lets you keep using the official YouTube Music web player or PWA directly with your **Elgato Stream Deck**:
-
-- 🚀 **Official Web Player**: Works directly with YouTube Music in your browser (Chrome, Brave, Edge, etc.) with all your playlists, recommendations, and official audio quality.
-- ⚡ **Event-Driven & Local-First**: WebSocket communication without periodic DOM polling or continuous timeupdate traffic (client-side interpolation), using in-memory RAM rendering without temporary cache files on disk (file export for OBS `.txt` is opt-in).
-- 🛡️ **Lightweight & Private**: Runs locally on your machine with zero external telemetry and zero open firewall ports.
+- 🚀 **Lightweight & Fast:** Uses the official web player or PWA in your browser. Saves memory and CPU power so your PC stays fast while gaming or streaming.
+- 🛡️ **100% Private & Local:** All communication stays strictly on your computer. No cloud accounts, no tracking, and no external servers.
+- 🖼️ **Clean & Disk-Friendly:** Album artwork and button graphics are drawn instantly on your keys and dials without cluttering your drive with temporary image files.
+- 🎛️ **Smooth Hardware Experience:** Specifically tuned for Stream Deck + so displays and dial controls respond smoothly without screen lag.
 
 ---
 
-<a id="key-features"></a>
+## 🎛️ What You Can Do
 
-## [✨ Key Features](#top)
+### Stream Deck Keys & Dials
+- **Stream Deck + Rotary Dials:** Turn dials to skip songs, adjust volume, or scrub through tracks. Push the dial or tap the LCD screen to play/pause or mute.
+- **Dynamic LCD Touchstrips:** See live song titles, artist names with smooth text scrolling, time progress bars, and album art thumbnails right above your dials.
+- **Keys with Live Album Art:** Use the current song cover as your Play/Pause button background with optional song title or time text on top.
+- **Essential Music Controls:** Next/Previous track, Volume Up/Down, Mute, Fast Forward, Rewind, Like/Dislike, Shuffle, Repeat (Off ➔ All ➔ One), and One-Click Copy Song Link.
+- **Action Catalog:** For a complete breakdown of every button and dial, see the **[Feature Matrix & Action Reference (`docs/features.md`)](docs/features.md)**.
 
-- 🎛️ **Stream Deck + Dial Controls**: Dial controls for Track Skipping, Volume, and Scrubbing/Seeking with real-time LCD progress bars and dynamic album cover thumbnails.
-- 🔘 **13 Keypad Actions**: Live Song Cover Art backgrounds & track info overlay, Play/Pause, Volume Up/Down, Fast Forward / Rewind, Mute, Next/Prev, Like/Dislike, Shuffle, Repeat (Tri-State), and Copy Song URL.
-- 💬 **Discord Rich Presence (RPC)**: Automatic status broadcasting with album art and animated progress across Desktop & Mobile *(clickable song links are supported on the Discord Desktop client)*.
+### Live Streaming & OBS Studio
+- **Now-Playing Stream Overlay:** Add an animated music widget to OBS Studio with live album art, progress bar, and customizable themes (`card`, `compact`, `pill`) and colors.
+- **Chatbot Command (`!song`):** Let your Twitch or YouTube viewers check what song is currently playing via Streamer.bot or MixItUp.
+- **Classic OBS Text Export:** Automatically write song info to a simple text file (`.txt`) for classic OBS text sources.
+- **Setup Guide:** Step-by-step setup instructions are available in the **[OBS Studio & Chatbot Setup Guide (`docs/obs-setup.md`)](docs/obs-setup.md)**.
 
-> [!TIP]
-> 📋 **Detailed Action Reference**: For full control tables, hardware feedbacks, and action specifications, see the **[Feature Matrix & Action Reference (`docs/features.md`)](docs/features.md)**.
-
----
-
-<a id="streamer--creator-features"></a>
-<a id="streamer-features"></a>
-
-## [🎥 Streamer & Creator Features](#top)
-
-- 🎨 **OBS Studio Browser Overlay**: Dynamic animated now-playing stream overlay (`/overlay`) with live album art, marquee scrolling, progress bar, themes (`card`, `compact`, `pill`), and HEX color customization.
-- 🤖 **Chatbot Integration (`!song`)**: Lightweight read-only REST endpoint (`/api/current`) for Streamer.bot, MixItUp, and local bots with customizable response formats.
-- 📄 **OBS Text File Export (.txt)**: Automatically writes live metadata (`{artist}`, `{title}`, `{album}`) to a local `.txt` file for classic OBS Text (GDI+) sources.
-
-> [!TIP]
-> 📖 **Full Streamer & Chatbot Guide**: For step-by-step setup, theme parameters, and bot commands (Streamer.bot, MixItUp), see the **[OBS Studio & Chatbot Setup Guide (`docs/obs-setup.md`)](docs/obs-setup.md)**.
+### Discord Status
+- **Rich Presence (RPC):** Show what you are listening to on Discord with album art, artist, and animated timeline progress across Discord Desktop and Mobile.
 
 ---
 
-<a id="quickstart--installation"></a>
-<a id="quickstart"></a>
-
-## [📦 Quickstart & Installation](#top)
+## 📦 Quickstart & Setup
 
 ### Step 1: Install the Stream Deck Plugin
 1. Download the latest `com.smok3y97.ytmusicweb.streamDeckPlugin` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page.
-2. Double-click the file to install it directly into Elgato Stream Deck.
-3. Open Stream Deck and drag any **YouTube Music** action onto your keys or dials.
+2. Double-click the downloaded file to install it into your Elgato Stream Deck app.
+3. Drag any **YouTube Music** action onto your keys or dials.
 
 ### Step 2: Install the Browser Extension
-1. Download and unzip `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page.
-2. In your browser (Chrome, Edge, Brave, etc.), navigate to `chrome://extensions` (or `about:debugging` in Firefox — *experimental / untested*).
-3. Enable **Developer mode** (top-right toggle) and click **Load unpacked**.
-4. Select the unzipped `extension` folder.
+1. Download and extract `extension.zip` from the [Releases](https://github.com/smok3y97/ytm-web-controller/releases) page.
+2. In your browser (Chrome, Edge, Brave), go to `chrome://extensions`.
+3. Turn on **Developer mode** (toggle in the top-right corner) and click **Load unpacked**.
+4. Select the extracted `extension` folder.
 
-### Step 3: Start Playing Music!
-1. Open [music.youtube.com](https://music.youtube.com).
-2. The extension automatically connects to your Stream Deck via local WebSocket (`127.0.0.1:39865`).
+### Step 3: Play Your Music
+1. Open [music.youtube.com](https://music.youtube.com) and start playing music.
+2. The extension connects automatically to your Stream Deck.
+3. To customize volume steps, text formatting, or colors, check the **[Configuration Guide (`docs/configuration.md`)](docs/configuration.md)**.
 
 ---
 
-<a id="documentation--guides"></a>
-<a id="documentation"></a>
+## 📚 Detailed Documentation & Guides
 
-## [📚 Documentation & Guides](#top)
+Looking for deeper technical details, developer instructions, or customization options? Explore our specialized guides:
 
-For detailed setup instructions, developer guidelines, and architectural specifications, check the documentation:
-
-| Guide | Description |
+| Guide | What It Covers |
 | :--- | :--- |
-| 📋 **[Feature Matrix & Action Reference](docs/features.md)** | Detailed breakdown of all Keypad and Dial actions, hardware feedbacks, and background services. |
-| 🎥 **[OBS Studio & Chatbot Setup Guide](docs/obs-setup.md)** | Step-by-step instructions for setting up live overlays, chatbots, and text sources in OBS Studio. |
-| ⚙️ **[Configuration & Customization Guide](docs/configuration.md)** | Complete breakdown of Property Inspector options, Discord RPC, Volume steps, and templates. |
-| 🏛️ **[System Architecture & Data Flows](docs/architecture.md)** | Full technical specifications, Mermaid architecture diagrams, service breakdowns, and monorepo file tree. |
-| 🏗️ **[Development & Contribution Guide](docs/development.md)** | Build commands, Rollup bundle setup, packaging pipeline, and versioning standards. |
-| 📋 **[Marketplace Guidelines Compliance](docs/plugin-guideline.md)** | Elgato Stream Deck Marketplace compliance rules and asset specifications. |
-| 🤖 **[AI Collaboration & Transparency](docs/ai-disclosure.md)** | Transparent breakdown of AI pair programming with Google Antigravity and quality assurance practices. |
-| 🤝 **[Community Contribution Guidelines](CONTRIBUTING.md)** | Contribution steps, bug reporting, PR workflow, and architectural principles. |
-| 📜 **[Code of Conduct](CODE_OF_CONDUCT.md)** | Contributor Covenant v2.1 community standards and pledge. |
-| 🔒 **[Security Policy](SECURITY.md)** | Local-first security architecture, privacy guarantee, and vulnerability reporting. |
-| 📋 **[Agent & Developer Guidelines](AGENTS.md)** | Persistent rules for human contributors and AI coding agents. |
+| 📋 **[Feature Matrix & Action Reference](docs/features.md)** | Full list of all buttons, dials, actions, and hardware interactions. |
+| 🎥 **[OBS Studio & Chatbot Setup Guide](docs/obs-setup.md)** | Step-by-step guide for stream overlays, chatbot commands, and text sources. |
+| ⚙️ **[Configuration & Customization Guide](docs/configuration.md)** | Settings, volume sliders, Discord options, and **[Template Tokens Reference](docs/configuration.md#4-template-tokens--formatting-placeholders)**. |
+| 🏛️ **[System Architecture & Data Flows](docs/architecture.md)** | Technical deep-dive into WebSocket communication, services, and diagrams. |
+| 🏗️ **[Development & Contribution Guide](docs/development.md)** | Build instructions, local setup, packaging scripts, and versioning rules. |
+| 📝 **[Commit Conventions & Categories](docs/commit-conventions.md)** | Conventional Commit standard, category emojis, and automated release notes. |
+| 📋 **[Marketplace Guidelines Compliance](docs/plugin-guideline.md)** | Elgato Stream Deck Marketplace compliance and icon asset rules. |
+| 🤖 **[AI Collaboration & Transparency](docs/ai-disclosure.md)** | Transparent documentation of AI pair programming with Google Antigravity. |
+| 🤝 **[Community Contribution Guidelines](CONTRIBUTING.md)** | How to report bugs, suggest features, and submit pull requests. |
+| 📜 **[Code of Conduct](CODE_OF_CONDUCT.md)** | Community pledge and behavior guidelines. |
+| 🔒 **[Security Policy](SECURITY.md)** | Local-first security architecture and vulnerability reporting. |
+| 📋 **[Agent & Developer Guidelines](AGENTS.md)** | Technical directives and operational guardrails for contributors. |
 
 ---
 
-<a id="ai-collaboration--transparency"></a>
-<a id="ai-collaboration"></a>
+## 🤖 AI Collaboration & Transparency
 
-## [🤖 AI Collaboration & Transparency](#top)
+This project is developed with transparent AI collaboration: code architecture, build automation, vector icons, and documentation were created in pair programming with **Google Antigravity / Gemini AI** under the architectural direction and feature specification of the maintainer (**Smok3y97**). Every feature, rotary dial behavior, and UI element is physically tested and verified on live Stream Deck hardware.
 
-The source code, build scripts, vector assets, and UI components in this repository were **100% generated by Artificial Intelligence (Google Antigravity / Gemini AI)** under the architectural guidance and feature specification of the maintainer (**Smok3y97**). All functionality, dials, keys, and integrations are physically tested on hardware. For full details, see **[AI Collaboration & Transparency (`docs/ai-disclosure.md`)](docs/ai-disclosure.md)**.
-
----
-
-<a id="tested-environments--hardware"></a>
-<a id="tested-environments"></a>
-
-## [🧪 Tested Environments & Hardware](#top)
-
-All releases and features are physically tested and validated by the maintainer on live hardware:
-
-- **Hardware**: Elgato Stream Deck +, Corsair Galleon 100 SD
-- **Environment**: Windows 11, Google Chrome (Web Player & PWA), Discord Desktop, OBS Studio
-
-> [!TIP]
-> 🔍 **Detailed Specifications**: For exact software build numbers, testing methodology, and full verification policy, see the **[Verified Environments Reference in `docs/ai-disclosure.md`](docs/ai-disclosure.md#3-hardware-testing--verified-environments)**.
+For detailed hardware testing environments, verification protocols, and development practices, see **[AI Collaboration & Transparency (`docs/ai-disclosure.md`)](docs/ai-disclosure.md)**.
 
 ---
 
-<a id="roadmap--future-ideas"></a>
-<a id="roadmap"></a>
+## 🧪 Verified Environments & Hardware
 
-## [🗺️ Roadmap & Future Ideas](#top)
+All releases and features are physically tested and validated on live hardware:
 
-Here is an overview of planned platform releases and potential future features under consideration for YouTube Music Web Controller:
-
-### 🚀 Distribution & Platform Releases
-- 🏬 **Elgato Stream Deck Marketplace Release**: Official distribution on the Elgato Marketplace for seamless one-click installation and automatic plugin updates directly within the Stream Deck app.
-- 🌐 **Chrome Web Store Extension Release**: One-click browser companion installation via the official Chrome Web Store (and Firefox Add-ons).
-
-### 💡 Potential Future Features & Ideas
-- 🎬 **Song / Video Mode Toggle (`toggleSongVideo`)**: Keypad action to switch between pure audio playback and YouTube Music video mode.
-- 📜 **Lyrics Tab Toggle (`toggleLyrics`)**: Direct action to open or close the dedicated song lyrics drawer in the web player.
-- 📻 **Start Radio Station (`startRadio`)**: Action to instantly launch an endless dynamic radio mix based on the currently playing track.
-- ⏩ **Playback Speed Toggle (`playbackRate`)**: Cycle playback speeds (e.g. `1.0x` ➔ `1.25x` ➔ `1.5x` ➔ `2.0x`) for podcasts and audiobooks on YouTube Music.
-- 🎵 **Quick Playlist / Supermix Launcher**: Dedicated hotkeys to trigger custom playlist URLs or your personalized "My Supermix" directly in the web player.
+- **Hardware:** Elgato Stream Deck +, Corsair Galleon 100 SD
+- **Environment:** Windows 11, Google Chrome (Web Player & PWA), Discord Desktop, OBS Studio
+- **Details:** For build numbers and full verification protocols, see the **[Verified Environments Reference in `docs/ai-disclosure.md`](docs/ai-disclosure.md#3-hardware-testing--verified-environments)**.
 
 ---
 
-<a id="disclaimer"></a>
+## 🗺️ Project Roadmap
 
-## [⚖️ Legal & Trademark Disclaimer](#top)
-
-YouTube Music is a trademark of Google LLC. This project is an independent open-source tool developed by Smok3y97 and is not affiliated with, sponsored, or endorsed by Google LLC. All trademarks, service marks, and company names are the property of their respective owners.
-
----
-
-<a id="privacy"></a>
-
-## [🔒 Privacy Policy](#top)
-
-I believe in privacy by design. The extension and plugin operate with **zero external tracking, zero telemetry, and 100% local-first communication**. For full details and Chrome Web Store permission disclosures, see **[Privacy Policy (`PRIVACY.md`)](PRIVACY.md)**.
+- 🏬 **Elgato Stream Deck Marketplace Listing:** Direct one-click install and automatic updates inside the Stream Deck app.
+- 🌐 **Chrome Web Store Release:** One-click companion extension install directly from the Chrome Web Store.
+- 🎵 **Extended Player Controls:** Additional button actions for video mode switching and radio mixes.
 
 ---
 
-<a id="license"></a>
+## 🔒 Privacy & Local Security
 
-## [📄 License](#top)
+- **Zero Telemetry:** No user tracking, no analytics, and no data collection of any kind.
+- **Local Isolation:** The extension and plugin communicate exclusively on your own computer (`127.0.0.1`).
+- **Read the Full Policy:** For complete disclosures, see **[Privacy Policy (`PRIVACY.md`)](PRIVACY.md)**.
 
-This project is licensed under the [MIT License](LICENSE).
+---
+
+## 📄 License
+
+This project is open-source software licensed under the [MIT License](LICENSE).

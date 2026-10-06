@@ -16,12 +16,12 @@ This guide explains how to display live YouTube Music track metadata in OBS Stud
 
 ## [🎨 1. OBS Browser Source Overlay (`/overlay`)](#top)
 
-Add an animated now-playing music widget directly to OBS Studio as a **Browser Source**. The overlay connects locally to the plugin WebSocket and updates in real-time with zero polling overhead.
+Add an animated now-playing music widget to OBS Studio as a **Browser Source**. The overlay updates in real time with album art, song title, artist, and progress bar without slowing down your stream.
 
 ### 🚀 Step-by-Step Setup in OBS Studio:
 1. Open **OBS Studio**.
 2. Under **Sources**, click **+** (Add) ➔ **Browser**.
-3. Name the source (e.g. `YTM Overlay`).
+3. Name the source (e.g. `YouTube Music Overlay`).
 4. Set the **URL**:
    ```text
    http://localhost:39865/overlay
@@ -30,8 +30,9 @@ Add an animated now-playing music widget directly to OBS Studio as a **Browser S
    - **Card Theme (`theme=card`)**: Width `460`, Height `180`
    - **Compact Theme (`theme=compact`)**: Width `400`, Height `100`
    - **Pill Theme (`theme=pill`)**: Width `420`, Height `90`
-6. Check **Shutdown source when not visible** (optional, saves GPU cycles).
+6. Check **Shutdown source when not visible** (optional, saves performance when overlay is not visible).
 7. Click **OK**.
+
 
 <p align="center">
   <img src="../screenshots/OBS-Browser-Overlay.png" alt="OBS Browser Source Music Overlay" width="480">
@@ -58,12 +59,14 @@ Customize the appearance simply by appending query parameters to `http://localho
 #### Typography & Colors
 | Parameter | Values / Format | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `template` | String with placeholders | `{artist} - {title}` | Custom text template (`{title}`, `{artist}`, `{album}`). |
+| `template` | String with placeholders | `{artist} - {title}` | Custom text template (see [Template Tokens Reference](configuration.md#4-template-tokens--formatting-placeholders)). |
+
+
 | `text` / `textColor` | HEX Code (e.g. `ffffff`, `000000`) | `#ffffff` | Primary title text color. |
 | `subColor` | HEX Code (e.g. `b3b3b3`, `888888`) | `#b3b3b3` | Secondary artist, album, and time text color. |
 | `marquee` / `scroll` | `true`, `false` | `true` | Ping-pong scrolling for long song titles. |
 
-#### Glassmorphism & Backgrounds
+#### Backgrounds, Borders & Styling
 | Parameter | Values / Format | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `accent` | HEX Code (e.g. `00d26a`, `3b82f6`, `ff0033`) | `#ff0033` | Accent color for progress bar fill, glow, and icons. |
@@ -72,8 +75,9 @@ Customize the appearance simply by appending query parameters to `http://localho
 | `radius` | Number in px (e.g. `0`, `8`, `16`, `50`) | Theme default | Corner rounding radius (`radius=0` for sharp corners). |
 | `width` | Number in px (e.g. `320`, `360`, `420`) | Theme default | Custom fixed widget width override. |
 | `height` | Number in px (e.g. `50`, `60`, `96`) | Theme default | Custom fixed widget height override. |
-| `border` | HEX Code or `none` | Subtly translucent | Custom border color or `border=none`. |
+| `border` | HEX Code or `none` | Translucent border | Custom border color or `border=none`. |
 | `shadow` | `true`, `false` | `true` | Toggle container drop shadow. |
+
 
 ---
 
@@ -99,8 +103,8 @@ Slim single-line banner for top/bottom stream edges with custom sapphire accent,
 http://localhost:39865/overlay?theme=compact&accent=3B82F6&width=420&radius=8&timeMode=current&hideOnPause=true
 ```
 
-#### 4. Twitch Purple Floating Pill (Curved Stadium Badge)
-Curved 50px rounded pill widget with official Twitch purple border, minimalist layout, and hidden time labels:
+#### 4. Twitch Purple Floating Pill
+Curved 50px rounded pill widget with Twitch purple border, minimalist layout, and hidden time labels:
 ```text
 http://localhost:39865/overlay?theme=pill&accent=9146FF&border=9146FF&radius=50&timeMode=none
 ```
@@ -110,21 +114,20 @@ http://localhost:39865/overlay?theme=pill&accent=9146FF&border=9146FF&radius=50&
 ## [🤖 2. Chatbot Current Song Command (`!song`)](#top)
 
 > [!IMPORTANT]
-> **Local System Requirement (Zero Telemetry & Maximum Security)**:
-> Because the endpoint `http://localhost:39865/api/current` runs strictly on your local PC via the Stream Deck plugin (ensuring complete privacy, zero telemetry, and zero latency), **your chatbot client MUST run locally on the same computer** (such as **Streamer.bot**, **MixItUp**, or **Fossabot Desktop**).
+> **Local Chatbot Required:**  
+> Song data is retrieved directly from your local computer (`http://localhost:39865/api/current`) for complete privacy and instant response times. This means your chatbot must run locally on the same computer (such as **Streamer.bot** or **MixItUp**).
 >
-> Remote cloud-hosted bot web dashboards (such as cloud Nightbot or Streamlabs Cloudbot) **cannot reach your local `localhost` / `127.0.0.1` address**.
+> Cloud-only bots that run on a remote website (such as cloud Nightbot or Streamlabs Cloudbot) cannot access your local PC.
 
-Let viewers query what song is currently playing via a simple read-only HTTP GET request (`http://localhost:39865/api/current`).
+Let viewers in your chat check what song is currently playing by requesting `http://localhost:39865/api/current`.
+
 
 ### 📝 Format Placeholders
-Custom format with `?format=...`:
-- `{title}`: Track title (e.g. `Never Gonna Give You Up`)
-- `{artist}`: Performing artist (e.g. `Rick Astley`)
-- `{album}`: Album or single name
-- `{url}`: Direct YouTube Music link
-- `{duration}`: Total track duration (e.g. `3:33`)
-- `{currentTime}`: Elapsed time (e.g. `1:20`)
+Customize chatbot replies with `?format=...`. All metadata and time placeholders are supported:
+- **Key Placeholders:** `{title}`, `{artist}`, `{album}`, `{url}`, `{duration}`, `{currentTime}`.
+- **Full Reference Matrix:** See the **[Template Tokens Reference (`docs/configuration.md`)](configuration.md#4-template-tokens--formatting-placeholders)** for all supported tokens, aliases, and multiline rules.
+
+
 
 ### 🤖 Local Bot Setup Guide:
 

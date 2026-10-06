@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "project": "ytm-web-controller",
+  "guardrails": [
+    {
+      "id": "zero-polling",
+      "name": "Zero Polling Overhead",
+      "severity": "critical",
+      "description": "Never introduce setInterval() or polling loops in extension/content.js or ytm-*.js. State extraction must be strictly reactive via HTML5 <video> events and scoped MutationObserver callbacks.",
+      "target_paths": ["extension/content.js", "extension/ytm-*.js"]
+    },
+    {
+      "id": "context-isolation",
+      "name": "Context Isolation Boundary",
+      "severity": "critical",
+      "description": "MAIN World scripts (content.js, ytm-*.js) have zero access to chrome.* APIs. ISOLATED World (bridge.js) has zero access to YouTube DOM or #movie_player. Communication is strictly bidirectional via window.postMessage.",
+      "target_paths": ["extension/**"]
+    },
+    {
+      "id": "in-memory-rendering",
+      "name": "In-Memory Asset Pipeline",
+      "severity": "high",
+      "description": "Album cover art, thumbnails, and dynamic canvas drawings must remain strictly in RAM as Base64 Data URLs. Never write intermediate image assets to disk.",
+      "target_paths": ["plugin/src/services/image-renderer.ts"]
+    },
+    {
+      "id": "hardware-refresh-limit",
+      "name": "Hardware Refresh Limit (10 Hz)",
+      "severity": "high",
+      "description": "Programmatic updates to Stream Deck keys, canvas drawings, and LCD touchstrips must never exceed 10 updates per second (10 Hz).",
+      "target_paths": ["plugin/src/actions/**", "plugin/src/services/**"]
+    },
+    {
+      "id": "strict-typing",
+      "name": "Strict Typing Discipline",
+      "severity": "error",
+      "description": "Prohibited in TypeScript: 'as any', '@ts-ignore', '@ts-expect-error'. All types and settings must be defined or extended in plugin/src/types/.",
+      "target_paths": ["plugin/src/**/*.ts"]
+    },
+    {
+      "id": "clean-logging",
+      "name": "Clean Production Logging",
+      "severity": "warning",
+      "description": "No orphaned console.log() or console.debug() statements in plugin production code. Use the dedicated project logger.",
+      "target_paths": ["plugin/src/**/*.ts"]
+    }
+  ]
+}

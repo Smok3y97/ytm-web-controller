@@ -1,0 +1,5 @@
+<!-- Stream Deck Category Icon (28x28 px standard / 56x56 px @2x) -->
+<!-- Monochromatic white (#FFFFFF) glyph with transparent background -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
+  <path fill="#FFFFFF" d="M14 2C7.37 2 2 7.37 2 14v6c0 1.66 1.34 3 3 3h2v-8H5v-1c0-4.97 4.03-9 9-9s9 4.03 9 9v1h-2v8h2c1.66 0 3-1.34 3-3v-6c0-6.63-5.37-12-12-12zm-2 15l5-3-5-3v6z"/>
+</svg>

@@ -7,6 +7,8 @@
     "build": "npm run build --prefix plugin",
     "watch": "npm run watch --prefix plugin",
     "bump": "node scripts/bump-version.mjs",
+    "changelog": "node .agents/skills/changelog-gen/scripts/generate-changelog.mjs",
+    "docs:conventions": "node .agents/skills/changelog-gen/scripts/sync-conventions-doc.mjs",
     "assets": "powershell -ExecutionPolicy Bypass -File ./scripts/generate_assets.ps1",
     "package": "powershell -ExecutionPolicy Bypass -File ./scripts/package_plugin.ps1",
     "validate": "streamdeck validate plugin/com.smok3y97.ytmusicweb.sdPlugin",
@@ -15,7 +17,11 @@
     "lint": "npm run lint --prefix plugin",
     "lint:fix": "npm run lint:fix --prefix plugin",
     "format": "npm run format --prefix plugin",
-    "format:check": "npm run format:check --prefix plugin"
+    "format:check": "npm run format:check --prefix plugin",
+    "docs:audit": "node .agents/skills/docs-review/scripts/audit-docs.mjs",
+    "docs:sync": "node .agents/skills/sync-docs/scripts/audit-sync.mjs",
+    "audit:guardrails": "node .agents/skills/code-audit/scripts/audit-guardrails.mjs",
+    "assets:validate": "node .agents/skills/generate-assets/scripts/validate-assets.mjs"
   },
   "keywords": [
     "streamdeck",

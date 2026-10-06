@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "project": "ytm-web-controller",
+  "component_mappings": [
+    {
+      "source_pattern": "plugin/src/types/**",
+      "target_docs": ["docs/architecture.md", "docs/obs-setup.md"],
+      "verification_focus": "Check if new state properties in TrackState or PlayerState are reflected in data flows and replacement tokens."
+    },
+    {
+      "source_pattern": "plugin/src/actions/**",
+      "target_docs": ["docs/features.md", "README.md"],
+      "verification_focus": "Ensure all action names, UUIDs, dial behaviors, and visual indicators are described accurately."
+    },
+    {
+      "source_pattern": "plugin/src/services/http-api.ts",
+      "target_docs": ["docs/architecture.md", "docs/obs-setup.md"],
+      "verification_focus": "Confirm HTTP endpoints (/overlay, /api/current), query parameters, and chatbot responses are up to date."
+    },
+    {
+      "source_pattern": "plugin/src/services/websocket-server.ts",
+      "target_docs": ["docs/architecture.md"],
+      "verification_focus": "Verify port binding (39865), protocol messages, and version mismatch event definitions."
+    },
+    {
+      "source_pattern": "extension/manifest.json",
+      "target_docs": ["docs/development.md", "docs/architecture.md"],
+      "verification_focus": "Check permissions, background service worker, and context isolation boundaries (MAIN vs ISOLATED)."
+    },
+    {
+      "source_pattern": "package.json",
+      "target_docs": ["docs/development.md", "README.md"],
+      "verification_focus": "Verify that all root npm run scripts are listed in the developer command tables."
+    }
+  ]
+}

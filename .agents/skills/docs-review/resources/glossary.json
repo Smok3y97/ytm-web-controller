@@ -1,0 +1,53 @@
+{
+  "project": "ytm-web-controller",
+  "terminology": {
+    "preferred": [
+      {
+        "term": "YouTube Music Web",
+        "forbidden": ["YTM Web", "ytm web", "YouTube-Music Web"],
+        "context": "Use full product title in prose; abbreviations allowed only in code paths or CLI flags."
+      },
+      {
+        "term": "Stream Deck +",
+        "forbidden": ["StreamDeck +", "Streamdeck+", "Stream Deck Plus"],
+        "context": "Capitalized with a space before the plus symbol."
+      },
+      {
+        "term": "Property Inspector",
+        "forbidden": ["property inspector", "PI", "Property-Inspector"],
+        "context": "Always capitalized in user-facing guides."
+      },
+      {
+        "term": "MAIN World",
+        "forbidden": ["Main world", "main world", "MAIN world"],
+        "context": "Extension DOM execution context boundary."
+      },
+      {
+        "term": "ISOLATED World",
+        "forbidden": ["Isolated world", "isolated world", "ISOLATED world"],
+        "context": "Extension storage & manifest execution context boundary."
+      },
+      {
+        "term": "Single Source of Truth",
+        "forbidden": ["SSoT", "ssot"],
+        "context": "Architectural standard reference; acronym (SSOT) optional."
+      }
+    ],
+    "forbidden_buzzwords": [
+      "blazing fast",
+      "game-changing",
+      "revolutionary",
+      "super easy",
+      "magical",
+      "seamlessly",
+      "effortless"
+    ],
+    "gfm_alert_types": [
+      "NOTE",
+      "TIP",
+      "IMPORTANT",
+      "WARNING",
+      "CAUTION"
+    ]
+  }
+}

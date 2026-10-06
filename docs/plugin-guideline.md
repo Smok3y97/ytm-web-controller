@@ -54,7 +54,8 @@ Universally unique identifiers (UUIDs) identify your plugin and its individual a
 | **Key State Icons** | `72 × 72 px` | `144 × 144 px` | SVG (Recommended), PNG, GIF | Crisp vector scaling. **Default White (`#FFFFFF`)** on transparent background; active highlight states (e.g. Liked, Disliked, Repeat-All) use active accent colors (`#FF0033`). |
 | **Stream Deck + LCD Layout** | `200 × 100 px` | Native Canvas/JSON | JSON Layout / In-Memory SVG | Interactive touch targets must be at least **`35 × 35 px`**. All elements must stay strictly within bounds. |
 
-> ⚠️ **Programmatic Flooding Limit:** Programmatic canvas/key render calls and LCD touchstrip updates must not exceed **10 updates per second** (10 Hz).
+> [!WARNING]
+> **Programmatic Flooding Limit:** Programmatic canvas/key render calls and LCD touchstrip updates must not exceed **10 updates per second** (10 Hz).
 
 ### Asset Generation
 Run the automated generation script to synchronize all vector SVGs and raster PNGs:

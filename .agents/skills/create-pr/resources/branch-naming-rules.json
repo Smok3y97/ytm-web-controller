@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "project": "ytm-web-controller",
+  "branches": [
+    {
+      "prefix": "feat/",
+      "commit_type": "feat",
+      "description": "New features, dials, actions, or capabilities"
+    },
+    {
+      "prefix": "fix/",
+      "commit_type": "fix",
+      "description": "Bug fixes and regression corrections"
+    },
+    {
+      "prefix": "perf/",
+      "commit_type": "perf",
+      "description": "Performance optimizations, memory improvements, event debouncing"
+    },
+    {
+      "prefix": "refactor/",
+      "commit_type": "refactor",
+      "description": "Code restructuring without behavioral changes"
+    },
+    {
+      "prefix": "docs/",
+      "commit_type": "docs",
+      "description": "Documentation, guides, or markdown improvements"
+    },
+    {
+      "prefix": "chore/",
+      "commit_type": "chore",
+      "description": "Build scripts, dependency bumps, release tags, or tool maintenance"
+    }
+  ]
+}

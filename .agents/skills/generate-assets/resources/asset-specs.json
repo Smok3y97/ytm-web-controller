@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "project": "ytm-web-controller",
+  "specifications": {
+    "plugin_icon": {
+      "format": "png",
+      "required_sizes": [256, 512],
+      "background": "#FF0033",
+      "glyph_color": "#FFFFFF",
+      "style": "circular-badge"
+    },
+    "category_icon": {
+      "format": "svg",
+      "standard_size": [28, 28],
+      "retina_size": [56, 56],
+      "glyph_color": "#FFFFFF",
+      "style": "monochromatic-transparent"
+    },
+    "action_icons": {
+      "format": "svg",
+      "standard_size": [20, 20],
+      "retina_size": [40, 40],
+      "glyph_color": "#FFFFFF",
+      "style": "monochromatic-transparent"
+    },
+    "key_state_icons": {
+      "format": "svg",
+      "standard_size": [72, 72],
+      "retina_size": [144, 144],
+      "default_color": "#FFFFFF",
+      "active_color": "#FF0033"
+    },
+    "lcd_touchstrip": {
+      "canvas_dimensions": [200, 100],
+      "min_touch_target": [35, 35],
+      "layout_file": "plugin/com.smok3y97.ytmusicweb.sdPlugin/layouts/dial_layout.json"
+    },
+    "extension_icons": {
+      "format": "png",
+      "required_sizes": [16, 48, 128],
+      "directory": "extension/icons"
+    }
+  }
+}

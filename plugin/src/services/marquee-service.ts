@@ -10,6 +10,17 @@ export const START_PAUSE_TICKS = 4; // Pause at the beginning before scrolling (
 export const END_PAUSE_TICKS = 3; // Pause at the end before reversing scroll (~1.0s)
 
 function estimateCharWidthPx(char: string): number {
+	const code = char.charCodeAt(0);
+	// Full-width CJK Radicals, Unified Ideographs, Hangul, Fullwidth Forms
+	if (
+		(code >= 0x2e80 && code <= 0x9fff) ||
+		(code >= 0xac00 && code <= 0xd7af) ||
+		(code >= 0xf900 && code <= 0xfaff) ||
+		(code >= 0xff01 && code <= 0xff60) ||
+		(code >= 0xffe0 && code <= 0xffe6)
+	) {
+		return 11.5;
+	}
 	if ("ilj!:. ,'|/\\()[]{}".includes(char)) return 3.4;
 	if ("mwMW".includes(char)) return 10.5;
 	if (char >= "A" && char <= "Z") return 7.8;
@@ -26,7 +37,12 @@ const MAX_CACHE_ENTRIES = 50;
 export function estimateTextWidthPx(text: string): number {
 	if (!text) return 0;
 	const cached = textWidthCache.get(text);
-	if (cached !== undefined) return cached;
+	if (cached !== undefined) {
+		// True LRU promotion: re-insert entry at the end of the Map
+		textWidthCache.delete(text);
+		textWidthCache.set(text, cached);
+		return cached;
+	}
 
 	let width = 0;
 	for (let i = 0; i < text.length; i++) {
@@ -45,7 +61,12 @@ export function findMaxMarqueeOffset(fullText: string, maxPx: number = MAX_LCD_P
 	if (!fullText) return 0;
 	const cacheKey = `${maxPx}:${fullText}`;
 	const cached = maxOffsetCache.get(cacheKey);
-	if (cached !== undefined) return cached;
+	if (cached !== undefined) {
+		// True LRU promotion: re-insert entry at the end of the Map
+		maxOffsetCache.delete(cacheKey);
+		maxOffsetCache.set(cacheKey, cached);
+		return cached;
+	}
 
 	let remainingWidth = estimateTextWidthPx(fullText);
 	let result = 0;

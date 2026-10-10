@@ -54,13 +54,36 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 			renderOptimistic: async (ticks) => {
 				await this.renderOptimisticFeedback(ev.action, ev.action.id, ticks);
 			},
-			flush: async (ticks) => {
-				await this.dispatchSeekDelta(ev.action, ev.action.id, ticks);
+			flush: async (ticks, alreadyRendered) => {
+				await this.dispatchSeekDelta(ev.action, ev.action.id, ticks, alreadyRendered);
 			},
 			settle: () => {
 				this.lastTargetSeconds.delete(ev.action.id);
 			},
 		});
+	}
+
+	private async renderSeekLcd(
+		action: WillAppearEvent<SeekDialSettings>["action"],
+		actionId: string,
+		optimisticSeconds: number,
+		duration: number,
+		timeTemplate: string,
+	): Promise<void> {
+		if (!action.isDial()) return;
+		const indicatorValue =
+			duration > 0 ? Math.min(100, Math.max(0, Math.round((optimisticSeconds / duration) * 100))) : 0;
+		const valueText = StateManager.getInstance().formatTimeTemplate(timeTemplate, optimisticSeconds, duration);
+
+		this.lastRenderedValue.set(actionId, valueText);
+		this.lastRenderedIndicator.set(actionId, indicatorValue);
+
+		try {
+			await action.setFeedback({
+				value: valueText,
+				indicator: indicatorValue,
+			});
+		} catch {}
 	}
 
 	private async renderOptimisticFeedback(
@@ -75,33 +98,20 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		const baseSeconds = this.lastTargetSeconds.get(actionId) ?? StateManager.getInstance().getInterpolatedCurrentTime();
 		const optimisticSeconds = Math.min(currentState.duration || Infinity, Math.max(0, baseSeconds + ticks * step));
 
-		const indicatorValue =
-			currentState.duration > 0
-				? Math.min(100, Math.max(0, Math.round((optimisticSeconds / currentState.duration) * 100)))
-				: 0;
-
-		const timeTemplate = settings.timeTemplate || "{both}";
-		const valueText = StateManager.getInstance().formatTimeTemplate(
-			timeTemplate,
+		await this.renderSeekLcd(
+			action,
+			actionId,
 			optimisticSeconds,
 			currentState.duration,
+			settings.timeTemplate || "{both}",
 		);
-
-		this.lastRenderedValue.set(actionId, valueText);
-		this.lastRenderedIndicator.set(actionId, indicatorValue);
-
-		try {
-			await action.setFeedback({
-				value: valueText,
-				indicator: indicatorValue,
-			});
-		} catch {}
 	}
 
 	private async dispatchSeekDelta(
 		action: WillAppearEvent<SeekDialSettings>["action"],
 		actionId: string,
 		ticks: number,
+		alreadyRendered?: boolean,
 	): Promise<void> {
 		const settings = this.actionSettings.get(actionId) || {};
 		const step = Math.min(120, Math.max(1, settings.seekStep || 10));
@@ -112,26 +122,15 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		const optimisticSeconds = Math.min(currentState.duration || Infinity, Math.max(0, baseSeconds + deltaSeconds));
 		this.lastTargetSeconds.set(actionId, optimisticSeconds);
 
-		// Render LCD touchstrip feedback at 10-Hz boundary
-		if (action.isDial()) {
-			const indicatorValue =
-				currentState.duration > 0
-					? Math.min(100, Math.max(0, Math.round((optimisticSeconds / currentState.duration) * 100)))
-					: 0;
-			const timeTemplate = settings.timeTemplate || "{both}";
-			const valueText = StateManager.getInstance().formatTimeTemplate(
-				timeTemplate,
+		// Render LCD touchstrip feedback at 10-Hz boundary if not already rendered optimistically in this tick
+		if (!alreadyRendered) {
+			await this.renderSeekLcd(
+				action,
+				actionId,
 				optimisticSeconds,
 				currentState.duration,
+				settings.timeTemplate || "{both}",
 			);
-			this.lastRenderedValue.set(actionId, valueText);
-			this.lastRenderedIndicator.set(actionId, indicatorValue);
-			try {
-				await action.setFeedback({
-					value: valueText,
-					indicator: indicatorValue,
-				});
-			} catch {}
 		}
 
 		WebSocketService.getInstance().sendCommand("seekRelative", { seconds: deltaSeconds });

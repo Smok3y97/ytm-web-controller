@@ -167,7 +167,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		ticksDelta: number,
 		handlers: {
 			renderOptimistic: (accumulatedTicks: number) => Promise<void> | void;
-			flush: (accumulatedTicks: number) => Promise<void> | void;
+			flush: (accumulatedTicks: number, alreadyRendered?: boolean) => Promise<void> | void;
 			settle?: () => void;
 		},
 	): Promise<void> {
@@ -186,14 +186,16 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		const lastCmd = this.lastCommandTime.get(actionId) || 0;
 
 		// 1. Optimistic LCD feedback (strictly rate-limited to <= 10 Hz)
+		let feedbackRendered = false;
 		const lastFeedback = this.lastFeedbackTime.get(actionId) || 0;
 		if (now - lastFeedback >= 100) {
 			this.lastFeedbackTime.set(actionId, now);
 			await handlers.renderOptimistic(currentTicks);
+			feedbackRendered = true;
 		}
 
 		// 2. Dispatch command: if >= 100ms since last dispatch, flush immediately
-		const executeFlush = async () => {
+		const executeFlush = async (alreadyRendered: boolean = false) => {
 			const pending = this.pendingTicks.get(actionId) || 0;
 			if (pending === 0) return;
 			if (this.isPushJitterActive(actionId)) {
@@ -202,15 +204,15 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			}
 			this.pendingTicks.set(actionId, 0);
 			this.lastCommandTime.set(actionId, Date.now());
-			await handlers.flush(pending);
+			await handlers.flush(pending, alreadyRendered);
 		};
 
 		if (now - lastCmd >= 100) {
-			await executeFlush();
+			await executeFlush(feedbackRendered);
 		} else if (!this.rotationStreamTimer.has(actionId)) {
 			// Start active 10-Hz interval streamer during continuous rotation
 			const streamTimer = setInterval(async () => {
-				await executeFlush();
+				await executeFlush(false);
 			}, 100);
 			this.rotationStreamTimer.set(actionId, streamTimer);
 		}
@@ -232,7 +234,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 				this.rotationTimer.delete(actionId);
 			}
 
-			await executeFlush();
+			await executeFlush(false);
 			if (handlers.settle) {
 				handlers.settle();
 			}

@@ -176,13 +176,6 @@ export class WebSocketService extends EventEmitter {
 									streamDeck.logger.info(
 										`[WebSocket] Handshake SUCCESS from extension v${extVersion} (min required: ${versionService.minRequiredExtensionVersion})`,
 									);
-									// Immediately send current playback state to newly connected compatible client
-									try {
-										const currentState = StateManager.getInstance().getState();
-										if (currentState && (currentState.title || currentState.artist)) {
-											this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
-										}
-									} catch {}
 									// Request immediate full state upon successful handshake
 									this.sendToClient(ws, { command: "requestState" });
 								} else {
@@ -234,8 +227,11 @@ export class WebSocketService extends EventEmitter {
 								});
 
 								streamDeck.logger.info(`[WebSocket] Registered client: ${payload.client} (${payload.url || ""})`);
-								const currentState = StateManager.getInstance().getState();
-								this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
+								// Only send initial STATE_UPDATE to overlay clients that display visual widgets
+								if (isOverlay) {
+									const currentState = StateManager.getInstance().getState();
+									this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
+								}
 							}
 						} catch (err) {
 							streamDeck.logger.warn(`[WebSocket] Failed to parse message: ${err}`);

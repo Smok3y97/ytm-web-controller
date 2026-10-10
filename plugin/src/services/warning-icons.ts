@@ -60,3 +60,38 @@ export function getActionWarningSvgDataUrl(actionKey: string): string {
 	warningIconCache.set(key, dataUrl);
 	return dataUrl;
 }
+
+export interface KeypadActionInstance {
+	isKey: () => boolean;
+	setTitle: (title: string) => Promise<void>;
+	setImage: (image: string | undefined) => Promise<void>;
+}
+
+/**
+ * Handles version mismatch display for keypad actions, setting amber warning icon or flagging recovery.
+ */
+export async function handleKeypadMismatch(
+	actionInstance: KeypadActionInstance,
+	actionId: string,
+	isMismatch: boolean,
+	actionKey: string,
+	lastRenderedMismatch: Map<string, boolean>,
+): Promise<{ isHandled: boolean; recoveredFromMismatch: boolean }> {
+	if (!actionInstance.isKey()) return { isHandled: false, recoveredFromMismatch: false };
+	const prevMismatch = lastRenderedMismatch.get(actionId);
+
+	if (isMismatch) {
+		if (prevMismatch !== true) {
+			await actionInstance.setTitle("");
+			await actionInstance.setImage(getActionWarningSvgDataUrl(actionKey));
+			lastRenderedMismatch.set(actionId, true);
+		}
+		return { isHandled: true, recoveredFromMismatch: false };
+	}
+
+	const recovered = prevMismatch === true;
+	if (recovered) {
+		lastRenderedMismatch.set(actionId, false);
+	}
+	return { isHandled: false, recoveredFromMismatch: recovered };
+}

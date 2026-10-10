@@ -5,15 +5,12 @@
  */
 import streamDeck from "@elgato/streamdeck";
 import { promises as fs } from "fs";
-import fsSync from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
 import { GlobalSettings, YTMPlaybackState } from "../types/index.js";
 import { StateManager } from "./state-manager.js";
 
 export const DEFAULT_OBS_TEMPLATE = "Currently Playing: {artist} - {title}";
-export const DEFAULT_OBS_FILENAME = "ytm_current_track.txt";
 
 export class ObsExporterService {
 	private static instance: ObsExporterService;
@@ -39,31 +36,6 @@ export class ObsExporterService {
 			ObsExporterService.instance = new ObsExporterService();
 		}
 		return ObsExporterService.instance;
-	}
-
-	/**
-	 * Resolve default ytm_current_track.txt storage path in plugin folder
-	 */
-	public resolveDefaultPath(): string {
-		try {
-			const currentDir = path.dirname(fileURLToPath(import.meta.url));
-			const candidateFromBin = path.resolve(currentDir, "..", DEFAULT_OBS_FILENAME);
-			if (fsSync.existsSync(candidateFromBin)) {
-				return candidateFromBin;
-			}
-		} catch {}
-
-		const fromCwd = path.resolve(process.cwd(), DEFAULT_OBS_FILENAME);
-		if (fsSync.existsSync(fromCwd)) {
-			return fromCwd;
-		}
-
-		const fromPluginDir = path.resolve(process.cwd(), "plugin", DEFAULT_OBS_FILENAME);
-		if (fsSync.existsSync(fromPluginDir)) {
-			return fromPluginDir;
-		}
-
-		return path.resolve(process.cwd(), DEFAULT_OBS_FILENAME);
 	}
 
 	/**

@@ -10,7 +10,7 @@ import {
 } from "@elgato/streamdeck";
 
 import { StateManager } from "../services/state-manager.js";
-import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
+import { handleKeypadMismatch } from "../services/warning-icons.js";
 import { WebSocketService } from "../services/websocket-server.js";
 import { SeekButtonSettings, YTMPlaybackState } from "../types/index.js";
 
@@ -97,17 +97,14 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 		if (!actionInstance.isKey()) return;
 
 		try {
-			const isMismatch = !!state.isVersionMismatch;
-			const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
-
-			if (isMismatch) {
-				if (prevMismatch !== true) {
-					await actionInstance.setTitle("");
-					await actionInstance.setImage(getActionWarningSvgDataUrl(this.actionKey));
-					this.lastRenderedMismatch.set(actionInstance.id, true);
-				}
-				return;
-			}
+			const { isHandled, recoveredFromMismatch } = await handleKeypadMismatch(
+				actionInstance,
+				actionInstance.id,
+				!!state.isVersionMismatch,
+				this.actionKey,
+				this.lastRenderedMismatch,
+			);
+			if (isHandled) return;
 
 			let text = "";
 			const step = Math.min(120, Math.max(1, settings.step || 10));
@@ -121,13 +118,12 @@ export abstract class BaseSeekAction extends SingletonAction<SeekButtonSettings>
 
 			const prevText = this.lastRenderedTitle.get(actionInstance.id);
 
-			if (prevText !== text || prevMismatch === true) {
-				if (prevMismatch === true) {
+			if (prevText !== text || recoveredFromMismatch) {
+				if (recoveredFromMismatch) {
 					await actionInstance.setImage(undefined);
 				}
 				await actionInstance.setTitle(text);
 				this.lastRenderedTitle.set(actionInstance.id, text);
-				this.lastRenderedMismatch.set(actionInstance.id, false);
 			}
 		} catch {}
 	}

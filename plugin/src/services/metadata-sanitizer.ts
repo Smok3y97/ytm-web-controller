@@ -21,7 +21,7 @@ const REGEX_RELATIVE_PAST =
 const REGEX_LIKE_KEYWORD =
 	/(?:like|gefällt|gusta|j'aime|mi piace|лайк|좋아요|讚|赞|subscribers?|abonnenten?|abonnés?|suscriptores?|iscritti)/i;
 const REGEX_BULLET_SPLIT = /\s*[\u2022\u00B7·•|]\s*/;
-const REGEX_TRAILING_YEAR = /(?:[\s\u2022\u00B7·•\\-|]|\s+)\b(19|20)\d{2}\b$/g;
+const REGEX_TRAILING_YEAR = /(?:[\s\u2022\u00B7·•\\-|]|\s+)\b(19|20)\d{2}\b$/;
 const REGEX_LEADING_EXPLICIT = /^(E|\[E\])\s+/i;
 const REGEX_TRAILING_PUNCTUATION = /[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/;
 

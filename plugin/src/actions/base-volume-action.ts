@@ -10,7 +10,7 @@ import {
 } from "@elgato/streamdeck";
 
 import { StateManager } from "../services/state-manager.js";
-import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
+import { handleKeypadMismatch } from "../services/warning-icons.js";
 import { WebSocketService } from "../services/websocket-server.js";
 import { VolumeSettings, YTMPlaybackState } from "../types/index.js";
 
@@ -96,18 +96,15 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
 		if (!actionInstance.isKey()) return;
 
 		try {
-			const isMismatch = !!state.isVersionMismatch;
-			const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
-
-			if (isMismatch) {
-				if (prevMismatch !== true) {
-					await actionInstance.setTitle("");
-					const key = this.actionKey || (this.command === "volumeUp" ? "volumeup" : "volumedown");
-					await actionInstance.setImage(getActionWarningSvgDataUrl(key));
-					this.lastRenderedMismatch.set(actionInstance.id, true);
-				}
-				return;
-			}
+			const key = this.actionKey || (this.command === "volumeUp" ? "volumeup" : "volumedown");
+			const { isHandled, recoveredFromMismatch } = await handleKeypadMismatch(
+				actionInstance,
+				actionInstance.id,
+				!!state.isVersionMismatch,
+				key,
+				this.lastRenderedMismatch,
+			);
+			if (isHandled) return;
 
 			let text = "";
 			if (settings.showVolumeTitle !== false) {
@@ -117,13 +114,12 @@ export abstract class BaseVolumeAction extends SingletonAction<VolumeSettings> {
 
 			const prevText = this.lastRenderedTitle.get(actionInstance.id);
 
-			if (prevText !== text || prevMismatch === true) {
-				if (prevMismatch === true) {
+			if (prevText !== text || recoveredFromMismatch) {
+				if (recoveredFromMismatch) {
 					await actionInstance.setImage(undefined);
 				}
 				await actionInstance.setTitle(text);
 				this.lastRenderedTitle.set(actionInstance.id, text);
-				this.lastRenderedMismatch.set(actionInstance.id, false);
 			}
 		} catch {}
 	}

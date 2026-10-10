@@ -371,13 +371,13 @@ The browser companion extension runs in the context of `https://music.youtube.co
 - **`TabManager`**: Decoupled multi-tab arbitration and client registry.
   - **Multi-Tab Orchestration**: Tracks connected tabs by `tabId` and active playback state. Automatically routes hardware commands exclusively to the tab actively playing audio (`!isPaused`), preventing ghost commands to idle tabs and ignoring stale pause events from background tabs.
   - **Version Mismatch Evaluation**: Centralizes version compatibility state across active non-overlay tabs.
-- **`HttpApiService`**: Serves read-only GET `/overlay` (OBS Browser Source) and GET `/api/current` (Chatbot plaintext metadata).
+- **`HttpApiService`**: Serves read-only GET `/overlay` (OBS Browser Source) with in-memory caching of HTML, CSS, and JS assets, and GET `/api/current` (Chatbot plaintext metadata).
 - **`StateManager`**: Stores active playback state, performs local timestamp-based time interpolation (`getInterpolatedCurrentTime()`), and manages state change lifecycle events.
 - **`TemplateEngine`**: Isolated placeholder formatting engine for Track Titles, Times, Formatted Tracks, Volume readouts, and Seek button labels across keypad buttons and LCD touchstrips.
-- **`MetadataSanitizer`**: Multi-language DOM metadata filtering engine that strips out non-album tokens (view counts, upload timestamps, release years, like counts) across internationalized YouTube Music interfaces.
-- **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs.
-- **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs with bounded in-RAM overlay caching.
-- **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with client-side timeline calculations.
+- **`MetadataSanitizer`**: Multi-language DOM metadata filtering engine that strips out non-album tokens (view counts, upload timestamps, release years, like counts) across internationalized YouTube Music interfaces. Pattern semantics are kept in parity with `extension/utils.js` (e.g. state-free `REGEX_TRAILING_YEAR` without global flag).
+- **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs, featuring LRU eviction and CJK full-width character detection for accurate LCD text width estimation.
+- **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs with bounded in-RAM LRU overlay caching.
+- **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with timeline calculations anchored to the state snapshot timestamp, eliminating debounce drift.
 - **`ObsExporterService`**: Debounced safe writer for OBS Text (GDI+) file sources (`.txt`).
 - **`VersionControlService`**: Dynamic manifest reader and version compatibility validator.
 
@@ -461,7 +461,7 @@ The Stream Deck + integration combines physical rotary encoders with high-densit
 - **Zero-Latency First Detent**: The first rotation detent fires immediately with 0ms latency if the dial was idle ($\ge 100\text{ ms}$ since the previous command dispatch).
 - **Active 10-Hz Streaming**: Continuous rotary encoder spinning spins up an active 100ms interval timer (`rotationStreamTimer`). Accumulated rotation ticks in `pendingTicks` are batched and dispatched at the exact 10-Hz boundary, preventing USB bus flooding or dropped ticks.
 - **Optimistic Target Tracking**: During active rotation, the controller tracks optimistic targets (`lastTargetVolume` / `lastTargetSeconds`). Subsequent ticks increment from the tracked optimistic position rather than stale `StateManager` values pending WebSocket round-trip acknowledgments, preventing dial rubber-banding or display flicker.
-- **Trailing Settle Debounce**: A 110ms trailing debounce timer (`rotationTimer`) fires after rotary movement stops, flushing any final residual ticks, clearing the 10-Hz stream interval, and resetting the optimistic tracking state.
+- **Trailing Settle Debounce**: A 110ms trailing debounce timer (`rotationTimer`) fires after rotary movement stops, flushing any final residual ticks, clearing the 10-Hz stream interval, and resetting the optimistic tracking state without redundant `setFeedback` calls if the LCD is already synchronized.
 
 ### ⏱️ Client-Side Time Interpolation
 - YouTube Music does not push continuous WebSocket timestamp ticks during playback (Zero Polling / Zero `timeupdate` over WS).

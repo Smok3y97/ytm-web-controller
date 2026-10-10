@@ -187,6 +187,51 @@ function isNonAlbumText(text) {
   return false;
 }
 
+const REGEX_BULLET_SPLIT = /\s*[\u2022\u00B7·•|]\s*/;
+const REGEX_TRAILING_YEAR = /(?:[\s\u2022\u00B7·•\\-|]|\s+)\b(19|20)\d{2}\b$/;
+const REGEX_LEADING_EXPLICIT = /^(E|\[E\])\s+/i;
+const REGEX_TRAILING_PUNCTUATION = /[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/;
+
+/**
+ * Clean up raw artist string: separates combined bullet fragments, strips trailing release years,
+ * explicit badges, and embedded album titles.
+ */
+function sanitizeArtist(rawArtist, album) {
+  if (!rawArtist || typeof rawArtist !== 'string') {
+    return { artist: '', extractedAlbum: undefined };
+  }
+
+  let cleanArtist = cleanWhitespace(rawArtist);
+  let cleanAlbum = (album && typeof album === 'string' && !isNonAlbumText(album)) ? cleanWhitespace(album) : '';
+  let extractedAlbum = undefined;
+
+  const bulletSplit = cleanArtist.split(REGEX_BULLET_SPLIT);
+  if (bulletSplit.length > 1) {
+    cleanArtist = bulletSplit[0].trim();
+    if (!cleanAlbum && bulletSplit[1] && !isNonAlbumText(bulletSplit[1])) {
+      cleanAlbum = bulletSplit[1].trim();
+      extractedAlbum = cleanAlbum;
+    }
+  }
+
+  if (cleanAlbum && cleanAlbum.length >= 3 && cleanArtist.length > cleanAlbum.length) {
+    const escapedAlbum = cleanAlbum.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    cleanArtist = cleanArtist.replace(
+      new RegExp(`(^|\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+)${escapedAlbum}(\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+|$)`, 'gi'),
+      '$1'
+    ).trim();
+  }
+
+  cleanArtist = cleanArtist.replace(REGEX_TRAILING_YEAR, '').trim();
+  cleanArtist = cleanArtist.replace(REGEX_LEADING_EXPLICIT, '').trim();
+  cleanArtist = cleanArtist.replace(REGEX_TRAILING_PUNCTUATION, '').trim();
+
+  return {
+    artist: cleanArtist || rawArtist.trim(),
+    extractedAlbum: extractedAlbum || (cleanAlbum ? cleanAlbum : undefined)
+  };
+}
+
 
 
 
@@ -293,5 +338,6 @@ window.YTM.utils = {
   detectBrowserPlatform,
   compareVersions,
   reportMismatchStatus,
-  parseTimeToSeconds
+  parseTimeToSeconds,
+  sanitizeArtist
 };

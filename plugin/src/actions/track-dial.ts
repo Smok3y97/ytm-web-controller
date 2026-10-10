@@ -25,8 +25,6 @@ import { BaseDialAction } from "./base-dial-action.js";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.trackdial" })
 export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
-	private lastTrackSkipTime: number = 0;
-
 	protected handleDialPress(
 		_ev: DialDownEvent<TrackDialSettings> | KeyDownEvent<TrackDialSettings> | TouchTapEvent<TrackDialSettings>,
 	): void {
@@ -34,56 +32,25 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 	}
 
 	override async onDialRotate(ev: DialRotateEvent<TrackDialSettings>): Promise<void> {
-		const actionId = ev.action.id;
-		if (this.isPushJitterActive(actionId)) return;
-
-		if (StateManager.getInstance().isVersionMismatch()) {
-			await ev.action.showAlert();
-			return;
+		if (ev.payload.settings) {
+			this.actionSettings.set(ev.action.id, ev.payload.settings);
 		}
 
-		const currentTicks = (this.pendingTicks.get(actionId) || 0) + ev.payload.ticks;
-		this.pendingTicks.set(actionId, currentTicks);
-
-		const timer = this.rotationTimer.get(actionId);
-		if (!timer) {
-			const newTimer = setTimeout(() => {
-				this.flushRotation(actionId);
-			}, 50);
-			this.rotationTimer.set(actionId, newTimer);
-		}
+		await this.handleRotaryStream(ev.action, ev.payload.ticks, {
+			renderOptimistic: () => {},
+			flush: (ticks) => {
+				const ws = WebSocketService.getInstance();
+				if (ticks > 0) {
+					ws.sendCommand("next");
+				} else if (ticks < 0) {
+					ws.sendCommand("previous");
+				}
+			},
+		});
 	}
 
-	private flushRotation(actionId: string): void {
-		const timer = this.rotationTimer.get(actionId);
-		if (timer) {
-			clearTimeout(timer);
-			this.rotationTimer.delete(actionId);
-		}
-
-		if (this.isPushJitterActive(actionId)) {
-			this.pendingTicks.set(actionId, 0);
-			return;
-		}
-
-		const ticks = this.pendingTicks.get(actionId) || 0;
-		this.pendingTicks.set(actionId, 0);
-
-		if (ticks === 0) return;
-
-		// Prevent rapid duplicate track skip commands during continuous dial detent rotation
-		const now = Date.now();
-		if (now - this.lastTrackSkipTime < 200) {
-			return;
-		}
-		this.lastTrackSkipTime = now;
-
-		const ws = WebSocketService.getInstance();
-		if (ticks > 0) {
-			ws.sendCommand("next");
-		} else {
-			ws.sendCommand("previous");
-		}
+	protected override needsPlaybackTimer(): boolean {
+		return true;
 	}
 
 	protected override getAdditionalMarqueeFeedback(

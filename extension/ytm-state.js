@@ -248,26 +248,24 @@ function collectPlaybackState() {
       artist = mediaSession.artist.trim();
     }
 
-    // Clean artist and album
-    artist = cleanWhitespace(artist);
-    album = cleanWhitespace(album);
+    // Clean artist and album via centralized sanitizeArtist
+    const sanitizeFn = window.YTM.utils?.sanitizeArtist || (typeof sanitizeArtist === 'function' ? sanitizeArtist : null);
+    if (sanitizeFn) {
+      const sanitized = sanitizeFn(artist, album);
+      artist = sanitized.artist;
+      if (!album && sanitized.extractedAlbum) {
+        album = sanitized.extractedAlbum;
+      }
+    } else {
+      artist = cleanWhitespace(artist);
+      album = cleanWhitespace(album);
+    }
 
     // Extra safeguard against non-album text strings
     if (album && isNonAlbumText(album)) {
       album = '';
       albumUrl = '';
     }
-
-    // If album name is present as a standalone segment or whole word inside artist, strip it safely
-    if (album && album.length >= 3 && artist.length > album.length) {
-      const escapedAlbum = album.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      artist = artist.replace(new RegExp(`(^|\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+)${escapedAlbum}(\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+|$)`, 'gi'), '$1').trim();
-    }
-
-    // Strip trailing 4-digit release years at the very end of string
-    artist = artist.replace(/(?:[\s\u2022\u00B7·•\\-|]|\s+)\b(19|20)\d{2}\b$/g, '').trim();
-    artist = artist.replace(/^(E|\[E\])\s+/i, '').trim();
-    artist = artist.replace(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/, '').trim();
 
     // Normalize relative URLs
     if (trackUrl && trackUrl.startsWith('/')) trackUrl = `https://music.youtube.com${trackUrl}`;
@@ -408,8 +406,9 @@ function collectPlaybackState() {
         ironIcon?.getAttribute('src') ||
         ''
       ).toLowerCase();
+      const iconId = (ironIcon?.id || '').toLowerCase();
+      const hasRepeatOneElem = Boolean(repeatButton.querySelector('#repeat-one, #repeat_one, [icon*="repeat_one" i], [icon*="repeat-one" i], [icon*="repeat1" i]'));
 
-      const btnHtml = repeatButton.innerHTML.toLowerCase();
       const innerBtn = repeatButton.querySelector('button');
       const label = (
         repeatButton.getAttribute('aria-label') ||
@@ -425,11 +424,9 @@ function collectPlaybackState() {
         iconAttr.includes('repeat_one') ||
         iconAttr.includes('repeat-one') ||
         iconAttr.includes('repeat1') ||
-        btnHtml.includes('repeat_one') ||
-        btnHtml.includes('repeat-one') ||
-        btnHtml.includes('repeat1') ||
-        btnHtml.includes('id="repeat-one"') ||
-        btnHtml.includes('id="repeat_one"') ||
+        iconId.includes('repeat-one') ||
+        iconId.includes('repeat_one') ||
+        hasRepeatOneElem ||
         label.includes('1 titel') ||
         label.includes('diesen titel') ||
         label.includes('aktuellen titel') ||

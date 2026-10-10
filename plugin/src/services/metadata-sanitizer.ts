@@ -29,6 +29,24 @@ export class MetadataSanitizer {
 	private static lastRawArtist: string | null = null;
 	private static lastRawAlbum: string | null = null;
 	private static lastResult: { artist: string; extractedAlbum?: string } = { artist: "" };
+	private static albumRegexCache: Map<string, RegExp> = new Map();
+	private static readonly MAX_ALBUM_REGEX_ENTRIES = 10;
+
+	private static getAlbumStripRegex(escapedAlbum: string): RegExp {
+		let re = MetadataSanitizer.albumRegexCache.get(escapedAlbum);
+		if (!re) {
+			if (MetadataSanitizer.albumRegexCache.size >= MetadataSanitizer.MAX_ALBUM_REGEX_ENTRIES) {
+				const oldest = MetadataSanitizer.albumRegexCache.keys().next().value;
+				if (oldest) MetadataSanitizer.albumRegexCache.delete(oldest);
+			}
+			re = new RegExp(
+				`(^|\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+)${escapedAlbum}(\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+|$)`,
+				"gi",
+			);
+			MetadataSanitizer.albumRegexCache.set(escapedAlbum, re);
+		}
+		return re;
+	}
 
 	/**
 	 * Clean up whitespace and special non-breaking spaces
@@ -79,15 +97,7 @@ export class MetadataSanitizer {
 		// If album name is present as a standalone segment or whole word inside artist, strip it safely
 		if (cleanAlbum && cleanAlbum.length >= 3 && cleanArtist.length > cleanAlbum.length) {
 			const escapedAlbum = cleanAlbum.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			cleanArtist = cleanArtist
-				.replace(
-					new RegExp(
-						`(^|\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+)${escapedAlbum}(\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+|$)`,
-						"gi",
-					),
-					"$1",
-				)
-				.trim();
+			cleanArtist = cleanArtist.replace(MetadataSanitizer.getAlbumStripRegex(escapedAlbum), "$1").trim();
 		}
 
 		// Strip trailing 4-digit release years at the very end of string

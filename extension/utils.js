@@ -192,6 +192,22 @@ const REGEX_TRAILING_YEAR = /(?:[\s\u2022\u00B7·•\\-|]|\s+)\b(19|20)\d{2}\b$/
 const REGEX_LEADING_EXPLICIT = /^(E|\[E\])\s+/i;
 const REGEX_TRAILING_PUNCTUATION = /[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/;
 
+const albumRegexCache = new Map();
+const MAX_ALBUM_REGEX_ENTRIES = 10;
+
+function getAlbumStripRegex(escapedAlbum) {
+  let re = albumRegexCache.get(escapedAlbum);
+  if (!re) {
+    if (albumRegexCache.size >= MAX_ALBUM_REGEX_ENTRIES) {
+      const oldest = albumRegexCache.keys().next().value;
+      if (oldest) albumRegexCache.delete(oldest);
+    }
+    re = new RegExp(`(^|\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+)${escapedAlbum}(\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+|$)`, 'gi');
+    albumRegexCache.set(escapedAlbum, re);
+  }
+  return re;
+}
+
 let lastSanitizedArtistRaw = null;
 let lastSanitizedAlbumRaw = null;
 let lastSanitizedResult = { artist: '', extractedAlbum: undefined };
@@ -224,10 +240,7 @@ function sanitizeArtist(rawArtist, album) {
 
   if (cleanAlbum && cleanAlbum.length >= 3 && cleanArtist.length > cleanAlbum.length) {
     const escapedAlbum = cleanAlbum.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    cleanArtist = cleanArtist.replace(
-      new RegExp(`(^|\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+)${escapedAlbum}(\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+|$)`, 'gi'),
-      '$1'
-    ).trim();
+    cleanArtist = cleanArtist.replace(getAlbumStripRegex(escapedAlbum), '$1').trim();
   }
 
   cleanArtist = cleanArtist.replace(REGEX_TRAILING_YEAR, '').trim();

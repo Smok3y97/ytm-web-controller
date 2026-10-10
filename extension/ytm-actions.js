@@ -143,20 +143,10 @@ function adjustPlayerVolume(delta) {
  */
 function togglePlayerMute() {
   const muteBtnSelector = window.YTM.selectors?.player?.volumeMuteButton || 'ytmusic-player-bar #volume-slider-volume-button, ytmusic-player-bar .volume, ytmusic-player-bar tp-yt-paper-icon-button.volume, #volume-slider-volume-button';
-  const clickFn = typeof clickElement === 'function' ? clickElement : window.YTM.utils?.clickElement;
+  const clickFn = window.YTM.utils?.clickElement || (typeof clickElement === 'function' ? clickElement : null);
 
   // 1. Click UI button to trigger YouTube Music's visual state & audio toggle
-  let clicked = false;
-  if (typeof clickFn === 'function') {
-    clicked = clickFn(muteBtnSelector);
-  } else {
-    const btn = document.querySelector(muteBtnSelector);
-    if (btn) {
-      const b = btn.querySelector('button') || btn;
-      b.click();
-      clicked = true;
-    }
-  }
+  const clicked = clickFn ? clickFn(muteBtnSelector) : false;
 
   // 2. Fallback to Player API and video element if button was not clickable
   if (!clicked) {
@@ -205,7 +195,7 @@ function seekRelative(deltaSeconds) {
     return;
   }
 
-  const video = (typeof findVideoElement === 'function' ? findVideoElement() : window.YTM.utils?.findVideoElement?.()) || document.querySelector('video');
+  const video = window.YTM.utils?.findVideoElement?.() || (typeof findVideoElement === 'function' ? findVideoElement() : document.querySelector('video'));
   if (video && typeof video.currentTime === 'number') {
     video.currentTime = Math.max(0, video.currentTime + deltaSeconds);
     triggerStateNotification([50, 150]);

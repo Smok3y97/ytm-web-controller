@@ -14,7 +14,11 @@ if (Test-Path $releaseDir) {
 }
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 
-# 1. Compile plugin & run linters
+# 1. Synchronize metadata patterns across extension and plugin
+Write-Output "Synchronizing metadata patterns from SSOT (shared/metadata-patterns.json)..."
+& node (Join-Path $rootDir "scripts\sync-patterns.mjs")
+
+# 2. Compile plugin & run linters
 Write-Output "Checking code style, formatting & building plugin bundle..."
 Push-Location $pluginDir
 if (!(Test-Path (Join-Path $pluginDir "node_modules"))) {

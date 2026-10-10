@@ -8,7 +8,6 @@ import { Client, type SetActivity, StatusDisplayType } from "@xhayper/discord-rp
 import { ActivityType } from "discord-api-types/v10";
 
 import { YTMPlaybackState } from "../types/index.js";
-import { MetadataSanitizer } from "./metadata-sanitizer.js";
 
 export const DEFAULT_DISCORD_CLIENT_ID = "1537908230209019954"; // YouTube Music Discord Client ID
 
@@ -259,10 +258,9 @@ export class DiscordRpcService {
 				return str;
 			};
 
-			// Clean artist and album strings via centralized MetadataSanitizer
-			const { artist: cleanArtist, extractedAlbum } = MetadataSanitizer.sanitizeArtist(rawArtist, rawAlbum);
-			const albumDisplayText =
-				extractedAlbum || (rawAlbum && !MetadataSanitizer.isNonAlbumText(rawAlbum) ? rawAlbum.trim() : "");
+			// Artist and album metadata are already centralized and sanitized by StateManager
+			const cleanArtist = rawArtist;
+			const albumDisplayText = rawAlbum;
 			const albumUrlToUse = albumDisplayText ? albumUrl || "" : "";
 
 			// Check if update is redundant (to prevent Discord RPC rate-limiting)

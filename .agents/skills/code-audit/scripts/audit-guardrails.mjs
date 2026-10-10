@@ -113,6 +113,19 @@ if (fs.existsSync(pluginSrcDir)) {
   }
 }
 
+// 4. Synchronized Metadata Patterns (SSOT: shared/metadata-patterns.json)
+console.log('📌 4. Verifying Metadata Patterns Synchronization...');
+const syncScriptPath = path.join(ROOT_DIR, 'scripts/sync-patterns.mjs');
+if (fs.existsSync(syncScriptPath)) {
+  try {
+    const { execFileSync } = await import('node:child_process');
+    execFileSync(process.execPath, [syncScriptPath, '--check'], { stdio: 'pipe' });
+  } catch (err) {
+    console.error('  ❌ Generated pattern files are out of date! Run "npm run sync:patterns" to synchronize.');
+    errorCount++;
+  }
+}
+
 console.log('\n=======================================');
 if (errorCount === 0 && warningCount === 0) {
   console.log('✅ All guardrail and architectural checks passed with 0 errors and 0 warnings!');

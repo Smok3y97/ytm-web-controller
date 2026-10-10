@@ -10,7 +10,7 @@ import { EventEmitter } from "events";
 import http from "http";
 import { WebSocket, WebSocketServer } from "ws";
 
-import { ClientTabInfo, WSMessage, YTMPlaybackState } from "../types/index.js";
+import { ClientTabInfo, HeartbeatWebSocket, WSMessage, YTMPlaybackState } from "../types/index.js";
 import { HttpApiService } from "./http-api.js";
 import { StateManager } from "./state-manager.js";
 import { TabManager } from "./tab-manager.js";
@@ -24,6 +24,7 @@ export class WebSocketService extends EventEmitter {
 	private tabManager: TabManager = new TabManager();
 	private currentPort: number = 39865;
 	private isMismatchActive: boolean = false;
+	private heartbeatTimer: NodeJS.Timeout | null = null;
 
 	private constructor() {
 		super();
@@ -124,6 +125,11 @@ export class WebSocketService extends EventEmitter {
 						lastActive: Date.now(),
 						isOverlay,
 					};
+					const hbSocket = ws as HeartbeatWebSocket;
+					hbSocket.isAlive = true;
+					ws.on("pong", () => {
+						hbSocket.isAlive = true;
+					});
 					this.clients.add(ws);
 					this.tabManager.addTab(ws, tabInfo);
 					this.emit("clientConnected", ws);
@@ -254,6 +260,25 @@ export class WebSocketService extends EventEmitter {
 				this.httpServer.listen(this.currentPort, "127.0.0.1", () => {
 					streamDeck.logger.info(`[WebSocket/HTTP] Server listening on http://127.0.0.1:${this.currentPort}`);
 					this.emit("listening", this.currentPort);
+
+					// Start 30-second ping/pong heartbeat to prune unresponsive or dead half-open sockets
+					this.heartbeatTimer = setInterval(() => {
+						for (const client of this.clients) {
+							const clientSocket = client as HeartbeatWebSocket;
+							if (clientSocket.isAlive === false) {
+								streamDeck.logger.info("[WebSocket] Terminating dead/unresponsive socket (heartbeat missed)");
+								client.terminate();
+								continue;
+							}
+							clientSocket.isAlive = false;
+							try {
+								client.ping();
+							} catch {
+								client.terminate();
+							}
+						}
+					}, 30000);
+
 					resolve();
 				});
 			} catch (err) {
@@ -270,6 +295,11 @@ export class WebSocketService extends EventEmitter {
 		if (!this.httpServer && !this.wss) return;
 
 		return new Promise((resolve) => {
+			if (this.heartbeatTimer) {
+				clearInterval(this.heartbeatTimer);
+				this.heartbeatTimer = null;
+			}
+
 			for (const client of this.clients) {
 				try {
 					client.close();

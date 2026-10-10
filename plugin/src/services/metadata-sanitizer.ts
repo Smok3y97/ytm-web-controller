@@ -4,26 +4,22 @@
  * Sanitizes YouTube Music DOM text fragments to filter out non-album metadata
  * (view counts, upload timestamps, release years, like counts) across all YouTube-supported languages.
  */
-
-const REGEX_WHITESPACE = /[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g;
-const REGEX_YEAR = /^\d{4}$/;
-const REGEX_EXPLICIT = /^(e|\[e\])$/i;
-const REGEX_TIME_DURATION = /^\d+:\d+(?::\d+)?$/;
-const REGEX_TRACK_COUNT = /^\d+\s*(?:tracks?|titel|songs?|morceaux|canciones|brani|трек\w*|піс\w*)$/i;
-const REGEX_VIEW_KEYWORD =
-	/(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)/i;
-const REGEX_TIME_KEYWORD =
-	/(?:^vor\s|\bago$|^il y a\b|^hace\s|^há\s|\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\s|^pred\s|^acum\s|^πριν\s|^pre\s|לפني|قبل|trước$|ที่แล้ว$|年前|前$|전$)/i;
-const REGEX_DATE_UNIT =
-	/(?:year|jahr|ans?|año|anno|год|лет|рок|month|monat|mois|mes|mese|месяц|місяц|week|woche|semaine|semana|settiman|недел|тижд|day|tag|jour|día|giorno|день|дней|днів|hour|stunde|heure|hora|ora|час|minute|минут|хвилин)/i;
-const REGEX_RELATIVE_PAST =
-	/(?:vor|ago|hace|há|fa|назад|тому|önce|temu|előtt|sedan|siden|sitten|yang lalu|před|pred|acum|πριν|pre|לפني|قبل|trước|ที่แล้ว)/i;
-const REGEX_LIKE_KEYWORD =
-	/(?:like|gefällt|gusta|j'aime|mi piace|лайк|좋아요|讚|赞|subscribers?|abonnenten?|abonnés?|suscriptores?|iscritti)/i;
-const REGEX_BULLET_SPLIT = /\s*[\u2022\u00B7·•|]\s*/;
-const REGEX_TRAILING_YEAR = /(?:[\s\u2022\u00B7·•\\-|]|\s+)\b(19|20)\d{2}\b$/;
-const REGEX_LEADING_EXPLICIT = /^(E|\[E\])\s+/i;
-const REGEX_TRAILING_PUNCTUATION = /[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/;
+import {
+	REGEX_BULLET_SPLIT,
+	REGEX_DATE_UNIT,
+	REGEX_EXPLICIT,
+	REGEX_LEADING_EXPLICIT,
+	REGEX_LIKE_KEYWORD,
+	REGEX_RELATIVE_PAST,
+	REGEX_TIME_DURATION,
+	REGEX_TIME_KEYWORD,
+	REGEX_TRACK_COUNT,
+	REGEX_TRAILING_PUNCTUATION,
+	REGEX_TRAILING_YEAR,
+	REGEX_VIEW_KEYWORD,
+	REGEX_WHITESPACE,
+	REGEX_YEAR,
+} from "./metadata-patterns.js";
 
 export class MetadataSanitizer {
 	private static lastRawArtist: string | null = null;

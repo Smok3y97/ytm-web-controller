@@ -131,6 +131,7 @@ ytm-web-controller/
 ├── plugin/                  # Stream Deck Plugin (Node.js SDK v3, Rollup bundle & Property Inspector)
 ├── screenshots/             # Visual previews & documentation assets
 ├── scripts/                 # Workspace build, packaging & version management scripts
+├── shared/                  # Shared configuration & metadata patterns (Single Source of Truth)
 ├── AGENTS.md                # Persistent directives and non-negotiable guardrails
 ├── CONTRIBUTING.md          # Community contribution guidelines & coding standards
 ├── CODE_OF_CONDUCT.md       # Contributor Covenant v2.1 pledge
@@ -195,11 +196,14 @@ extension/
 ├── content.js               # WebSocket client orchestrator, command router & lifecycle
 ├── popup.html/.css/.js      # Toolbar popup UI (status, port configuration & live tester)
 ├── ytm-actions.js           # Action dispatcher: Playback (MediaSession -> Player API) & UI controls
+├── ytm-controls.js          # Control state parser (Like, Dislike, Shuffle, Repeat button DOM & heuristics)
 ├── ytm-fallback.js          # UI toggles (Like/Dislike/Shuffle/Repeat) & <video> volume fallbacks
 ├── ytm-media-session.js     # W3C Media Session API hooks (setActionHandler / metadata)
+├── ytm-observers.js         # Reactive HTML5 media listeners & scoped MutationObserver setup/teardown
+├── ytm-patterns.js          # Generated metadata RegExp constants (SSOT: shared/metadata-patterns.json)
 ├── ytm-player-api.js        # YouTube Player API bridge (#movie_player)
 ├── ytm-selectors.js         # Single Source of Truth for YouTube Music DOM element selectors
-├── ytm-state.js             # Reactive HTML5 <video> observer & playback state collector
+├── ytm-state.js             # Reactive playback state collector & timing snapshot generator
 ├── utils.js                 # DOM query helpers, time parsers & artwork URL resolution
 └── icons/                   # Extension toolbar & store icons (16, 48, 128 px PNG)
 ```
@@ -307,7 +311,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
 1. **Manifest Configuration ([`extension/manifest.json`](../extension/manifest.json))**:
    - Built on **Manifest V3**.
    - Fully compatible with **Chromium** and **Gecko** (Mozilla Firefox).
-   - Sequentially loads modular scripts in page `"world": "MAIN"` context (`ytm-selectors.js` → `ytm-media-session.js` → `utils.js` → `ytm-player-api.js` → `ytm-fallback.js` → `ytm-actions.js` → `ytm-state.js` → `content.js`) at `document_start` to intercept MediaSession handlers before YouTube Music scripts initialize.
+   - Sequentially loads modular scripts in page `"world": "MAIN"` context (`ytm-selectors.js` → `ytm-media-session.js` → `ytm-patterns.js` → `utils.js` → `ytm-player-api.js` → `ytm-fallback.js` → `ytm-controls.js` → `ytm-actions.js` → `ytm-observers.js` → `ytm-state.js` → `content.js`) at `document_start` to intercept MediaSession handlers before YouTube Music scripts initialize.
 
 2. **ISOLATED World Bridge ([`extension/bridge.js`](../extension/bridge.js))**:
    - Injected into `music.youtube.com` with default `ISOLATED` world execution at `document_start`.
@@ -322,34 +326,46 @@ The browser companion extension runs in the context of `https://music.youtube.co
    - Captures YouTube Music's internal action callbacks (`play`, `pause`, `nexttrack`, `previoustrack`, `seekto`).
    - Extracts official `playbackState` and `metadata` (title, artist, album, artwork).
 
-5. **Core Utilities & Helpers ([`extension/utils.js`](../extension/utils.js))**:
+5. **Metadata Patterns Generator ([`extension/ytm-patterns.js`](../extension/ytm-patterns.js))**:
+   - Pre-compiled RegExp constants exposed under `window.YTM.patterns` synchronized from `shared/metadata-patterns.json` (Single Source of Truth) via `npm run sync:patterns`.
+   - Eliminates regex duplication and runtime compilation overhead across multi-lingual view counts, relative timestamps, explicit badges, and release years.
+
+6. **Core Utilities & Helpers ([`extension/utils.js`](../extension/utils.js))**:
    - Fast DOM query helpers (`$`, `$$`, `clickElement`).
-   - Text & time sanitizers (`cleanWhitespace`, `isNonAlbumText`, `parseTimeToSeconds`) to filter multi-lingual YouTube metadata and parse track durations.
+   - Text & time sanitizers (`cleanWhitespace`, `isNonAlbumText`, `parseTimeToSeconds`) consuming `window.YTM.patterns` to filter multi-lingual YouTube metadata and parse track durations.
    - High-resolution artwork URL extractor (`extractArtworkUrl` preferring `226x226` for Stream Deck keys and touchstrips).
 
-6. **Native Player API ([`extension/ytm-player-api.js`](../extension/ytm-player-api.js))**:
+7. **Native Player API ([`extension/ytm-player-api.js`](../extension/ytm-player-api.js))**:
    - Primary playback & seeking controller: executes commands directly through the internal YouTube Music Player API (`#movie_player` / `playerBar.playerApi_`: `playVideo()`, `pauseVideo()`, `nextVideo()`, `previousVideo()`, `setVolume()`, `isMuted()`, `mute()`, `unMute()`, `seekTo()`, `getCurrentTime()`, `getDuration()`).
    - Timing extraction: `getCurrentTime()` directly via Player API with `<video>` fallback; `getDuration()` directly via the authoritative player bar `.time-info` with native API / `<video>` fallback. Avoids MSE streaming buffer truncation issues during track transitions.
    - Zero DOM dependencies for playback controls; unaffected by CSS/HTML changes.
 
-7. **DOM & UI Fallbacks ([`extension/ytm-fallback.js`](../extension/ytm-fallback.js))**:
+8. **DOM & UI Fallbacks ([`extension/ytm-fallback.js`](../extension/ytm-fallback.js))**:
    - Handles controls not exposed via official JavaScript APIs (Like, Dislike, Shuffle, Repeat) and provides hardware `<video>` volume/mute fallbacks.
    - Strictly references `window.YTM.selectors` for all DOM queries.
 
-8. **Action Orchestrator ([`extension/ytm-actions.js`](../extension/ytm-actions.js))**:
+9. **Action Orchestrator ([`extension/ytm-actions.js`](../extension/ytm-actions.js))**:
    - **Playback Control**: Tier 1 Media Session API → Tier 2 Native Player API.
    - **Seeking**: Direct native `playerApi.seekTo(target, true)` execution with Media Session fallback for reliable scrubbing.
    - **Volume & Mute**: Native Player API execution coupled with Polymer UI component synchronization (`playerBar.setVolume_`, `tp-yt-paper-slider#volume-slider`, and UI mute button click) so that in-browser icons and sliders stay synchronized with Stream Deck hardware.
    - Triggers staggered state notifications (`notifyState`).
 
-9. **State Extraction & Observers ([`extension/ytm-state.js`](../extension/ytm-state.js))**:
-   - Primary metadata extraction via `navigator.mediaSession.metadata` (title, artist, album, artwork).
-   - High-precision timing snapshot via `window.YTM.playerApi.getCurrentTime()` and `window.YTM.playerApi.getDuration()`.
-   - Event-driven snapshot broadcasting on state transitions (`play`, `pause`, `seeking`, `seeked`, `durationchange`, `loadedmetadata`, `ratechange`, `volumechange`, `ended`) with zero periodic `timeupdate` WebSocket flood.
-   - Scoped `MutationObserver` on player bar elements for immediate state broadcast on like, dislike, shuffle, and repeat clicks with clean lifecycle detachment (`teardownGlobalMediaListeners`).
+10. **Player Controls State Parser ([`extension/ytm-controls.js`](../extension/ytm-controls.js))**:
+    - Dedicated extraction of like/dislike rating, shuffle, and repeat modes (`NONE`, `ONE`, `ALL`).
+    - Reads Polymer component properties (`likeStatus_`, `aria-checked`, `aria-pressed`) with multilingual tooltip heuristics (`ytm-selectors.js`) and SVG path icon heuristics fallback.
 
-10. **WebSocket Orchestrator ([`extension/content.js`](../extension/content.js))**:
+11. **Reactive Media Listeners & Observers ([`extension/ytm-observers.js`](../extension/ytm-observers.js))**:
+    - Encapsulates native HTML5 `<video>` listeners and scoped `MutationObserver` attachments on the player bar.
+    - Strictly reactive: triggers snapshot updates on playback transitions without polling overhead.
+    - Provides safe teardown and idempotent setup (`setupGlobalMediaListeners`, `teardownGlobalMediaListeners`) to prevent event listener leakage during page transitions.
+
+12. **State Aggregator & Snapshot Generator ([`extension/ytm-state.js`](../extension/ytm-state.js))**:
+    - Central state collector: unites Media Session metadata, Player API duration/timing, `<video>` status, and `window.YTM.controls.extractControlStates()`.
+    - Generates unified playback state snapshots and broadcasts them via registered state listeners (`subscribeStateChange`).
+
+13. **WebSocket Client & Command Router ([`extension/content.js`](../extension/content.js))**:
     - Generates unique session `tabId` to participate in multi-tab arbitration.
+    - Clean connection synchronization: receives initial state request (`requestState`) upon server handshake verification, eliminating premature connection bursts.
     - Centralized atomic microtask coalescing (`queueStateSnapshot`) and dirty-checking snapshot dispatcher to eliminate redundant WebSocket frames.
     - Dispatches `TAB_CLOSED` on `beforeunload` and `pagehide` to cleanly deregister tabs and teardown observers.
     - Automatically synchronizes playback state on `visibilitychange` when returning to background tabs.
@@ -367,6 +383,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
 
 - **`WebSocketService`**: Hosts local WebSocket & HTTP server on configurable port (default `39865`).
   - **CSWSH Origin Security (`verifyClient`)**: Strictly validates incoming connection origins (`https://music.youtube.com`, `http://127.0.0.1:${port}`, `http://localhost:${port}`, `chrome-extension://*`, `moz-extension://*`, and local tools), rejecting unauthorized web origins with HTTP 403.
+  - **Connection Liveness & Heartbeat**: Runs a 30-second ping/pong heartbeat interval (`HeartbeatWebSocket`). Unresponsive sockets failing to answer with `pong` are promptly pruned via `client.terminate()`, preventing zombie connection accumulation from ungracefully closed or crashed browser tabs.
   - **Broadcast State**: Dispatches state updates to all connected external listeners (e.g. OBS overlay).
 - **`TabManager`**: Decoupled multi-tab arbitration and client registry.
   - **Multi-Tab Orchestration**: Tracks connected tabs by `tabId` and active playback state. Automatically routes hardware commands exclusively to the tab actively playing audio (`!isPaused`), preventing ghost commands to idle tabs and ignoring stale pause events from background tabs.
@@ -374,13 +391,13 @@ The browser companion extension runs in the context of `https://music.youtube.co
 - **`HttpApiService`**: Serves read-only GET `/overlay` (OBS Browser Source) with in-memory caching of HTML, CSS, and JS assets, and GET `/api/current` (Chatbot plaintext metadata).
 - **`StateManager`**: Stores active playback state, performs local timestamp-based time interpolation (`getInterpolatedCurrentTime()`), and manages state change lifecycle events.
 - **`TemplateEngine`**: Isolated placeholder formatting engine for Track Titles, Times, Formatted Tracks, Volume readouts, and Seek button labels across keypad buttons and LCD touchstrips.
-- **`MetadataSanitizer`**: Multi-language DOM metadata filtering engine that strips out non-album tokens (view counts, upload timestamps, release years, like counts) across internationalized YouTube Music interfaces. Pattern semantics are kept in parity with `extension/utils.js` (e.g. state-free `REGEX_TRAILING_YEAR` without global flag).
+- **`MetadataSanitizer`**: Multi-language DOM metadata filtering engine that strips out non-album tokens (view counts, upload timestamps, release years, like counts) across internationalized YouTube Music interfaces. Pattern constants are imported directly from `plugin/src/services/metadata-patterns.ts`, auto-generated from `shared/metadata-patterns.json` (Single Source of Truth) via `npm run sync:patterns` to maintain 100% parity across Plugin and Browser Extension.
 - **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs, featuring LRU eviction and CJK full-width character detection for accurate LCD text width estimation.
 - **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs with bounded in-RAM LRU overlay caching.
-- **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with timeline calculations anchored to the state snapshot timestamp, eliminating debounce drift.
+- **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with timeline calculations anchored to the state snapshot timestamp, eliminating debounce drift. Consumes pre-sanitized metadata directly from `StateManager`, eliminating redundant re-sanitization cycles.
 - **`ObsExporterService`**: Debounced safe writer for OBS Text (GDI+) file sources (`.txt`).
 - **`VersionControlService`**: Dynamic manifest reader and version compatibility validator.
-- **`DialRotaryStreamer`**: Decoupled hardware rotary stream controller encapsulating encoder tick accumulation, push-jitter suppression (250ms), 10-Hz optimistic feedback rate limiting (100ms), continuous rotation streaming, and trailing settle timers (110ms) across all Stream Deck + dial actions.
+- **`DialRotaryStreamer`**: Decoupled hardware rotary stream controller encapsulating encoder tick accumulation, push-jitter suppression (250ms), 10-Hz optimistic feedback rate limiting (100ms), continuous rotation streaming, strict 100ms throttle boundary guard in `executeFlush` to prevent interval burst violations, and trailing settle timers (110ms) across all Stream Deck + dial actions.
 
 ---
 
@@ -412,14 +429,14 @@ The Property Inspector frontend uses a modular architecture with centralized int
 │                                                             │
 │  ┌───────────────────────┐       ┌───────────────────────┐  │
 │  │   streamdeck-client   │       │     i18n.js Loader    │  │
-│  │  (WebSocket SDK Bridge│ ◄───► │ (Loads de.json/en.json│  │
-│  │  & App Language Parser│       │  & DOM Auto-Translate │  │
+│  │ (WebSocket SDK Bridge │ ◄───► │ (Loads de.json/en.json│  │
+│  │ & App Language Parser)│       │  & DOM Auto-Translate)│  │
 │  └───────────┬───────────┘       └───────────┬───────────┘  │
 │              │                               │              │
 │  ┌───────────▼───────────┐       ┌───────────▼───────────┐  │
 │  │   global-settings.js  │       │  Action Specific HTML │  │
-│  │  (Discord / OBS / Port│       │ (common, playpause,   │  │
-│  │   Auto-Save Settings) │       │  dials, volume, etc.) │  │
+│  │ (Discord / OBS / Port │       │ (common, playpause,   │  │
+│  │  Auto-Save Settings)  │       │  dials, volume, etc.) │  │
 │  └───────────────────────┘       └───────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -460,7 +477,7 @@ The Stream Deck + integration combines physical rotary encoders with high-densit
 
 ### 🔄 10-Hz Dial Rotary Streaming & Settle Lifecycle (`DialRotaryStreamer`)
 - **Zero-Latency First Detent**: The first rotation detent fires immediately with 0ms latency if the dial was idle ($\ge 100\text{ ms}$ since the previous command dispatch).
-- **Active 10-Hz Streaming**: Continuous rotary encoder spinning spins up an active 100ms interval timer via `DialRotaryStreamer`. Accumulated rotation ticks are batched and dispatched at the exact 10-Hz boundary, preventing USB bus flooding or dropped ticks.
+- **Active 10-Hz Streaming**: Continuous rotary encoder spinning spins up an active 100ms interval timer via `DialRotaryStreamer`. Accumulated rotation ticks are batched and dispatched at the exact 10-Hz boundary with an explicit interval throttle guard (`now - lastCommand < 100`), preventing USB bus flooding, interval burst violations, or dropped ticks.
 - **Optimistic Target Tracking**: During active rotation, the controller tracks optimistic targets (`lastTargetVolume` / `lastTargetSeconds`). Subsequent ticks increment from the tracked optimistic position rather than stale `StateManager` values pending WebSocket round-trip acknowledgments, preventing dial rubber-banding or display flicker.
 - **Trailing Settle Debounce**: A 110ms trailing debounce timer fires after rotary movement stops, flushing any final residual ticks, clearing the 10-Hz stream interval, and resetting the optimistic tracking state without redundant `setFeedback` calls if the LCD is already synchronized.
 

@@ -4,8 +4,10 @@
   "description": "Event-driven controller bridge connecting YouTube Music Web to Elgato Stream Deck, OBS Studio, and Discord.",
   "private": true,
   "scripts": {
-    "build": "npm run build --prefix plugin",
+    "build": "node scripts/sync-patterns.mjs && npm run build --prefix plugin",
     "watch": "npm run watch --prefix plugin",
+    "sync:patterns": "node scripts/sync-patterns.mjs",
+    "patterns:check": "node scripts/sync-patterns.mjs --check",
     "bump": "node scripts/bump-version.mjs",
     "changelog": "node .agents/skills/changelog-gen/scripts/generate-changelog.mjs",
     "docs:conventions": "node .agents/skills/changelog-gen/scripts/sync-conventions-doc.mjs",

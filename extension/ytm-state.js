@@ -1,20 +1,14 @@
 /**
- * YouTube Music Web Controller - State Extraction & Media Observers
+ * YouTube Music Web Controller - Playback State Extraction & Assembly
  * 
- * Extracts player metadata and state (like, dislike, shuffle, repeat, volume, timing)
- * and provides reactive DOM and media event listeners.
+ * Extracts player metadata, timing, and volume, assembling a unified playback
+ * state snapshot in coordination with ytm-controls.js and ytm-observers.js.
  */
 
 'use strict';
 
 window.YTM = window.YTM || {};
 
-let hasInitializedMediaListeners = false;
-let activeObserver = null;
-let initialObserver = null;
-let mediaEventDebounceTimer = null;
-let mutationDebounceTimer = null;
-let registeredMediaListeners = [];
 let lastResolvedVideoId = '';
 let lastResolvedTrackKey = '';
 
@@ -27,6 +21,9 @@ function getPlayerVolume() {
     return Math.round(apiVol);
   }
 
+  const $ = window.YTM.utils?.$ || ((sel, parent = document) => {
+    try { return parent.querySelector(sel); } catch { return null; }
+  });
   const selectors = window.YTM.selectors?.player || {};
   const playerBar = $(selectors.playerBar || 'ytmusic-player-bar');
   if (playerBar && typeof playerBar.volume_ === 'number') {
@@ -42,7 +39,8 @@ function getPlayerVolume() {
     }
   }
 
-  const video = findVideoElement();
+  const findVideo = window.YTM.utils?.findVideoElement || (typeof findVideoElement === 'function' ? findVideoElement : () => document.querySelector('video'));
+  const video = findVideo();
   if (video && typeof video.volume === 'number' && !isNaN(video.volume)) {
     return Math.round(video.volume * 100);
   }
@@ -59,6 +57,9 @@ function getPlayerMuted() {
     return apiMuted;
   }
 
+  const $ = window.YTM.utils?.$ || ((sel, parent = document) => {
+    try { return parent.querySelector(sel); } catch { return null; }
+  });
   const selectors = window.YTM.selectors?.player || {};
   const playerBar = $(selectors.playerBar || 'ytmusic-player-bar');
   if (playerBar && typeof playerBar.muted_ === 'boolean') {
@@ -74,7 +75,8 @@ function getPlayerMuted() {
     }
   }
 
-  const video = findVideoElement();
+  const findVideo = window.YTM.utils?.findVideoElement || (typeof findVideoElement === 'function' ? findVideoElement : () => document.querySelector('video'));
+  const video = findVideo();
   if (video) return video.muted;
 
   return false;
@@ -92,6 +94,15 @@ function extractTrackMetadata(mediaSession, playerBar) {
   let artistUrl = '';
   let albumUrl = '';
   let videoId = '';
+
+  const $ = window.YTM.utils?.$ || ((sel, parent = document) => {
+    try { return parent.querySelector(sel); } catch { return null; }
+  });
+  const $$ = window.YTM.utils?.$$ || ((sel, parent = document) => {
+    try { return Array.from(parent.querySelectorAll(sel)); } catch { return []; }
+  });
+  const cleanWhitespace = window.YTM.utils?.cleanWhitespace || (s => (s || '').trim());
+  const isNonAlbumText = window.YTM.utils?.isNonAlbumText || (() => false);
 
   if (typeof extractArtworkUrl === 'function') {
     coverUrl = extractArtworkUrl(mediaSession);
@@ -355,151 +366,17 @@ function extractTransportState(video) {
 }
 
 /**
- * Extract interactive control button states (Like, Dislike, Shuffle, Repeat)
+ * Extract interactive control button states (delegates to centralized ytm-controls.js)
  */
 function extractControlStates(playerBar) {
-  // Like & Dislike Status (Strictly scoped to bottom player bar)
-  let isLiked = false;
-  let isDisliked = false;
-
-  const playerBarElem = playerBar || $(window.YTM.selectors?.player?.playerBar || 'ytmusic-player-bar');
-  const likeRenderer = playerBarElem
-    ? $(window.YTM.selectors?.controls?.likeRenderer || 'ytmusic-like-button-renderer, #like-button-renderer, .like-button-renderer', playerBarElem)
-    : null;
-  const likeStatusAttr = likeRenderer?.getAttribute('like-status')?.toUpperCase();
-
-  if (likeStatusAttr === 'LIKE') {
-    isLiked = true;
-    isDisliked = false;
-  } else if (likeStatusAttr === 'DISLIKE') {
-    isLiked = false;
-    isDisliked = true;
-  } else if (likeStatusAttr === 'INDIFFERENT') {
-    isLiked = false;
-    isDisliked = false;
-  } else if (playerBarElem && typeof playerBarElem.likeStatus_ === 'string' && playerBarElem.likeStatus_) {
-    const ls = playerBarElem.likeStatus_.toUpperCase();
-    isLiked = ls === 'LIKE';
-    isDisliked = ls === 'DISLIKE';
-  } else if (playerBarElem) {
-    const likeButton = $(window.YTM.selectors?.controls?.likeButton, playerBarElem);
-    const dislikeButton = $(window.YTM.selectors?.controls?.dislikeButton, playerBarElem);
-
-    isLiked = isButtonActive(likeButton);
-    isDisliked = isButtonActive(dislikeButton);
+  if (window.YTM.controls?.extractControlStates) {
+    return window.YTM.controls.extractControlStates(playerBar);
   }
-
-  // Shuffle Status
-  let shuffleActive = false;
-  const rawShuffle = playerBar?.shuffleOn_ ?? 
-    playerBar?.shuffleActive_ ?? 
-    playerBar?.__data?.shuffleOn ?? 
-    playerBar?.__data?.shuffleActive;
-
-  if (typeof rawShuffle === 'boolean') {
-    shuffleActive = rawShuffle;
-  } else {
-    const shuffleButton = $(window.YTM.selectors?.controls?.shuffleButton, playerBar) ||
-      $(window.YTM.selectors?.controls?.shuffleButton);
-
-    if (shuffleButton) {
-      shuffleActive = isButtonActive(shuffleButton, ['deaktivieren', 'ausschalten', 'turn off', 'is on']);
-    }
-  }
-
-  // Repeat Status
-  let repeatMode = 'OFF';
-  const rawRepeat = playerBar?.repeatMode_ ?? 
-    playerBar?.__data?.repeatMode ?? 
-    playerBar?.__data?.repeatMode_ ?? 
-    playerBar?.repeatMode;
-
-  if (typeof rawRepeat === 'number') {
-    if (rawRepeat === 2) repeatMode = 'ONE';
-    else if (rawRepeat === 1) repeatMode = 'ALL';
-    else repeatMode = 'OFF';
-  } else if (typeof rawRepeat === 'string') {
-    const rm = rawRepeat.toUpperCase().trim();
-    if (rm === 'NONE' || rm === 'OFF' || rm === '0' || rm === 'REPEAT_OFF' || rm === 'REPEAT_NONE') {
-      repeatMode = 'OFF';
-    } else if (rm === 'ONE' || rm === '2' || rm === 'FEATURED' || rm === 'REPEAT_ONE' || rm === 'REPEAT_SINGLE' || rm === 'TRACK') {
-      repeatMode = 'ONE';
-    } else if (rm === 'ALL' || rm === '1' || rm === 'REPEAT_ALL') {
-      repeatMode = 'ALL';
-    } else {
-      repeatMode = 'OFF';
-    }
-  } else if (typeof rawRepeat === 'boolean') {
-    repeatMode = rawRepeat ? 'ALL' : 'OFF';
-  } else {
-    const repeatBtnSel = window.YTM.selectors?.controls?.repeatButton || 'ytmusic-player-bar tp-yt-paper-icon-button.repeat, ytmusic-player-bar .repeat, ytmusic-player-bar #repeat-button';
-    const repeatButton = $(repeatBtnSel, playerBar) ||
-      $(repeatBtnSel);
-
-    if (repeatButton) {
-      const ironIconSel = window.YTM.selectors?.controls?.ironIcon || 'tp-yt-iron-icon, iron-icon, yt-icon, #icon, [icon]';
-      const ironIcon = repeatButton.querySelector(ironIconSel);
-      const iconAttr = (
-        ironIcon?.getAttribute('icon') ||
-        repeatButton.getAttribute('icon') ||
-        ironIcon?.getAttribute('src') ||
-        ''
-      ).toLowerCase();
-      const iconId = (ironIcon?.id || '').toLowerCase();
-      const repeatOneSel = window.YTM.selectors?.controls?.repeatOne || '#repeat-one, #repeat_one, [icon*="repeat_one" i], [icon*="repeat-one" i], [icon*="repeat1" i]';
-      const hasRepeatOneElem = Boolean(repeatButton.querySelector(repeatOneSel));
-
-      const innerBtn = repeatButton.querySelector('button');
-      const label = (
-        repeatButton.getAttribute('aria-label') ||
-        innerBtn?.getAttribute('aria-label') ||
-        repeatButton.getAttribute('title') ||
-        innerBtn?.getAttribute('title') ||
-        ''
-      ).toLowerCase();
-
-      const isCurrentlyActive = isButtonActive(repeatButton, ['deaktivieren', 'ausschalten', 'turn off', 'desactivar', 'désactiver', 'is on']);
-
-      const isOne = (
-        iconAttr.includes('repeat_one') ||
-        iconAttr.includes('repeat-one') ||
-        iconAttr.includes('repeat1') ||
-        iconId.includes('repeat-one') ||
-        iconId.includes('repeat_one') ||
-        hasRepeatOneElem ||
-        label.includes('1 titel') ||
-        label.includes('diesen titel') ||
-        label.includes('aktuellen titel') ||
-        label.includes('einzelnen titel') ||
-        label.includes('wiederholen (1)') ||
-        label.includes('wiederholung: 1') ||
-        label.includes('repeat one') ||
-        label.includes('repeat 1') ||
-        label.includes('repeat: 1') ||
-        label.includes('repeat: one') ||
-        label.includes('repeat single') ||
-        label.includes('repetir una') ||
-        label.includes('repetir 1') ||
-        label.includes('répéter le titre actuel') ||
-        label.includes('répéter 1 titre') ||
-        label.includes('répéter ce titre')
-      ) && !label.includes('alle') && !label.includes('all') && !label.includes('tout') && !label.includes('todo') && !label.includes('aus') && !label.includes('off');
-
-      if (isCurrentlyActive) {
-        repeatMode = isOne ? 'ONE' : 'ALL';
-      } else if (isOne && (iconAttr.includes('repeat_one') || iconAttr.includes('repeat-one') || label.includes('aktuellen') || label.includes('diesen') || label.includes('1 titel') || label.includes('repeat one'))) {
-        repeatMode = 'ONE';
-      } else {
-        repeatMode = 'OFF';
-      }
-    }
-  }
-
   return {
-    isLiked,
-    isDisliked,
-    shuffleActive,
-    repeatMode
+    isLiked: false,
+    isDisliked: false,
+    shuffleActive: false,
+    repeatMode: 'OFF'
   };
 }
 
@@ -507,8 +384,12 @@ function extractControlStates(playerBar) {
  * Extract current playback metadata and player state from DOM & MediaSession
  */
 function collectPlaybackState() {
-  const video = findVideoElement();
+  const findVideo = window.YTM.utils?.findVideoElement || (typeof findVideoElement === 'function' ? findVideoElement : () => document.querySelector('video'));
+  const video = findVideo();
   const mediaSession = navigator.mediaSession?.metadata;
+  const $ = window.YTM.utils?.$ || ((sel, parent = document) => {
+    try { return parent.querySelector(sel); } catch { return null; }
+  });
   const playerBar = $('ytmusic-player-bar');
 
   const metadata = extractTrackMetadata(mediaSession, playerBar);
@@ -523,138 +404,7 @@ function collectPlaybackState() {
   };
 }
 
-/**
- * Setup Global DOM, HTML5 Media, and MutationObserver listeners (Zero Polling, Zero Timeupdate)
- */
-function setupGlobalMediaListeners() {
-  if (hasInitializedMediaListeners) return;
-  hasInitializedMediaListeners = true;
-
-  let pendingForce = false;
-  const sendSnapshot = (force = false) => {
-    if (force) pendingForce = true;
-    if (mediaEventDebounceTimer) {
-      clearTimeout(mediaEventDebounceTimer);
-    }
-    mediaEventDebounceTimer = setTimeout(() => {
-      const isForce = pendingForce;
-      pendingForce = false;
-      mediaEventDebounceTimer = null;
-      const notify = window.YTM.utils?.notifyState || (typeof notifyState === 'function' ? notifyState : null);
-      notify?.(isForce);
-    }, 25);
-  };
-
-  // When track duration or metadata changes, notify immediately and schedule re-check for late-arriving metadata
-  const onTrackTransition = () => {
-    sendSnapshot(false);
-    if (typeof window.YTM?.scheduleStateUpdates === 'function') {
-      window.YTM.scheduleStateUpdates([75, 250]);
-    }
-  };
-
-  const mediaEvents = [
-    'play',
-    'playing',
-    'pause',
-    'seeking',
-    'seeked',
-    'ratechange',
-    'volumechange',
-    'ended'
-  ];
-
-  for (const eventName of mediaEvents) {
-    const handler = () => sendSnapshot(false);
-    document.addEventListener(eventName, handler, true);
-    registeredMediaListeners.push({ type: eventName, handler, useCapture: true });
-  }
-
-  const transitionEvents = ['durationchange', 'loadedmetadata'];
-  for (const eventName of transitionEvents) {
-    const handler = onTrackTransition;
-    document.addEventListener(eventName, handler, true);
-    registeredMediaListeners.push({ type: eventName, handler, useCapture: true });
-  }
-
-  // Slim MutationObserver for Like, Dislike, Shuffle, Repeat button states (Debounced & Scoped)
-  const onMutation = () => {
-    if (mutationDebounceTimer) return;
-    mutationDebounceTimer = setTimeout(() => {
-      mutationDebounceTimer = null;
-      const notify = window.YTM.utils?.notifyState || (typeof notifyState === 'function' ? notifyState : null);
-      notify?.(false);
-    }, 60);
-  };
-
-  const playerBarObserverOptions = {
-    childList: false,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['aria-pressed', 'aria-checked', 'like-status', 'active', 'icon']
-  };
-
-  const playerBar = $('ytmusic-player-bar');
-  if (playerBar) {
-    activeObserver = new MutationObserver(onMutation);
-    activeObserver.observe(playerBar, playerBarObserverOptions);
-  } else {
-    // If player-bar not rendered yet, temporarily observe document.body until player-bar appears
-    const initialObserverOptions = {
-      childList: true,
-      subtree: true
-    };
-    initialObserver = new MutationObserver((mutations, obs) => {
-      const bar = $('ytmusic-player-bar');
-      if (bar) {
-        // Disconnect from full document and narrow strictly to ytmusic-player-bar
-        obs.disconnect();
-        initialObserver = null;
-        activeObserver = new MutationObserver(onMutation);
-        activeObserver.observe(bar, playerBarObserverOptions);
-      }
-      onMutation();
-    });
-    initialObserver.observe(document.body || document.documentElement, initialObserverOptions);
-  }
-}
-
-/**
- * Cleanly disconnect MutationObservers and remove global media event listeners
- */
-function teardownGlobalMediaListeners() {
-  if (activeObserver) {
-    try {
-      activeObserver.disconnect();
-    } catch { }
-    activeObserver = null;
-  }
-  if (initialObserver) {
-    try {
-      initialObserver.disconnect();
-    } catch { }
-    initialObserver = null;
-  }
-  if (mediaEventDebounceTimer) {
-    clearTimeout(mediaEventDebounceTimer);
-    mediaEventDebounceTimer = null;
-  }
-  if (mutationDebounceTimer) {
-    clearTimeout(mutationDebounceTimer);
-    mutationDebounceTimer = null;
-  }
-  for (const item of registeredMediaListeners) {
-    try {
-      document.removeEventListener(item.type, item.handler, item.useCapture);
-    } catch { }
-  }
-  registeredMediaListeners = [];
-  lastResolvedVideoId = '';
-  lastResolvedTrackKey = '';
-  hasInitializedMediaListeners = false;
-}
-
-// Export state methods to YTM namespace
+// Export state methods to YTM namespace with backward compatibility proxies
 window.YTM.state = {
   getPlayerVolume,
   getPlayerMuted,
@@ -662,6 +412,6 @@ window.YTM.state = {
   extractTransportState,
   extractControlStates,
   collectPlaybackState,
-  setupGlobalMediaListeners,
-  teardownGlobalMediaListeners
+  setupGlobalMediaListeners: () => window.YTM.observers?.setupGlobalMediaListeners?.(),
+  teardownGlobalMediaListeners: () => window.YTM.observers?.teardownGlobalMediaListeners?.()
 };

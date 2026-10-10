@@ -24,6 +24,8 @@ import { WindowFocusService } from "../services/window-focus.js";
 import { PlayPauseSettings, YTMPlaybackState } from "../types/index.js";
 
 export const DEFAULT_PLAYPAUSE_TEMPLATE = "{artist}\n\n{song}\n\n{both}";
+const TIME_PLACEHOLDER_REGEX =
+	/{(both|current_duration|current_and_duration|beides|duration|total|totalTime|total_time|dauer|gesamt|length|currentTime|current|current_time|aktuell|zeit|elapsed|time|remaining|remainingTime|remaining_time|rest|restzeit|left)}/i;
 
 @action({ UUID: "com.smok3y97.ytmusicweb.playpause" })
 export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
@@ -35,6 +37,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 	private registeredConsumers: Set<string> = new Set();
 	private keyPressTimers: Map<string, NodeJS.Timeout> = new Map();
 	private isLongPressTriggered: Map<string, boolean> = new Map();
+	private staticTrackFormattedCache: Map<string, { trackKey: string; text: string }> = new Map();
 	private renderDebounceTimer: NodeJS.Timeout | null = null;
 	private readonly LONG_PRESS_THRESHOLD_MS = 450;
 
@@ -73,6 +76,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		this.lastRenderedImage.delete(actionId);
 		this.lastRenderedTitle.delete(actionId);
 		this.lastRenderedMismatch.delete(actionId);
+		this.staticTrackFormattedCache.delete(actionId);
 		this.syncConsumerState(actionId, false);
 		this.activeActions.delete(actionId);
 		this.actionSettings.delete(actionId);
@@ -155,6 +159,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		this.actionSettings.set(ev.action.id, ev.payload.settings);
 		this.lastRenderedImage.delete(ev.action.id);
 		this.lastRenderedTitle.delete(ev.action.id);
+		this.staticTrackFormattedCache.delete(ev.action.id);
 		const state = StateManager.getInstance().getState();
 		await this.updateInstance(ev.action, state, ev.payload.settings);
 	}
@@ -176,6 +181,24 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		}, 40);
 	}
 
+	private getFormattedTrackText(actionId: string, template: string, state: YTMPlaybackState): string {
+		const isTimeSensitive = TIME_PLACEHOLDER_REGEX.test(template);
+		const trackKey = `${state.title}::${state.artist}::${state.album}::${state.trackUrl}::${template}`;
+
+		if (!isTimeSensitive) {
+			const cached = this.staticTrackFormattedCache.get(actionId);
+			if (cached && cached.trackKey === trackKey) {
+				return cached.text;
+			}
+		}
+
+		const formatted = StateManager.getInstance().formatTrackText(template, state);
+		if (!isTimeSensitive) {
+			this.staticTrackFormattedCache.set(actionId, { trackKey, text: formatted });
+		}
+		return formatted;
+	}
+
 	private async handleMarqueeTick(): Promise<void> {
 		const state = StateManager.getInstance().getState();
 		if (state.paused || state.isVersionMismatch) return;
@@ -187,8 +210,8 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 				if (!settings?.showTitle) continue;
 
 				const rawTemplate = settings.titleTemplate?.trim();
-				const template = rawTemplate ? settings.titleTemplate : DEFAULT_PLAYPAUSE_TEMPLATE;
-				const rawFormatted = StateManager.getInstance().formatTrackText(template, state);
+				const template = rawTemplate || DEFAULT_PLAYPAUSE_TEMPLATE;
+				const rawFormatted = this.getFormattedTrackText(actionId, template, state);
 				const marqueeTitle = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
 
 				const prevTitle = this.lastRenderedTitle.get(actionId);
@@ -250,8 +273,8 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 
 			if (settings.showTitle) {
 				const rawTemplate = settings.titleTemplate?.trim();
-				const template = rawTemplate ? settings.titleTemplate : DEFAULT_PLAYPAUSE_TEMPLATE;
-				const rawFormatted = StateManager.getInstance().formatTrackText(template, state);
+				const template = rawTemplate || DEFAULT_PLAYPAUSE_TEMPLATE;
+				const rawFormatted = this.getFormattedTrackText(actionInstance.id, template, state);
 				titleText = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
 			}
 

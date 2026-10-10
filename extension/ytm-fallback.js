@@ -11,25 +11,22 @@
 window.YTM = window.YTM || {};
 
 function getVideo() {
-  if (typeof findVideoElement === 'function') return findVideoElement();
-  if (typeof window.YTM.utils?.findVideoElement === 'function') return window.YTM.utils.findVideoElement();
-  const sel = window.YTM.selectors?.player?.video || 'video';
-  return document.querySelector(sel);
+  const findVideo = window.YTM.utils?.findVideoElement || (typeof findVideoElement === 'function' ? findVideoElement : null);
+  return findVideo ? findVideo() : document.querySelector('video');
 }
 
 function click(selector, parent = document) {
   if (!selector) return false;
-  if (typeof clickElement === 'function') return clickElement(selector, parent);
-  if (typeof window.YTM.utils?.clickElement === 'function') return window.YTM.utils.clickElement(selector, parent);
+  const clickFn = window.YTM.utils?.clickElement || (typeof clickElement === 'function' ? clickElement : null);
+  if (clickFn) return clickFn(selector, parent);
   try {
     const elem = parent.querySelector(selector);
-    if (elem) {
-      const btn = elem.querySelector('button') || elem;
-      btn.click();
-      return true;
-    }
-  } catch { }
-  return false;
+    const btn = elem?.querySelector('button') || elem;
+    btn?.click();
+    return Boolean(btn);
+  } catch {
+    return false;
+  }
 }
 
 /**

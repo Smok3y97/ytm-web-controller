@@ -123,7 +123,7 @@ export class ImageRenderer {
   <rect x="75" y="58" width="6" height="28" fill="#ffffff" rx="1.5"/>
 </svg>`;
 
-		const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+		const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 
 		// Evict oldest cached overlay in RAM to maintain memory bounds
 		if (this.overlayCache.size >= this.maxCacheSize) {

@@ -81,14 +81,9 @@ function getPlayerMuted() {
 }
 
 /**
- * Extract current playback metadata and player state from DOM & MediaSession
+ * Extract track metadata from DOM and MediaSession
  */
-function collectPlaybackState() {
-  const video = findVideoElement();
-  const mediaSession = navigator.mediaSession?.metadata;
-  const playerBar = $('ytmusic-player-bar');
-
-  // Primary metadata extraction via MediaSession API
+function extractTrackMetadata(mediaSession, playerBar) {
   let title = mediaSession?.title?.trim() || '';
   let artist = mediaSession?.artist?.trim() || '';
   let album = mediaSession?.album?.trim() || '';
@@ -120,7 +115,7 @@ function collectPlaybackState() {
     }
   } catch { }
 
-  // 2. Extract Title, Artist, Album & URLs from DOM & MediaSession
+  // Extract Title, Artist, Album & URLs from DOM & MediaSession
   try {
     if (!title) {
       const titleLinkSel = window.YTM.selectors?.metadata?.titleLink || 'ytmusic-player-bar .title a, ytmusic-player-bar yt-formatted-string.title a, ytmusic-player-bar a.yt-simple-endpoint[href*="watch"]';
@@ -139,14 +134,15 @@ function collectPlaybackState() {
       title = titleElem?.textContent?.trim() || mediaSession?.title || '';
     }
 
-    // Short-circuit: Reuse cached videoId for the active track before deep DOM scans
+    // Short-circuit: Reuse cached videoId (or cached negative resolution) for active track
     const currentTrackKey = (title && artist) ? `${title}::${artist}` : '';
-    if (!videoId && currentTrackKey && currentTrackKey === lastResolvedTrackKey && lastResolvedVideoId) {
+    if (!videoId && currentTrackKey && currentTrackKey === lastResolvedTrackKey) {
       videoId = lastResolvedVideoId;
     }
 
-    // Extract videoId from watch links
-    if (!videoId) {
+    // Deep DOM fallback scans only if not resolved yet for the active track
+    if (!videoId && currentTrackKey && currentTrackKey !== lastResolvedTrackKey) {
+      // 1. Extract videoId from watch links
       const watchLinksSel = window.YTM.selectors?.metadata?.watchLinks || 'ytmusic-player-bar a[href*="watch"], ytmusic-player-page a[href*="watch"], .middle-controls a[href*="watch"]';
       const watchLinks = $$(watchLinksSel);
       for (const link of watchLinks) {
@@ -157,48 +153,47 @@ function collectPlaybackState() {
           break;
         }
       }
-    }
 
-    // Extract videoId from current window URL
-    if (!videoId && window.location.href.includes('watch')) {
-      const match = window.location.href.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-      if (match && match[1]) {
-        videoId = match[1];
-      }
-    }
-
-    // Extract videoId from artwork URLs
-    if (!videoId) {
-      const artworks = mediaSession?.artwork || [];
-      for (const art of artworks) {
-        const src = art.src || '';
-        const match = src.match(/\/vi\/([a-zA-Z0-9_-]{11})\//) || src.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+      // 2. Extract videoId from current window URL
+      if (!videoId && window.location.href.includes('watch')) {
+        const match = window.location.href.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
         if (match && match[1]) {
           videoId = match[1];
-          break;
         }
       }
-    }
 
-    if (!videoId) {
-      const artworkImgsSel = window.YTM.selectors?.metadata?.artworkImgs || 'ytmusic-player-bar img';
-      const imgs = $$(artworkImgsSel);
-      for (const img of imgs) {
-        const src = img.getAttribute('src') || img.src || '';
-        const match = src.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
-        if (match && match[1]) {
-          videoId = match[1];
-          break;
+      // 3. Extract videoId from artwork URLs
+      if (!videoId) {
+        const artworks = mediaSession?.artwork || [];
+        for (const art of artworks) {
+          const src = art.src || '';
+          const match = src.match(/\/vi\/([a-zA-Z0-9_-]{11})\//) || src.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+          if (match && match[1]) {
+            videoId = match[1];
+            break;
+          }
         }
       }
-    }
 
-    // Memoize resolved videoId for the active track
-    if (videoId && currentTrackKey) {
-      lastResolvedVideoId = videoId;
+      // 4. Extract videoId from img tags in player bar
+      if (!videoId) {
+        const artworkImgsSel = window.YTM.selectors?.metadata?.artworkImgs || 'ytmusic-player-bar img';
+        const imgs = $$(artworkImgsSel);
+        for (const img of imgs) {
+          const src = img.getAttribute('src') || img.src || '';
+          const match = src.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
+          if (match && match[1]) {
+            videoId = match[1];
+            break;
+          }
+        }
+      }
+
+      // Memoize resolved videoId (including negative empty result) for active track
+      lastResolvedVideoId = videoId || '';
       lastResolvedTrackKey = currentTrackKey;
-    } else if (currentTrackKey && currentTrackKey !== lastResolvedTrackKey) {
-      lastResolvedVideoId = '';
+    } else if (videoId && currentTrackKey) {
+      lastResolvedVideoId = videoId;
       lastResolvedTrackKey = currentTrackKey;
     }
 
@@ -301,6 +296,21 @@ function collectPlaybackState() {
     }
   } catch { }
 
+  return {
+    title: title || 'Unbekannter Titel',
+    artist: artist || 'Unbekannter Interpret',
+    album: album || '',
+    coverUrl,
+    trackUrl,
+    artistUrl,
+    albumUrl
+  };
+}
+
+/**
+ * Extract audio playback and transport status
+ */
+function extractTransportState(video) {
   const volume = getPlayerVolume();
   const muted = getPlayerMuted();
 
@@ -332,11 +342,27 @@ function collectPlaybackState() {
     } catch { }
   }
 
+  return {
+    volume,
+    muted,
+    currentTime,
+    duration,
+    paused,
+    isPaused: paused,
+    playbackRate,
+    timestamp
+  };
+}
+
+/**
+ * Extract interactive control button states (Like, Dislike, Shuffle, Repeat)
+ */
+function extractControlStates(playerBar) {
   // Like & Dislike Status (Strictly scoped to bottom player bar)
   let isLiked = false;
   let isDisliked = false;
 
-  const playerBarElem = $(window.YTM.selectors?.player?.playerBar || 'ytmusic-player-bar');
+  const playerBarElem = playerBar || $(window.YTM.selectors?.player?.playerBar || 'ytmusic-player-bar');
   const likeRenderer = playerBarElem
     ? $(window.YTM.selectors?.controls?.likeRenderer || 'ytmusic-like-button-renderer, #like-button-renderer, .like-button-renderer', playerBarElem)
     : null;
@@ -470,26 +496,30 @@ function collectPlaybackState() {
   }
 
   return {
-    title: title || 'Unbekannter Titel',
-    artist: artist || 'Unbekannter Interpret',
-    album: album || '',
-    coverUrl,
-    coverBase64: '',
-    trackUrl,
-    artistUrl,
-    albumUrl,
-    currentTime,
-    duration,
-    volume,
-    paused,
-    isPaused: paused,
-    playbackRate,
-    timestamp,
-    muted,
     isLiked,
     isDisliked,
     shuffleActive,
     repeatMode
+  };
+}
+
+/**
+ * Extract current playback metadata and player state from DOM & MediaSession
+ */
+function collectPlaybackState() {
+  const video = findVideoElement();
+  const mediaSession = navigator.mediaSession?.metadata;
+  const playerBar = $('ytmusic-player-bar');
+
+  const metadata = extractTrackMetadata(mediaSession, playerBar);
+  const transport = extractTransportState(video);
+  const controls = extractControlStates(playerBar);
+
+  return {
+    ...metadata,
+    coverBase64: '',
+    ...transport,
+    ...controls
   };
 }
 
@@ -628,6 +658,9 @@ function teardownGlobalMediaListeners() {
 window.YTM.state = {
   getPlayerVolume,
   getPlayerMuted,
+  extractTrackMetadata,
+  extractTransportState,
+  extractControlStates,
   collectPlaybackState,
   setupGlobalMediaListeners,
   teardownGlobalMediaListeners

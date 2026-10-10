@@ -290,8 +290,6 @@ function connectWebSocket(port) {
           if (comp === 0) {
             console.info('[YTM Controller] 🟢 Handshake ACK received (Plugin v%s)', data.version);
             reportStatus(false);
-            sendState(true);
-            scheduleStateUpdates([50, 200]);
           } else if (comp > 0) {
             console.warn('[YTM Controller] ⚠️ Plugin is older than Extension (Plugin v%s, Extension v%s)', data.version, bridgeVersion);
             reportStatus(true, bridgeVersion, data.version, `Stream Deck Plugin (v${data.version}) is outdated!`);

@@ -28,6 +28,7 @@ export class ObsExporterService {
 	private debounceTimer: NodeJS.Timeout | null = null;
 	private isWriting: boolean = false;
 	private pendingWriteContent: string | null = null;
+	private verifiedDirPath: string = "";
 
 	private constructor() {
 		this.filePath = "";
@@ -101,6 +102,9 @@ export class ObsExporterService {
 			prevClear !== this.clearOnPause;
 
 		if (changed) {
+			if (prevPath !== this.filePath) {
+				this.verifiedDirPath = "";
+			}
 			streamDeck.logger.info(
 				`[OBS Exporter] Settings updated: enabled=${this.isEnabled}, path="${this.filePath}", clearOnPause=${this.clearOnPause}`,
 			);
@@ -192,13 +196,20 @@ export class ObsExporterService {
 				const resolvedPath = path.resolve(this.filePath);
 				const dirPath = path.dirname(resolvedPath);
 
-				// Create target directory structure if missing before writing file
-				await fs.mkdir(dirPath, { recursive: true });
+				// Create target directory structure only if not yet verified
+				if (this.verifiedDirPath !== dirPath) {
+					await fs.mkdir(dirPath, { recursive: true });
+					this.verifiedDirPath = dirPath;
+				}
 
 				// Write current song metadata with UTF-8 encoding for OBS text source consumption
 				await fs.writeFile(resolvedPath, currentContent, { encoding: "utf8" });
 				this.lastWrittenContent = currentContent;
 			} catch (err: unknown) {
+				const nodeErr = err as NodeJS.ErrnoException;
+				if (nodeErr?.code === "ENOENT") {
+					this.verifiedDirPath = "";
+				}
 				const errMsg = err instanceof Error ? err.message : String(err);
 				streamDeck.logger.warn(`[OBS Exporter] Failed to write file "${this.filePath}": ${errMsg}`);
 			}

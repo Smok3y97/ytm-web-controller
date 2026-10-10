@@ -320,9 +320,19 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		return null;
 	}
 
+	/**
+	 * Declares whether the dial action requires a periodic 500-ms playback timer
+	 * (e.g. for time/progress bar rendering). Actions without time displays (e.g. VolumeDialAction)
+	 * return false to avoid unnecessary event-loop timer wakeups.
+	 */
+	protected needsPlaybackTimer(): boolean {
+		return false;
+	}
+
 	protected checkPlaybackTimer(): void {
 		const state = StateManager.getInstance().getState();
-		const shouldRun = this.activeDials.size > 0 && !state.paused && !state.isVersionMismatch;
+		const shouldRun =
+			this.needsPlaybackTimer() && this.activeDials.size > 0 && !state.paused && !state.isVersionMismatch;
 
 		if (shouldRun) {
 			if (!this.playbackTimer) {

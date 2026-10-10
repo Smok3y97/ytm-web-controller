@@ -19,27 +19,55 @@ function estimateCharWidthPx(char: string): number {
 	return 6.2; // standard lowercase characters
 }
 
+const textWidthCache: Map<string, number> = new Map();
+const maxOffsetCache: Map<string, number> = new Map();
+const MAX_CACHE_ENTRIES = 50;
+
 export function estimateTextWidthPx(text: string): number {
+	if (!text) return 0;
+	const cached = textWidthCache.get(text);
+	if (cached !== undefined) return cached;
+
 	let width = 0;
 	for (let i = 0; i < text.length; i++) {
 		width += estimateCharWidthPx(text[i]);
 	}
+
+	if (textWidthCache.size >= MAX_CACHE_ENTRIES) {
+		const firstKey = textWidthCache.keys().next().value;
+		if (firstKey) textWidthCache.delete(firstKey);
+	}
+	textWidthCache.set(text, width);
 	return width;
 }
 
 export function findMaxMarqueeOffset(fullText: string, maxPx: number = MAX_LCD_PIXEL_WIDTH): number {
 	if (!fullText) return 0;
+	const cacheKey = `${maxPx}:${fullText}`;
+	const cached = maxOffsetCache.get(cacheKey);
+	if (cached !== undefined) return cached;
+
 	let remainingWidth = estimateTextWidthPx(fullText);
-	if (remainingWidth <= maxPx) {
-		return 0;
-	}
-	for (let offset = 0; offset < fullText.length - 1; offset++) {
-		remainingWidth -= estimateCharWidthPx(fullText[offset]);
-		if (remainingWidth <= maxPx) {
-			return offset + 1;
+	let result = 0;
+	if (remainingWidth > maxPx) {
+		for (let offset = 0; offset < fullText.length - 1; offset++) {
+			remainingWidth -= estimateCharWidthPx(fullText[offset]);
+			if (remainingWidth <= maxPx) {
+				result = offset + 1;
+				break;
+			}
+		}
+		if (result === 0) {
+			result = Math.max(0, fullText.length - 1);
 		}
 	}
-	return Math.max(0, fullText.length - 1);
+
+	if (maxOffsetCache.size >= MAX_CACHE_ENTRIES) {
+		const firstKey = maxOffsetCache.keys().next().value;
+		if (firstKey) maxOffsetCache.delete(firstKey);
+	}
+	maxOffsetCache.set(cacheKey, result);
+	return result;
 }
 
 export function getFittingTextSlice(
@@ -76,6 +104,7 @@ export class MarqueeService extends EventEmitter {
 	private lastTrackKey: string = "";
 	private activeConsumerCount: number = 0;
 	private speedMs: number = DEFAULT_MARQUEE_SPEED_MS;
+	private cachedMaxOffset: number = 0;
 
 	private constructor() {
 		super();
@@ -127,6 +156,15 @@ export class MarqueeService extends EventEmitter {
 			this.currentOffset = 0;
 			this.direction = 1;
 			this.pauseTicks = START_PAUSE_TICKS;
+
+			const artistStr = (state.artist || "").trim();
+			const titleStr = (state.title || "").trim();
+			const rawTitle = `${artistStr} - ${titleStr}`;
+
+			const lcdMaxOffset = findMaxMarqueeOffset(rawTitle, MAX_LCD_PIXEL_WIDTH);
+			const keypadArtistMaxOffset = findMaxMarqueeOffset(artistStr, KEYPAD_MAX_PIXEL_WIDTH);
+			const keypadTitleMaxOffset = findMaxMarqueeOffset(titleStr, KEYPAD_MAX_PIXEL_WIDTH);
+			this.cachedMaxOffset = Math.max(lcdMaxOffset, keypadArtistMaxOffset, keypadTitleMaxOffset);
 		}
 		this.checkTimer();
 	}
@@ -153,16 +191,7 @@ export class MarqueeService extends EventEmitter {
 			return;
 		}
 
-		const state = StateManager.getInstance().getState();
-		const artistStr = (state.artist || "").trim();
-		const titleStr = (state.title || "").trim();
-		const rawTitle = `${artistStr} - ${titleStr}`;
-
-		const lcdMaxOffset = findMaxMarqueeOffset(rawTitle, MAX_LCD_PIXEL_WIDTH);
-		const keypadArtistMaxOffset = findMaxMarqueeOffset(artistStr, KEYPAD_MAX_PIXEL_WIDTH);
-		const keypadTitleMaxOffset = findMaxMarqueeOffset(titleStr, KEYPAD_MAX_PIXEL_WIDTH);
-		const maxOffset = Math.max(lcdMaxOffset, keypadArtistMaxOffset, keypadTitleMaxOffset);
-
+		const maxOffset = this.cachedMaxOffset;
 		if (maxOffset <= 0) {
 			this.currentOffset = 0;
 			return;

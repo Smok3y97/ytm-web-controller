@@ -118,6 +118,7 @@ export class DiscordRpcService {
 				this.isConnected = true;
 				this.isConnecting = false;
 				this.client = client;
+				this.stopReconnectLoop();
 				streamDeck.logger.info(`[Discord RPC] Connected to Discord as application ${this.clientId}`);
 				if (this.lastState) {
 					this.updatePresence(this.lastState, true);
@@ -150,6 +151,10 @@ export class DiscordRpcService {
 			this.client = null;
 		}
 		this.lastCachedActivity = null;
+
+		if (this.isEnabled) {
+			this.startReconnectLoop();
+		}
 	}
 
 	/**

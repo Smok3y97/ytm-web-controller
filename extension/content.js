@@ -447,6 +447,15 @@ function scheduleReconnect() {
  */
 function wakeFromStandby() {
   isTabClosing = false;
+
+  // Restore reactivity if listeners were previously torn down during pagehide / suspend
+  const setupMedia = window.YTM?.state?.setupGlobalMediaListeners || (typeof setupGlobalMediaListeners === 'function' ? setupGlobalMediaListeners : null);
+  if (setupMedia) {
+    try {
+      setupMedia();
+    } catch { }
+  }
+
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     return;
   }
@@ -469,9 +478,16 @@ function init() {
     setupMedia();
   }
 
-  // Deregister tab on close or navigation
+  // Deregister tab on close or navigation, and restore on bfcache pageshow
   window.addEventListener('beforeunload', notifyTabClosed);
   window.addEventListener('pagehide', notifyTabClosed);
+  window.addEventListener('pageshow', () => {
+    wakeFromStandby();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      lastSentState = {};
+      sendState(true);
+    }
+  });
 
   // Passive event wakeups: Reconnect on user or playback events without any polling timers
   document.addEventListener('visibilitychange', () => {

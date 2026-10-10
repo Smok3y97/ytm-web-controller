@@ -137,6 +137,10 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		WebSocketService.getInstance().sendCommand("seekRelative", { seconds: deltaSeconds });
 	}
 
+	protected override needsPlaybackTimer(): boolean {
+		return true;
+	}
+
 	protected override getAdditionalMarqueeFeedback(
 		settings: SeekDialSettings,
 		state: YTMPlaybackState,

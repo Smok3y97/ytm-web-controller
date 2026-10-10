@@ -303,12 +303,17 @@ export class WebSocketService extends EventEmitter {
 	}
 
 	/**
-	 * Broadcast playback state to connected WebSocket clients (e.g. OBS Overlay)
+	 * Broadcast playback state to connected WebSocket subscriber clients (e.g. OBS Overlay)
 	 */
 	public broadcastState(state: YTMPlaybackState, excludeWs?: WebSocket): void {
 		const message = JSON.stringify({ type: "STATE_UPDATE", data: state });
 		for (const client of this.clients) {
-			if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
+			if (client === excludeWs || client.readyState !== WebSocket.OPEN) {
+				continue;
+			}
+			const tabInfo = this.tabManager.getTab(client);
+			// Only broadcast state to overlay/subscriber clients, avoiding loopback echo frames to browser extension tabs
+			if (tabInfo?.isOverlay) {
 				try {
 					client.send(message);
 				} catch (err) {

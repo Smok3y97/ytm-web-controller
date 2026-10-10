@@ -166,10 +166,7 @@ export class HttpApiService extends EventEmitter {
 		const safePath = path.normalize(relativeFile).replace(/^(\.\.[/\\])+/, "");
 		const filePath = path.resolve(this.overlayDir, safePath);
 
-		if (
-			(filePath !== this.overlayDir && !filePath.startsWith(this.overlayDir + path.sep)) ||
-			!fs.existsSync(filePath)
-		) {
+		if (filePath !== this.overlayDir && !filePath.startsWith(this.overlayDir + path.sep)) {
 			res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
 			res.end("Overlay asset not found");
 			return;
@@ -194,7 +191,13 @@ export class HttpApiService extends EventEmitter {
 				Expires: "0",
 			});
 			res.end(fileContent);
-		} catch (err) {
+		} catch (err: unknown) {
+			const nodeErr = err as NodeJS.ErrnoException;
+			if (nodeErr?.code === "ENOENT" || nodeErr?.code === "EISDIR") {
+				res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+				res.end("Overlay asset not found");
+				return;
+			}
 			streamDeck.logger.error(`[HTTP API] Error reading overlay file ${filePath}: ${err}`);
 			res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
 			res.end("Internal Server Error");

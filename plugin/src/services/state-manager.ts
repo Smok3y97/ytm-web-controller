@@ -56,7 +56,12 @@ export class StateManager extends EventEmitter {
 			state.isVersionMismatch !== undefined ? state.isVersionMismatch : this.currentState.isVersionMismatch;
 		const extVer = state.extensionVersion !== undefined ? state.extensionVersion : this.currentState.extensionVersion;
 
-		const sanitizedAlbum = MetadataSanitizer.sanitizeAlbum(state.album);
+		let sanitizedAlbum = MetadataSanitizer.sanitizeAlbum(state.album);
+		const artistResult = MetadataSanitizer.sanitizeArtist(state.artist, sanitizedAlbum);
+		const sanitizedArtist = artistResult.artist || state.artist;
+		if (!sanitizedAlbum && artistResult.extractedAlbum) {
+			sanitizedAlbum = artistResult.extractedAlbum;
+		}
 
 		// Retain existing in-RAM coverBase64 if coverUrl is identical and incoming snapshot has no coverBase64
 		let coverBase64 = state.coverBase64;
@@ -93,6 +98,7 @@ export class StateManager extends EventEmitter {
 
 		this.currentState = {
 			...state,
+			artist: sanitizedArtist,
 			currentTime,
 			duration,
 			timestamp,

@@ -26,12 +26,10 @@ import { BaseDialAction } from "./base-dial-action.js";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.seekdial" })
 export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
-	private lastCommandTime: Map<string, number> = new Map();
 	private lastTargetSeconds: Map<string, number> = new Map();
 
 	override async onWillDisappear(ev: WillDisappearEvent<SeekDialSettings>): Promise<void> {
 		const actionId = ev.action.id;
-		this.lastCommandTime.delete(actionId);
 		this.lastTargetSeconds.delete(actionId);
 		await super.onWillDisappear(ev);
 	}
@@ -48,60 +46,31 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 	}
 
 	override async onDialRotate(ev: DialRotateEvent<SeekDialSettings>): Promise<void> {
-		const actionId = ev.action.id;
-		if (this.isPushJitterActive(actionId)) return;
-
-		if (StateManager.getInstance().isVersionMismatch()) {
-			await ev.action.showAlert();
-			return;
-		}
-
 		if (ev.payload.settings) {
-			this.actionSettings.set(actionId, ev.payload.settings);
+			this.actionSettings.set(ev.action.id, ev.payload.settings);
 		}
 
-		const currentTicks = (this.pendingTicks.get(actionId) || 0) + ev.payload.ticks;
-		this.pendingTicks.set(actionId, currentTicks);
-
-		const now = Date.now();
-		const lastCmd = this.lastCommandTime.get(actionId) || 0;
-
-		// 1. Optimistic LCD feedback (strictly rate-limited to <= 10 Hz)
-		const lastFeedback = this.lastFeedbackTime.get(actionId) || 0;
-		if (now - lastFeedback >= 100) {
-			await this.renderOptimisticFeedback(ev.action, actionId);
-		}
-
-		// 2. Dispatch command: if >= 100ms since last dispatch, flush immediately
-		if (now - lastCmd >= 100) {
-			await this.flushRotation(ev.action);
-		} else if (!this.rotationStreamTimer.has(actionId)) {
-			// Start active 10-Hz interval streamer during continuous rotation
-			const streamTimer = setInterval(async () => {
-				await this.flushRotation(ev.action);
-			}, 100);
-			this.rotationStreamTimer.set(actionId, streamTimer);
-		}
-
-		// 3. Trailing settle timer (110ms after last rotation detent)
-		const settleTimer = this.rotationTimer.get(actionId);
-		if (settleTimer) {
-			clearTimeout(settleTimer);
-		}
-		const newSettleTimer = setTimeout(async () => {
-			await this.settleRotation(ev.action);
-		}, 110);
-		this.rotationTimer.set(actionId, newSettleTimer);
+		await this.handleRotaryStream(ev.action, ev.payload.ticks, {
+			renderOptimistic: async (ticks) => {
+				await this.renderOptimisticFeedback(ev.action, ev.action.id, ticks);
+			},
+			flush: async (ticks) => {
+				await this.dispatchSeekDelta(ev.action, ev.action.id, ticks);
+			},
+			settle: () => {
+				this.lastTargetSeconds.delete(ev.action.id);
+			},
+		});
 	}
 
 	private async renderOptimisticFeedback(
 		action: DialRotateEvent<SeekDialSettings>["action"],
 		actionId: string,
+		ticks: number,
 	): Promise<void> {
 		if (!action.isDial()) return;
 		const settings = this.actionSettings.get(actionId) || {};
 		const step = Math.min(120, Math.max(1, settings.seekStep || 10));
-		const ticks = this.pendingTicks.get(actionId) || 0;
 		const currentState = StateManager.getInstance().getState();
 		const baseSeconds = this.lastTargetSeconds.get(actionId) ?? StateManager.getInstance().getInterpolatedCurrentTime();
 		const optimisticSeconds = Math.min(currentState.duration || Infinity, Math.max(0, baseSeconds + ticks * step));
@@ -118,7 +87,6 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 			currentState.duration,
 		);
 
-		this.lastFeedbackTime.set(actionId, Date.now());
 		this.lastRenderedValue.set(actionId, valueText);
 		this.lastRenderedIndicator.set(actionId, indicatorValue);
 
@@ -130,19 +98,11 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		} catch {}
 	}
 
-	private async flushRotation(action: WillAppearEvent<SeekDialSettings>["action"]): Promise<void> {
-		const actionId = action.id;
-		if (this.isPushJitterActive(actionId)) {
-			this.pendingTicks.set(actionId, 0);
-			return;
-		}
-
-		const ticks = this.pendingTicks.get(actionId) || 0;
-		if (ticks === 0) return;
-		this.pendingTicks.set(actionId, 0);
-
-		this.lastCommandTime.set(actionId, Date.now());
-
+	private async dispatchSeekDelta(
+		action: WillAppearEvent<SeekDialSettings>["action"],
+		actionId: string,
+		ticks: number,
+	): Promise<void> {
 		const settings = this.actionSettings.get(actionId) || {};
 		const step = Math.min(120, Math.max(1, settings.seekStep || 10));
 		const deltaSeconds = ticks * step;
@@ -164,7 +124,6 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 				optimisticSeconds,
 				currentState.duration,
 			);
-			this.lastFeedbackTime.set(actionId, Date.now());
 			this.lastRenderedValue.set(actionId, valueText);
 			this.lastRenderedIndicator.set(actionId, indicatorValue);
 			try {
@@ -176,23 +135,6 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		}
 
 		WebSocketService.getInstance().sendCommand("seekRelative", { seconds: deltaSeconds });
-	}
-
-	private async settleRotation(action: WillAppearEvent<SeekDialSettings>["action"]): Promise<void> {
-		const actionId = action.id;
-		const streamTimer = this.rotationStreamTimer.get(actionId);
-		if (streamTimer) {
-			clearInterval(streamTimer);
-			this.rotationStreamTimer.delete(actionId);
-		}
-		const settleTimer = this.rotationTimer.get(actionId);
-		if (settleTimer) {
-			clearTimeout(settleTimer);
-			this.rotationTimer.delete(actionId);
-		}
-
-		await this.flushRotation(action);
-		this.lastTargetSeconds.delete(actionId);
 	}
 
 	protected override getAdditionalMarqueeFeedback(

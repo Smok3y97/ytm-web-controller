@@ -121,15 +121,16 @@ try {
 if (isCheckOnly) {
   let isOutOfDate = false;
 
+  const normalizeEol = (str) => (typeof str === 'string' ? str.replace(/\r\n/g, '\n') : str);
   const currentExt = fs.existsSync(EXTENSION_OUTPUT_PATH) ? fs.readFileSync(EXTENSION_OUTPUT_PATH, 'utf8') : null;
   const currentPlugin = fs.existsSync(PLUGIN_OUTPUT_PATH) ? fs.readFileSync(PLUGIN_OUTPUT_PATH, 'utf8') : null;
 
-  if (currentExt !== extensionContent) {
+  if (normalizeEol(currentExt) !== normalizeEol(extensionContent)) {
     console.error(`❌ [sync-patterns] ${path.relative(ROOT_DIR, EXTENSION_OUTPUT_PATH)} is missing or out of date!`);
     isOutOfDate = true;
   }
 
-  if (currentPlugin !== formattedPluginContent) {
+  if (normalizeEol(currentPlugin) !== normalizeEol(formattedPluginContent)) {
     console.error(`❌ [sync-patterns] ${path.relative(ROOT_DIR, PLUGIN_OUTPUT_PATH)} is missing or out of date!`);
     isOutOfDate = true;
   }

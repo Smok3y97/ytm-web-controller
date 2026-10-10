@@ -13,7 +13,6 @@ import {
 	DialDownEvent,
 	DialRotateEvent,
 	KeyDownEvent,
-	TitleParametersDidChangeEvent,
 	TouchTapEvent,
 	WillAppearEvent,
 	WillDisappearEvent,
@@ -27,19 +26,10 @@ import { BaseDialAction } from "./base-dial-action.js";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.volumedial" })
 export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
-	private dialTitles: Map<string, string> = new Map();
 	private lastTargetVolume: Map<string, number> = new Map();
-
-	override async onWillAppear(ev: WillAppearEvent<VolumeDialSettings>): Promise<void> {
-		if ("title" in ev.payload && typeof ev.payload.title === "string" && ev.payload.title) {
-			this.dialTitles.set(ev.action.id, ev.payload.title);
-		}
-		await super.onWillAppear(ev);
-	}
 
 	override async onWillDisappear(ev: WillDisappearEvent<VolumeDialSettings>): Promise<void> {
 		const actionId = ev.action.id;
-		this.dialTitles.delete(actionId);
 		this.lastTargetVolume.delete(actionId);
 		await super.onWillDisappear(ev);
 	}
@@ -47,16 +37,6 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 	override async onDialDown(ev: DialDownEvent<VolumeDialSettings>): Promise<void> {
 		this.lastTargetVolume.delete(ev.action.id);
 		await super.onDialDown(ev);
-	}
-
-	override async onTitleParametersDidChange(ev: TitleParametersDidChangeEvent<VolumeDialSettings>): Promise<void> {
-		if (ev.payload.title) {
-			this.dialTitles.set(ev.action.id, ev.payload.title);
-		} else {
-			this.dialTitles.delete(ev.action.id);
-		}
-		const state = StateManager.getInstance().getState();
-		await this.updateDialDisplay(ev.action, state, ev.payload.settings);
 	}
 
 	protected override getTitleTemplate(settings: VolumeDialSettings, actionId?: string): string {

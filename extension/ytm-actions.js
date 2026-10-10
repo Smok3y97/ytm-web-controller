@@ -97,17 +97,16 @@ function setPlayerVolume(targetPercent) {
 
   // 2. Synchronize YouTube Music's Polymer player-bar UI and paper-slider
   try {
-    const playerBar = document.querySelector('ytmusic-player-bar');
+    const playerBarSel = window.YTM.selectors?.player?.playerBar || 'ytmusic-player-bar';
+    const playerBar = document.querySelector(playerBarSel);
     if (playerBar) {
       if (typeof playerBar.setVolume_ === 'function') playerBar.setVolume_(clamped);
       if (typeof playerBar.volume_ !== 'undefined') playerBar.volume_ = clamped;
       if (clamped > 0 && typeof playerBar.muted_ !== 'undefined') playerBar.muted_ = false;
     }
 
-    const slider = document.querySelector('ytmusic-player-bar #volume-slider') ||
-      document.querySelector('tp-yt-paper-slider#volume-slider') ||
-      document.querySelector('#volume-slider') ||
-      document.querySelector('.volume-slider');
+    const sliderSel = window.YTM.selectors?.player?.volumeSlider || 'ytmusic-player-bar #volume-slider, tp-yt-paper-slider#volume-slider, #volume-slider, .volume-slider';
+    const slider = document.querySelector(sliderSel);
     if (slider) {
       slider.value = clamped;
       slider.setAttribute('value', String(clamped));

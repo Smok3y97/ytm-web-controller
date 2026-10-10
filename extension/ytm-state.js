@@ -15,6 +15,8 @@ let initialObserver = null;
 let mediaEventDebounceTimer = null;
 let mutationDebounceTimer = null;
 let registeredMediaListeners = [];
+let lastResolvedVideoId = '';
+let lastResolvedTrackKey = '';
 
 /**
  * Get current player volume (0 - 100)
@@ -121,9 +123,8 @@ function collectPlaybackState() {
   // 2. Extract Title, Artist, Album & URLs from DOM & MediaSession
   try {
     if (!title) {
-      const titleLink = $('ytmusic-player-bar .title a') ||
-        $('ytmusic-player-bar yt-formatted-string.title a') ||
-        $('ytmusic-player-bar a.yt-simple-endpoint[href*="watch"]');
+      const titleLinkSel = window.YTM.selectors?.metadata?.titleLink || 'ytmusic-player-bar .title a, ytmusic-player-bar yt-formatted-string.title a, ytmusic-player-bar a.yt-simple-endpoint[href*="watch"]';
+      const titleLink = $(titleLinkSel);
       if (titleLink) {
         title = titleLink.textContent?.trim() || '';
         if (!videoId && titleLink.href) {
@@ -133,15 +134,21 @@ function collectPlaybackState() {
       }
     }
     if (!title) {
-      const titleElem = $('ytmusic-player-bar .title') ||
-        $('ytmusic-player-bar yt-formatted-string.title') ||
-        $('.middle-controls .title');
+      const titleSel = window.YTM.selectors?.metadata?.title || 'ytmusic-player-bar .title, ytmusic-player-bar yt-formatted-string.title, .title.ytmusic-player-bar, .middle-controls .title';
+      const titleElem = $(titleSel);
       title = titleElem?.textContent?.trim() || mediaSession?.title || '';
+    }
+
+    // Short-circuit: Reuse cached videoId for the active track before deep DOM scans
+    const currentTrackKey = (title && artist) ? `${title}::${artist}` : '';
+    if (!videoId && currentTrackKey && currentTrackKey === lastResolvedTrackKey && lastResolvedVideoId) {
+      videoId = lastResolvedVideoId;
     }
 
     // Extract videoId from watch links
     if (!videoId) {
-      const watchLinks = $$('ytmusic-player-bar a[href*="watch"], ytmusic-player-page a[href*="watch"], .middle-controls a[href*="watch"]');
+      const watchLinksSel = window.YTM.selectors?.metadata?.watchLinks || 'ytmusic-player-bar a[href*="watch"], ytmusic-player-page a[href*="watch"], .middle-controls a[href*="watch"]';
+      const watchLinks = $$(watchLinksSel);
       for (const link of watchLinks) {
         const href = link.getAttribute('href') || link.href || '';
         const match = href.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
@@ -174,7 +181,8 @@ function collectPlaybackState() {
     }
 
     if (!videoId) {
-      const imgs = $$('ytmusic-player-bar img');
+      const artworkImgsSel = window.YTM.selectors?.metadata?.artworkImgs || 'ytmusic-player-bar img';
+      const imgs = $$(artworkImgsSel);
       for (const img of imgs) {
         const src = img.getAttribute('src') || img.src || '';
         const match = src.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
@@ -185,19 +193,23 @@ function collectPlaybackState() {
       }
     }
 
+    // Memoize resolved videoId for the active track
+    if (videoId && currentTrackKey) {
+      lastResolvedVideoId = videoId;
+      lastResolvedTrackKey = currentTrackKey;
+    } else if (currentTrackKey && currentTrackKey !== lastResolvedTrackKey) {
+      lastResolvedVideoId = '';
+      lastResolvedTrackKey = currentTrackKey;
+    }
+
     // Build canonical clean watch sharing URL if videoId found
     if (videoId) {
       trackUrl = `https://music.youtube.com/watch?v=${videoId}`;
     }
 
     // Query Byline element
-    const bylineElem = $('ytmusic-player-bar .byline') ||
-      $('ytmusic-player-bar .subtitle') ||
-      $('ytmusic-player-bar yt-formatted-string.byline') ||
-      $('ytmusic-player-bar yt-formatted-string.subtitle') ||
-      $('.middle-controls .byline') ||
-      $('.middle-controls .subtitle') ||
-      $('ytmusic-player-bar .content-info-wrapper .subtitle');
+    const bylineSel = window.YTM.selectors?.metadata?.byline || 'ytmusic-player-bar .byline, ytmusic-player-bar .subtitle, ytmusic-player-bar yt-formatted-string.byline, ytmusic-player-bar yt-formatted-string.subtitle, .middle-controls .byline, .middle-controls .subtitle, ytmusic-player-bar .content-info-wrapper .subtitle';
+    const bylineElem = $(bylineSel);
 
     if (bylineElem) {
       // Check explicit structured anchor links first
@@ -394,12 +406,13 @@ function collectPlaybackState() {
   } else if (typeof rawRepeat === 'boolean') {
     repeatMode = rawRepeat ? 'ALL' : 'OFF';
   } else {
-    const repeatButton = $('tp-yt-paper-icon-button.repeat, .repeat, #repeat-button', playerBar) ||
-      $('ytmusic-player-bar tp-yt-paper-icon-button.repeat') ||
-      $('ytmusic-player-bar .repeat');
+    const repeatBtnSel = window.YTM.selectors?.controls?.repeatButton || 'ytmusic-player-bar tp-yt-paper-icon-button.repeat, ytmusic-player-bar .repeat, ytmusic-player-bar #repeat-button';
+    const repeatButton = $(repeatBtnSel, playerBar) ||
+      $(repeatBtnSel);
 
     if (repeatButton) {
-      const ironIcon = repeatButton.querySelector('tp-yt-iron-icon, iron-icon, yt-icon, #icon, [icon]');
+      const ironIconSel = window.YTM.selectors?.controls?.ironIcon || 'tp-yt-iron-icon, iron-icon, yt-icon, #icon, [icon]';
+      const ironIcon = repeatButton.querySelector(ironIconSel);
       const iconAttr = (
         ironIcon?.getAttribute('icon') ||
         repeatButton.getAttribute('icon') ||
@@ -407,7 +420,8 @@ function collectPlaybackState() {
         ''
       ).toLowerCase();
       const iconId = (ironIcon?.id || '').toLowerCase();
-      const hasRepeatOneElem = Boolean(repeatButton.querySelector('#repeat-one, #repeat_one, [icon*="repeat_one" i], [icon*="repeat-one" i], [icon*="repeat1" i]'));
+      const repeatOneSel = window.YTM.selectors?.controls?.repeatOne || '#repeat-one, #repeat_one, [icon*="repeat_one" i], [icon*="repeat-one" i], [icon*="repeat1" i]';
+      const hasRepeatOneElem = Boolean(repeatButton.querySelector(repeatOneSel));
 
       const innerBtn = repeatButton.querySelector('button');
       const label = (
@@ -605,6 +619,8 @@ function teardownGlobalMediaListeners() {
     } catch { }
   }
   registeredMediaListeners = [];
+  lastResolvedVideoId = '';
+  lastResolvedTrackKey = '';
   hasInitializedMediaListeners = false;
 }
 

@@ -9,7 +9,7 @@ import streamDeck from "@elgato/streamdeck";
 export class ImageRenderer {
 	private static instance: ImageRenderer;
 	private coverCache: Map<string, string> = new Map();
-	private overlayCache: Map<string, string> = new Map();
+	private overlayCache: Map<number, string> = new Map();
 	private inFlightRequests: Map<string, Promise<string | null>> = new Map();
 	private maxCacheSize = 20;
 
@@ -20,6 +20,20 @@ export class ImageRenderer {
 			ImageRenderer.instance = new ImageRenderer();
 		}
 		return ImageRenderer.instance;
+	}
+
+	/**
+	 * Compute compact 32-bit FNV-1a hash for large base64 strings
+	 * Prevents storing 150-350 KB strings as Map keys in RAM
+	 */
+	private static hashKey(str: string): number {
+		let hash = 2166136261;
+		const len = Math.min(str.length, 1024);
+		for (let i = 0; i < len; i++) {
+			hash ^= str.charCodeAt(i);
+			hash = Math.imul(hash, 16777619);
+		}
+		return hash >>> 0;
 	}
 
 	/**
@@ -80,11 +94,13 @@ export class ImageRenderer {
 			return coverBase64;
 		}
 
-		if (this.overlayCache.has(coverBase64)) {
-			const cached = this.overlayCache.get(coverBase64)!;
+		const cacheKey = ImageRenderer.hashKey(coverBase64);
+
+		if (this.overlayCache.has(cacheKey)) {
+			const cached = this.overlayCache.get(cacheKey)!;
 			// Refresh key position to implement true LRU eviction
-			this.overlayCache.delete(coverBase64);
-			this.overlayCache.set(coverBase64, cached);
+			this.overlayCache.delete(cacheKey);
+			this.overlayCache.set(cacheKey, cached);
 			return cached;
 		}
 
@@ -112,10 +128,10 @@ export class ImageRenderer {
 		// Evict oldest cached overlay in RAM to maintain memory bounds
 		if (this.overlayCache.size >= this.maxCacheSize) {
 			const firstKey = this.overlayCache.keys().next().value;
-			if (firstKey) this.overlayCache.delete(firstKey);
+			if (firstKey !== undefined) this.overlayCache.delete(firstKey);
 		}
 
-		this.overlayCache.set(coverBase64, dataUrl);
+		this.overlayCache.set(cacheKey, dataUrl);
 		return dataUrl;
 	}
 }

@@ -11,6 +11,7 @@ import {
 	DidReceiveSettingsEvent,
 	KeyDownEvent,
 	SingletonAction,
+	TitleParametersDidChangeEvent,
 	TouchTapEvent,
 	WillAppearEvent,
 	WillDisappearEvent,
@@ -28,6 +29,7 @@ import { YTMPlaybackState } from "../types/index.js";
 export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> extends SingletonAction<TSettings> {
 	protected activeDials: Map<string, WillAppearEvent<TSettings>["action"]> = new Map();
 	protected actionSettings: Map<string, TSettings> = new Map();
+	protected dialTitles: Map<string, string> = new Map();
 	protected rotaryStreamer: DialRotaryStreamer = new DialRotaryStreamer();
 	protected playbackTimer: NodeJS.Timeout | null = null;
 	protected renderDebounceTimer: NodeJS.Timeout | null = null;
@@ -52,6 +54,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	override async onWillAppear(ev: WillAppearEvent<TSettings>): Promise<void> {
 		this.activeDials.set(ev.action.id, ev.action);
 		this.actionSettings.set(ev.action.id, ev.payload.settings);
+		if ("title" in ev.payload && typeof ev.payload.title === "string" && ev.payload.title) {
+			this.dialTitles.set(ev.action.id, ev.payload.title);
+		}
 		MarqueeService.getInstance().registerConsumer();
 
 		if (ev.action.isDial()) {
@@ -69,6 +74,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 
 	override async onWillDisappear(ev: WillDisappearEvent<TSettings>): Promise<void> {
 		const id = ev.action.id;
+		this.dialTitles.delete(id);
 		this.lastRenderedValue.delete(id);
 		this.lastRenderedIndicator.delete(id);
 		this.lastRenderedTitle.delete(id);
@@ -120,6 +126,16 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		await this.updateDialDisplay(ev.action, state, ev.payload.settings);
 	}
 
+	override async onTitleParametersDidChange(ev: TitleParametersDidChangeEvent<TSettings>): Promise<void> {
+		if (ev.payload.title) {
+			this.dialTitles.set(ev.action.id, ev.payload.title);
+		} else {
+			this.dialTitles.delete(ev.action.id);
+		}
+		const state = StateManager.getInstance().getState();
+		await this.updateDialDisplay(ev.action, state, ev.payload.settings);
+	}
+
 	/**
 	 * Returns true if an action is currently actively rotating or settling
 	 */
@@ -148,8 +164,12 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	/**
 	 * Resolves the title template for marquee LCD display (can be overridden)
 	 */
-	protected getTitleTemplate(settings: TSettings, _actionId?: string): string {
-		return ((settings as Record<string, unknown>).titleTemplate as string) || "{artist} - {title}";
+	protected getTitleTemplate(settings: TSettings, actionId?: string): string {
+		return (
+			(actionId && this.dialTitles.get(actionId)) ||
+			((settings as Record<string, unknown>).titleTemplate as string) ||
+			"{artist} - {title}"
+		);
 	}
 
 	/**
@@ -236,8 +256,8 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 
 	protected checkPlaybackTimer(): void {
 		const state = StateManager.getInstance().getState();
-		const shouldRun =
-			this.needsPlaybackTimer() && this.activeDials.size > 0 && !state.paused && !state.isVersionMismatch;
+		const hasPhysicalDial = Array.from(this.activeDials.values()).some((action) => action.isDial());
+		const shouldRun = this.needsPlaybackTimer() && hasPhysicalDial && !state.paused && !state.isVersionMismatch;
 
 		if (shouldRun) {
 			if (!this.playbackTimer) {

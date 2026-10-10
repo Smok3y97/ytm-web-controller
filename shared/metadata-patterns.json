@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Single Source of Truth for YouTube Music metadata cleaning patterns and keywords across languages.",
+  "patterns": {
+    "whitespace": {
+      "constantName": "REGEX_WHITESPACE",
+      "pattern": "[\\s\\u00A0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]+",
+      "flags": "g",
+      "description": "Matches whitespace and non-breaking Unicode space variants."
+    },
+    "year": {
+      "constantName": "REGEX_YEAR",
+      "pattern": "^\\d{4}$",
+      "flags": "",
+      "description": "Matches a standalone 4-digit release year."
+    },
+    "explicit": {
+      "constantName": "REGEX_EXPLICIT",
+      "pattern": "^(e|\\[e\\])$",
+      "flags": "i",
+      "description": "Matches explicit badge indicators (e or [e])."
+    },
+    "timeDuration": {
+      "constantName": "REGEX_TIME_DURATION",
+      "pattern": "^\\d+:\\d+(?::\\d+)?$",
+      "flags": "",
+      "description": "Matches mm:ss or hh:mm:ss track duration formats."
+    },
+    "trackCount": {
+      "constantName": "REGEX_TRACK_COUNT",
+      "pattern": "^\\d+\\s*(?:tracks?|titel|songs?|morceaux|canciones|brani|трек\\w*|піс\\w*)$",
+      "flags": "i",
+      "description": "Matches track counts across multi-lingual interfaces."
+    },
+    "viewKeyword": {
+      "constantName": "REGEX_VIEW_KEYWORD",
+      "pattern": "(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)",
+      "flags": "i",
+      "description": "Matches view count keywords across 25+ YouTube Music languages."
+    },
+    "timeKeyword": {
+      "constantName": "REGEX_TIME_KEYWORD",
+      "pattern": "(?:^vor\\s|\\bago$|^il y a\\b|^hace\\s|^há\\s|\\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\\s|^pred\\s|^acum\\s|^πριν\\s|^pre\\s|לפני|قبل|trước$|ที่แล้ว$|年前|前$|전$)",
+      "flags": "i",
+      "description": "Matches relative upload time prefixes and suffixes across languages."
+    },
+    "dateUnit": {
+      "constantName": "REGEX_DATE_UNIT",
+      "pattern": "(?:year|jahr|ans?|año|anno|год|лет|рок|month|monat|mois|mes|mese|месяц|місяц|week|woche|semaine|semana|settiman|недел|тижд|day|tag|jour|día|giorno|день|дней|днів|hour|stunde|heure|hora|ora|час|minute|минут|хвилин)",
+      "flags": "i",
+      "description": "Matches time/date units (year, month, week, day, hour, minute)."
+    },
+    "relativePast": {
+      "constantName": "REGEX_RELATIVE_PAST",
+      "pattern": "(?:vor|ago|hace|há|fa|назад|тому|önce|temu|előtt|sedan|siden|sitten|yang lalu|před|pred|acum|πριν|pre|לפני|قبل|trước|ที่แล้ว)",
+      "flags": "i",
+      "description": "Matches past relative words across languages."
+    },
+    "likeKeyword": {
+      "constantName": "REGEX_LIKE_KEYWORD",
+      "pattern": "(?:like|gefällt|gusta|j'aime|mi piace|лайк|좋아요|讚|赞|subscribers?|abonnenten?|abonnés?|suscriptores?|iscritti)",
+      "flags": "i",
+      "description": "Matches like, reaction, and subscriber count keywords across languages."
+    },
+    "bulletSplit": {
+      "constantName": "REGEX_BULLET_SPLIT",
+      "pattern": "\\s*[\\u2022\\u00B7·•|]\\s*",
+      "flags": "",
+      "description": "Matches bullet delimiters separating artist, album, and views."
+    },
+    "trailingYear": {
+      "constantName": "REGEX_TRAILING_YEAR",
+      "pattern": "(?:[\\s\\u2022\\u00B7·•\\\\-|]|\\s+)\\b(19|20)\\d{2}\\b$",
+      "flags": "",
+      "description": "Matches trailing 4-digit release year at the end of string (state-free, no global flag)."
+    },
+    "leadingExplicit": {
+      "constantName": "REGEX_LEADING_EXPLICIT",
+      "pattern": "^(E|\\[E\\])\\s+",
+      "flags": "i",
+      "description": "Matches leading explicit badge at beginning of title/artist."
+    },
+    "trailingPunctuation": {
+      "constantName": "REGEX_TRAILING_PUNCTUATION",
+      "pattern": "[\\u2022\\u00B7\\u2023\\u25E6\\u2043\\u2219·•\\-,|\\s]+$",
+      "flags": "",
+      "description": "Matches trailing punctuation, dashes, or bullets left over after string stripping."
+    }
+  }
+}

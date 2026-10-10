@@ -90,15 +90,19 @@ export class DialRotaryStreamer {
 		}
 
 		// 2. Dispatch command: if >= 100ms since last dispatch, flush immediately
-		const executeFlush = async (alreadyRendered: boolean = false) => {
+		const executeFlush = async (alreadyRendered: boolean = false, force: boolean = false) => {
 			const pending = this.pendingTicks.get(actionId) || 0;
 			if (pending === 0) return;
+			const currentTime = Date.now();
+			const lastCommand = this.lastCommandTime.get(actionId) || 0;
+			if (!force && currentTime - lastCommand < 100) return;
+
 			if (this.isPushJitterActive(actionId)) {
 				this.pendingTicks.set(actionId, 0);
 				return;
 			}
 			this.pendingTicks.set(actionId, 0);
-			this.lastCommandTime.set(actionId, Date.now());
+			this.lastCommandTime.set(actionId, currentTime);
 			await handlers.flush(pending, alreadyRendered);
 		};
 
@@ -129,7 +133,7 @@ export class DialRotaryStreamer {
 				this.rotationTimer.delete(actionId);
 			}
 
-			await executeFlush(false);
+			await executeFlush(false, true);
 			if (handlers.settle) {
 				handlers.settle();
 			}

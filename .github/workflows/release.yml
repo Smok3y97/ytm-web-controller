@@ -27,41 +27,45 @@ jobs:
       - name: Install dependencies
         run: npm ci --prefix plugin
 
-      # 1. Linting, Typecheck & Prettier Check (fails fast on syntax/type/style issues before packaging or system installs)
+      # 1. Verify Metadata Patterns Synchronization (SSOT: shared/metadata-patterns.json)
+      - name: Verify Synchronized Metadata Patterns
+        run: node scripts/sync-patterns.mjs --check
+
+      # 2. Linting, Typecheck & Prettier Check (fails fast on syntax/type/style issues before packaging or system installs)
       - name: Lint, Typecheck and Prettier Check
         run: npm run lint
 
-      # 2. Add local plugin node_modules CLI binaries (streamdeck) to PATH
+      # 3. Add local plugin node_modules CLI binaries (streamdeck) to PATH
       - name: Add local CLI binaries to PATH
         run: echo "$GITHUB_WORKSPACE/plugin/node_modules/.bin" >> $GITHUB_PATH
 
-      # 3. Install lightweight Mono C# compiler for Windows focus helper
+      # 4. Install lightweight Mono C# compiler for Windows focus helper
       - name: Install Mono Compiler
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends mono-mcs
 
-      # 4. Compile Plugin Bundle via Rollup
+      # 5. Compile Plugin Bundle via Rollup
       - name: Build Plugin Bundle
         run: npm run build
 
-      # 5. Compile Native Windows Focus Helper Binary
+      # 6. Compile Native Windows Focus Helper Binary
       - name: Compile Focus Helper Binary
         run: |
           mkdir -p plugin/com.smok3y97.ytmusicweb.sdPlugin/bin
           mcs -target:winexe -optimize+ -out:plugin/com.smok3y97.ytmusicweb.sdPlugin/bin/ytm-focus.exe scripts/ytm-focus.cs
 
-      # 6. Official Elgato Stream Deck Plugin Validation
+      # 7. Official Elgato Stream Deck Plugin Validation
       - name: Validate Stream Deck Plugin
         run: npm run validate
 
-      # 7. Package Stream Deck Plugin (.streamDeckPlugin)
+      # 8. Package Stream Deck Plugin (.streamDeckPlugin)
       - name: Pack Stream Deck Plugin
         run: |
           mkdir -p release
           streamdeck pack plugin/com.smok3y97.ytmusicweb.sdPlugin -o release --force
 
-      # 8. Package Browser Extension (.zip)
+      # 9. Package Browser Extension (.zip)
       - name: Pack Browser Extension
         run: |
           mkdir -p release
@@ -69,7 +73,7 @@ jobs:
           zip -r ../release/extension.zip . -x "*.git*"
           cd ..
 
-      # 9. Stage release binaries as workflow artifact for publishing
+      # 10. Stage release binaries as workflow artifact for publishing
       - name: Upload Release Binaries
         uses: actions/upload-artifact@v7
         with:

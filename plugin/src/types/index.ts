@@ -2,6 +2,11 @@
  * TypeScript Interfaces for YouTube Music Web Controller
  */
 import type { JsonObject, JsonValue } from "@elgato/utils";
+import type { WebSocket } from "ws";
+
+export interface HeartbeatWebSocket extends WebSocket {
+	isAlive?: boolean;
+}
 
 export interface YTMPlaybackState {
 	title: string;

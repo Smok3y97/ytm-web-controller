@@ -15,7 +15,7 @@ Consult the specialized documentation before modifying components:
 
 ## 🚨 2. Non-Negotiable Guardrails & Hard Rules
 
-- **Generated & Packed Files:** Never manually edit `release/**`, `plugin/bin/**`, or `plugin/package-lock.json`. Dependencies and lockfiles must strictly be managed natively via `npm`.
+- **Generated & Packed Files:** Never manually edit `release/**`, `plugin/bin/**`, `plugin/package-lock.json`, `extension/ytm-patterns.js`, or `plugin/src/services/metadata-patterns.ts`. Dependencies and lockfiles must strictly be managed natively via `npm`; metadata patterns are centrally managed in `shared/metadata-patterns.json` and synchronized via `npm run sync:patterns`.
 - **Zero Polling Overhead:** Never introduce `setInterval()` or polling loops in `extension/content.js`. State extraction is strictly reactive via HTML5 `<video>` events (`play`, `pause`, `seeking`, `seeked`, `durationchange`, `ratechange`, `volumechange`) and scoped `MutationObserver` callbacks.
 - **Context Isolation:**
   - **MAIN World (`extension/ytm-*.js`, `extension/content.js`):** Interacts with YouTube Music DOM and Player API (`#movie_player`). Has **zero** access to Chrome Extension runtime APIs (`chrome.*`).

@@ -31,10 +31,13 @@
       "js": [
         "ytm-selectors.js",
         "ytm-media-session.js",
+        "ytm-patterns.js",
         "utils.js",
         "ytm-player-api.js",
         "ytm-fallback.js",
+        "ytm-controls.js",
         "ytm-actions.js",
+        "ytm-observers.js",
         "ytm-state.js",
         "content.js"
       ],

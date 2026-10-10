@@ -63,6 +63,10 @@ npx streamdeck restart com.smok3y97.ytmusicweb
 # Optional: Watch mode for active live development
 npm run watch
 
+# Metadata patterns synchronization
+npm run sync:patterns     # Synchronize metadata RegExp patterns from shared/metadata-patterns.json
+npm run patterns:check    # Verify metadata pattern synchronization without modifying files
+
 # Quality assurance & agent skill tooling
 npm run docs:audit         # Run full documentation hygiene, link & anchor audit
 npm run docs:sync          # Verify code-to-documentation and version synchronization
@@ -85,6 +89,20 @@ The codebase strictly adheres to the official [Elgato Stream Deck Style Guide fo
 
 > [!NOTE]
 > **Plugin-Only Scope for Linting & Validation:** `npm run lint`, `npm run build`, and `npm run validate` are strictly scoped to the Stream Deck plugin (`plugin/**`). When changes only affect the companion browser extension (`extension/**`), helper scripts (`scripts/**`), agent skills (`.agents/**`), or Markdown documentation (`*.md`, `docs/**`), running local linting, bundle compilation, and Elgato CLI validation is not required and should be skipped.
+
+
+---
+
+## [🔄 Metadata Patterns Synchronization (`shared/metadata-patterns.json`)](#top)
+
+To eliminate code duplication across the TypeScript Node.js plugin and the unbundled browser extension, all metadata cleaning patterns, view count keywords, and relative date expressions are governed centrally by **`shared/metadata-patterns.json`** (Single Source of Truth).
+
+### Synchronization Workflow (`npm run sync:patterns`)
+1. **Compilation**: Running `npm run sync:patterns` reads `shared/metadata-patterns.json` and compiles:
+   - **`extension/ytm-patterns.js`**: Pre-compiled RegExp constants bound to `window.YTM.patterns` for high-performance in-browser execution with zero parsing overhead.
+   - **`plugin/src/services/metadata-patterns.ts`**: Fully-typed TypeScript RegExp constant exports consumed directly by `MetadataSanitizer`.
+2. **Pre-Build Automation**: `npm run build` and `scripts/package_plugin.ps1` automatically invoke pattern synchronization before building the bundle.
+3. **CI/CD & Guardrails**: Both `.github/workflows/ci.yml` and `npm run audit:guardrails` run `node scripts/sync-patterns.mjs --check` to reject pull requests if generated files do not match the JSON definition.
 
 
 ---

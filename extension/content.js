@@ -96,9 +96,10 @@ function notifyTabClosed() {
   clearScheduledUpdates();
 
   // Cleanly detach MutationObservers and Media Listeners
-  if (typeof window.YTM?.state?.teardownGlobalMediaListeners === 'function') {
+  const teardownMedia = window.YTM?.observers?.teardownGlobalMediaListeners || window.YTM?.state?.teardownGlobalMediaListeners;
+  if (typeof teardownMedia === 'function') {
     try {
-      window.YTM.state.teardownGlobalMediaListeners();
+      teardownMedia();
     } catch { }
   }
 
@@ -274,9 +275,6 @@ function connectWebSocket(port) {
 
       // 2. Register client info
       registerClient(extVersion);
-
-      sendState(true);
-      scheduleStateUpdates([50, 150, 400]);
     };
 
     ws.onmessage = (event) => {
@@ -357,7 +355,7 @@ function wakeFromStandby() {
   isTabClosing = false;
 
   // Restore reactivity if listeners were previously torn down during pagehide / suspend
-  const setupMedia = window.YTM?.state?.setupGlobalMediaListeners || (typeof setupGlobalMediaListeners === 'function' ? setupGlobalMediaListeners : null);
+  const setupMedia = window.YTM?.observers?.setupGlobalMediaListeners || window.YTM?.state?.setupGlobalMediaListeners || (typeof setupGlobalMediaListeners === 'function' ? setupGlobalMediaListeners : null);
   if (setupMedia) {
     try {
       setupMedia();
@@ -381,7 +379,7 @@ function wakeFromStandby() {
 function init() {
   console.info('[YTM Controller] ⚡ Initializing YouTube Music Content Script...');
 
-  const setupMedia = window.YTM?.state?.setupGlobalMediaListeners || (typeof setupGlobalMediaListeners === 'function' ? setupGlobalMediaListeners : null);
+  const setupMedia = window.YTM?.observers?.setupGlobalMediaListeners || window.YTM?.state?.setupGlobalMediaListeners || (typeof setupGlobalMediaListeners === 'function' ? setupGlobalMediaListeners : null);
   if (setupMedia) {
     setupMedia();
   }

@@ -140,7 +140,7 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 		return true;
 	}
 
-	protected override getAdditionalMarqueeFeedback(
+	protected override getPlaybackProgressFeedback(
 		settings: SeekDialSettings,
 		state: YTMPlaybackState,
 	): { value?: string; indicator?: number } | null {
@@ -167,7 +167,7 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 					return;
 				}
 
-				const isRotating = this.rotationStreamTimer.has(dialAction.id) || this.rotationTimer.has(dialAction.id);
+				const isRotating = this.isRotating(dialAction.id);
 				const curTime =
 					isRotating && this.lastTargetSeconds.has(dialAction.id)
 						? this.lastTargetSeconds.get(dialAction.id)!

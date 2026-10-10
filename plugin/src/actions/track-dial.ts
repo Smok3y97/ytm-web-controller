@@ -53,7 +53,7 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 		return true;
 	}
 
-	protected override getAdditionalMarqueeFeedback(
+	protected override getPlaybackProgressFeedback(
 		settings: TrackDialSettings,
 		state: YTMPlaybackState,
 	): { value?: string; indicator?: number } | null {

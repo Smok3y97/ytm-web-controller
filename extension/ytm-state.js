@@ -541,8 +541,8 @@ function setupGlobalMediaListeners() {
     }, 60);
   };
 
-  const observerOptions = {
-    childList: true,
+  const playerBarObserverOptions = {
+    childList: false,
     subtree: true,
     attributes: true,
     attributeFilter: ['aria-pressed', 'aria-checked', 'like-status', 'active', 'icon']
@@ -551,9 +551,13 @@ function setupGlobalMediaListeners() {
   const playerBar = $('ytmusic-player-bar');
   if (playerBar) {
     activeObserver = new MutationObserver(onMutation);
-    activeObserver.observe(playerBar, observerOptions);
+    activeObserver.observe(playerBar, playerBarObserverOptions);
   } else {
     // If player-bar not rendered yet, temporarily observe document.body until player-bar appears
+    const initialObserverOptions = {
+      childList: true,
+      subtree: true
+    };
     initialObserver = new MutationObserver((mutations, obs) => {
       const bar = $('ytmusic-player-bar');
       if (bar) {
@@ -561,11 +565,11 @@ function setupGlobalMediaListeners() {
         obs.disconnect();
         initialObserver = null;
         activeObserver = new MutationObserver(onMutation);
-        activeObserver.observe(bar, observerOptions);
+        activeObserver.observe(bar, playerBarObserverOptions);
       }
       onMutation();
     });
-    initialObserver.observe(document.body || document.documentElement, observerOptions);
+    initialObserver.observe(document.body || document.documentElement, initialObserverOptions);
   }
 }
 

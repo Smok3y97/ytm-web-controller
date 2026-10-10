@@ -248,14 +248,19 @@ function extractArtworkUrl(mediaSession) {
   const preferred = artworks.find(a => a && a.sizes === '226x226');
   if (preferred?.src) return preferred.src;
 
-  // Otherwise sort by resolution descending
-  const sorted = [...artworks].sort((a, b) => {
-    const sizeA = parseInt(a?.sizes?.split('x')[0] || '0', 10);
-    const sizeB = parseInt(b?.sizes?.split('x')[0] || '0', 10);
-    return sizeB - sizeA;
-  });
+  // Otherwise search for highest resolution artwork in a single pass without array allocation
+  let best = artworks[0];
+  let maxRes = 0;
+  for (let i = 0; i < artworks.length; i++) {
+    const art = artworks[i];
+    const res = parseInt(art?.sizes?.split('x')[0] || '0', 10);
+    if (res > maxRes) {
+      maxRes = res;
+      best = art;
+    }
+  }
 
-  return sorted[0]?.src || artworks[artworks.length - 1]?.src || '';
+  return best?.src || artworks[artworks.length - 1]?.src || '';
 }
 
 /**

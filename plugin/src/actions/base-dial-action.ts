@@ -2,7 +2,7 @@
  * Base Class for Stream Deck + Dial & LCD Touchstrip Actions
  *
  * Centralizes lifecycle management, feedback layout registration, marquee subscriptions,
- * push-jitter lock mechanism, and unified state rendering.
+ * rotary streamer delegation, and unified state rendering.
  */
 import {
 	type DialAction,
@@ -19,6 +19,7 @@ import type { JsonObject } from "@elgato/utils";
 
 import { ImageRenderer } from "../services/image-renderer.js";
 import { MarqueeService } from "../services/marquee-service.js";
+import { DialRotaryStreamer, RotaryStreamHandlers } from "../services/rotary-streamer.js";
 import { StateManager } from "../services/state-manager.js";
 import { VersionControlService } from "../services/version-control.js";
 import { WebSocketService } from "../services/websocket-server.js";
@@ -27,12 +28,7 @@ import { YTMPlaybackState } from "../types/index.js";
 export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> extends SingletonAction<TSettings> {
 	protected activeDials: Map<string, WillAppearEvent<TSettings>["action"]> = new Map();
 	protected actionSettings: Map<string, TSettings> = new Map();
-	protected lastDialPressTime: Map<string, number> = new Map();
-	protected rotationTimer: Map<string, NodeJS.Timeout> = new Map();
-	protected rotationStreamTimer: Map<string, NodeJS.Timeout> = new Map();
-	protected pendingTicks: Map<string, number> = new Map();
-	protected lastFeedbackTime: Map<string, number> = new Map();
-	protected lastCommandTime: Map<string, number> = new Map();
+	protected rotaryStreamer: DialRotaryStreamer = new DialRotaryStreamer();
 	protected playbackTimer: NodeJS.Timeout | null = null;
 	protected renderDebounceTimer: NodeJS.Timeout | null = null;
 	protected lastRenderedValue: Map<string, string> = new Map();
@@ -76,20 +72,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		this.lastRenderedValue.delete(id);
 		this.lastRenderedIndicator.delete(id);
 		this.lastRenderedTitle.delete(id);
-		this.lastDialPressTime.delete(id);
-		this.lastFeedbackTime.delete(id);
-		this.lastCommandTime.delete(id);
-		this.pendingTicks.delete(id);
-		const timer = this.rotationTimer.get(id);
-		if (timer) {
-			clearTimeout(timer);
-			this.rotationTimer.delete(id);
-		}
-		const streamTimer = this.rotationStreamTimer.get(id);
-		if (streamTimer) {
-			clearInterval(streamTimer);
-			this.rotationStreamTimer.delete(id);
-		}
+		this.rotaryStreamer.cleanup(id);
 		this.activeDials.delete(id);
 		this.actionSettings.delete(id);
 		if (this.activeDials.size === 0 && this.renderDebounceTimer) {
@@ -101,19 +84,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	}
 
 	override async onDialDown(ev: DialDownEvent<TSettings>): Promise<void> {
-		const id = ev.action.id;
-		this.lastDialPressTime.set(id, Date.now());
-		this.pendingTicks.set(id, 0);
-		const existingTimer = this.rotationTimer.get(id);
-		if (existingTimer) {
-			clearTimeout(existingTimer);
-			this.rotationTimer.delete(id);
-		}
-		const existingStreamTimer = this.rotationStreamTimer.get(id);
-		if (existingStreamTimer) {
-			clearInterval(existingStreamTimer);
-			this.rotationStreamTimer.delete(id);
-		}
+		this.rotaryStreamer.recordPress(ev.action.id);
 
 		if (StateManager.getInstance().isVersionMismatch()) {
 			await ev.action.showAlert();
@@ -124,9 +95,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	}
 
 	override async onDialUp(ev: DialUpEvent<TSettings>): Promise<void> {
-		const id = ev.action.id;
-		this.lastDialPressTime.set(id, Date.now());
-		this.pendingTicks.set(id, 0);
+		this.rotaryStreamer.recordPress(ev.action.id);
 	}
 
 	override async onTouchTap(ev: TouchTapEvent<TSettings>): Promise<void> {
@@ -152,11 +121,17 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	}
 
 	/**
+	 * Returns true if an action is currently actively rotating or settling
+	 */
+	protected isRotating(actionId: string): boolean {
+		return this.rotaryStreamer.isRotating(actionId);
+	}
+
+	/**
 	 * Push-jitter suppression: returns true if dial was pressed within last 250ms
 	 */
 	protected isPushJitterActive(actionId: string): boolean {
-		const pressTime = this.lastDialPressTime.get(actionId) || 0;
-		return Date.now() - pressTime < 250;
+		return this.rotaryStreamer.isPushJitterActive(actionId);
 	}
 
 	/**
@@ -165,81 +140,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	protected async handleRotaryStream(
 		dialAction: DialAction<TSettings>,
 		ticksDelta: number,
-		handlers: {
-			renderOptimistic: (accumulatedTicks: number) => Promise<void> | void;
-			flush: (accumulatedTicks: number, alreadyRendered?: boolean) => Promise<void> | void;
-			settle?: () => void;
-		},
+		handlers: RotaryStreamHandlers,
 	): Promise<void> {
-		const actionId = dialAction.id;
-		if (this.isPushJitterActive(actionId)) return;
-
-		if (StateManager.getInstance().isVersionMismatch()) {
-			await dialAction.showAlert();
-			return;
-		}
-
-		const currentTicks = (this.pendingTicks.get(actionId) || 0) + ticksDelta;
-		this.pendingTicks.set(actionId, currentTicks);
-
-		const now = Date.now();
-		const lastCmd = this.lastCommandTime.get(actionId) || 0;
-
-		// 1. Optimistic LCD feedback (strictly rate-limited to <= 10 Hz)
-		let feedbackRendered = false;
-		const lastFeedback = this.lastFeedbackTime.get(actionId) || 0;
-		if (now - lastFeedback >= 100) {
-			this.lastFeedbackTime.set(actionId, now);
-			await handlers.renderOptimistic(currentTicks);
-			feedbackRendered = true;
-		}
-
-		// 2. Dispatch command: if >= 100ms since last dispatch, flush immediately
-		const executeFlush = async (alreadyRendered: boolean = false) => {
-			const pending = this.pendingTicks.get(actionId) || 0;
-			if (pending === 0) return;
-			if (this.isPushJitterActive(actionId)) {
-				this.pendingTicks.set(actionId, 0);
-				return;
-			}
-			this.pendingTicks.set(actionId, 0);
-			this.lastCommandTime.set(actionId, Date.now());
-			await handlers.flush(pending, alreadyRendered);
-		};
-
-		if (now - lastCmd >= 100) {
-			await executeFlush(feedbackRendered);
-		} else if (!this.rotationStreamTimer.has(actionId)) {
-			// Start active 10-Hz interval streamer during continuous rotation
-			const streamTimer = setInterval(async () => {
-				await executeFlush(false);
-			}, 100);
-			this.rotationStreamTimer.set(actionId, streamTimer);
-		}
-
-		// 3. Trailing settle timer (110ms after last rotation detent)
-		const settleTimer = this.rotationTimer.get(actionId);
-		if (settleTimer) {
-			clearTimeout(settleTimer);
-		}
-		const newSettleTimer = setTimeout(async () => {
-			const activeStreamTimer = this.rotationStreamTimer.get(actionId);
-			if (activeStreamTimer) {
-				clearInterval(activeStreamTimer);
-				this.rotationStreamTimer.delete(actionId);
-			}
-			const activeSettleTimer = this.rotationTimer.get(actionId);
-			if (activeSettleTimer) {
-				clearTimeout(activeSettleTimer);
-				this.rotationTimer.delete(actionId);
-			}
-
-			await executeFlush(false);
-			if (handlers.settle) {
-				handlers.settle();
-			}
-		}, 110);
-		this.rotationTimer.set(actionId, newSettleTimer);
+		return this.rotaryStreamer.handleRotaryStream(dialAction, ticksDelta, handlers);
 	}
 
 	/**
@@ -313,9 +216,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	): Promise<void>;
 
 	/**
-	 * Hook for derived dial classes to optionally provide live feedback (e.g. time/progress) on marquee tick
+	 * Hook for derived dial classes to optionally provide live feedback (e.g. time/progress) on periodic ticks
 	 */
-	protected getAdditionalMarqueeFeedback(
+	protected getPlaybackProgressFeedback(
 		_settings: TSettings,
 		_state: YTMPlaybackState,
 	): { value?: string; indicator?: number } | null {
@@ -360,16 +263,14 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		}
 
 		for (const [actionId, dialAction] of this.activeDials) {
-			const pending = this.pendingTicks.get(actionId) || 0;
-			const hasTimer = this.rotationTimer.has(actionId) || this.rotationStreamTimer.has(actionId);
-			if (pending !== 0 || hasTimer) {
+			if (this.rotaryStreamer.isRotating(actionId)) {
 				continue;
 			}
 
 			try {
 				if (dialAction.isDial()) {
 					const settings = this.actionSettings.get(actionId) ?? (await dialAction.getSettings());
-					const extra = this.getAdditionalMarqueeFeedback(settings, state);
+					const extra = this.getPlaybackProgressFeedback(settings, state);
 					if (extra) {
 						const prevValue = this.lastRenderedValue.get(dialAction.id);
 						const prevIndicator = this.lastRenderedIndicator.get(dialAction.id);
@@ -400,6 +301,8 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			return;
 		}
 
+		const state = StateManager.getInstance().getState();
+
 		for (const [actionId, dialAction] of this.activeDials) {
 			try {
 				if (dialAction.isDial()) {
@@ -408,9 +311,33 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 					const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
 					const currentText = MarqueeService.getInstance().getDisplayText(fullTitle);
 
-					if (currentText !== this.lastRenderedTitle.get(dialAction.id)) {
+					const titleChanged = currentText !== this.lastRenderedTitle.get(dialAction.id);
+					const feedback: { title?: string; value?: string; indicator?: number } = {};
+
+					if (titleChanged) {
 						this.lastRenderedTitle.set(dialAction.id, currentText);
-						await dialAction.setFeedback({ title: currentText });
+						feedback.title = currentText;
+					}
+
+					// Harmonize: Bundle progress updates into same feedback packet if changed and not actively rotating
+					if (!this.rotaryStreamer.isRotating(actionId)) {
+						const extra = this.getPlaybackProgressFeedback(settings, state);
+						if (extra) {
+							const prevValue = this.lastRenderedValue.get(dialAction.id);
+							const prevIndicator = this.lastRenderedIndicator.get(dialAction.id);
+							if (extra.value !== undefined && extra.value !== prevValue) {
+								feedback.value = extra.value;
+								this.lastRenderedValue.set(dialAction.id, extra.value);
+							}
+							if (extra.indicator !== undefined && extra.indicator !== prevIndicator) {
+								feedback.indicator = extra.indicator;
+								this.lastRenderedIndicator.set(dialAction.id, extra.indicator);
+							}
+						}
+					}
+
+					if (Object.keys(feedback).length > 0) {
+						await dialAction.setFeedback(feedback);
 					}
 				}
 			} catch {}

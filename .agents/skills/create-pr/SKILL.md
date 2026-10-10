@@ -47,10 +47,13 @@ Run static analysis, bundle compilation, and schema verification before touching
    git push -u origin HEAD
    ```
 
-2. Format the Pull Request description using the commit summary and body (see reference layout: [`examples/pr-template.md`](examples/pr-template.md)):
+2. Format the Pull Request description based on the canonical template in [`resources/pull_request_template.md`](resources/pull_request_template.md) (synchronized with [`.github/pull_request_template.md`](../../../.github/pull_request_template.md) and illustrated in [`examples/pr-template.md`](examples/pr-template.md)):
    - **Title:** Same as the Conventional Commit header (`<type>(<scope>): <summary>`).
-   - **Body:** Summary bullet points, motivation, and the adaptive Quality Assurance checklist.
-     - For **Plugin Changes (`plugin/**`)**: Include verification checkboxes for `npm run lint`, `npm run build`, and `npm run validate`.
+   - **Description (`## 📝 Description`):** Summary bullet points explaining what changed and the motivation/architecture rationale behind it.
+   - **Type of Change (`## 🔍 Type of Change`):** Check the applicable category box (`Bug fix`, `New feature`, `Code style / Refactoring`, `Documentation update`, `CI/CD / Build tooling update`).
+   - **Architectural Compliance Checklist (`## 🏛️ Architectural Compliance Checklist`):** Check off applicable architecture rules (Zero DOM Polling, Zero Disk Footprint, 10 Hz Rate Limit, Property Inspector Auto-Save, i18n & Localization).
+   - **Quality Assurance Checklist (`## 🧪 Quality Assurance & Testing Checklist`):**
+     - For **Plugin Changes (`plugin/**`)**: Check off `npm run lint`, `npm run build`, and `npm run validate`.
      - For **Non-Plugin Changes** (docs, skills, scripts, extension): Note that plugin quality gates were safely skipped per `AGENTS.md`.
 
 3. Provide the user with the direct GitHub Pull Request URL:

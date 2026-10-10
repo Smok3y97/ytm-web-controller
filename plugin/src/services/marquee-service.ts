@@ -192,7 +192,7 @@ export class MarqueeService extends EventEmitter {
 
 	private checkTimer(): void {
 		const state = StateManager.getInstance().getState();
-		const shouldRun = this.activeConsumerCount > 0 && !state.paused;
+		const shouldRun = this.activeConsumerCount > 0 && !state.paused && this.cachedMaxOffset > 0;
 
 		if (shouldRun) {
 			if (!this.marqueeTimer) {
@@ -242,6 +242,11 @@ export class MarqueeService extends EventEmitter {
 	 */
 	public getDisplayText(fullText: string): string {
 		if (!fullText) return "";
+		const textMax = findMaxMarqueeOffset(fullText, MAX_LCD_PIXEL_WIDTH);
+		if (textMax > this.cachedMaxOffset) {
+			this.cachedMaxOffset = textMax;
+			this.checkTimer();
+		}
 		return getFittingTextSlice(fullText, this.currentOffset, MAX_LCD_PIXEL_WIDTH);
 	}
 
@@ -252,15 +257,23 @@ export class MarqueeService extends EventEmitter {
 	public formatKeypadMarqueeText(multiLineText: string, maxPx: number = KEYPAD_MAX_PIXEL_WIDTH): string {
 		if (!multiLineText) return "";
 		const lines = multiLineText.split("\n");
+		let didExpand = false;
 		const formattedLines = lines.map((line) => {
 			const trimmed = line.trim();
 			if (!trimmed || estimateTextWidthPx(trimmed) <= maxPx) {
 				return trimmed;
 			}
 			const lineMaxOffset = findMaxMarqueeOffset(trimmed, maxPx);
+			if (lineMaxOffset > this.cachedMaxOffset) {
+				this.cachedMaxOffset = lineMaxOffset;
+				didExpand = true;
+			}
 			const effectiveOffset = Math.min(lineMaxOffset, Math.max(0, this.currentOffset));
 			return getFittingTextSlice(trimmed, effectiveOffset, maxPx);
 		});
+		if (didExpand) {
+			this.checkTimer();
+		}
 		return formattedLines.join("\n");
 	}
 }

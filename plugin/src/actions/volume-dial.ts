@@ -154,7 +154,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 					return;
 				}
 
-				const isRotating = this.rotationStreamTimer.has(dialAction.id) || this.rotationTimer.has(dialAction.id);
+				const isRotating = this.isRotating(dialAction.id);
 				const volPercent =
 					isRotating && this.lastTargetVolume.has(dialAction.id)
 						? this.lastTargetVolume.get(dialAction.id)!

@@ -380,6 +380,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
 - **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with timeline calculations anchored to the state snapshot timestamp, eliminating debounce drift.
 - **`ObsExporterService`**: Debounced safe writer for OBS Text (GDI+) file sources (`.txt`).
 - **`VersionControlService`**: Dynamic manifest reader and version compatibility validator.
+- **`DialRotaryStreamer`**: Decoupled hardware rotary stream controller encapsulating encoder tick accumulation, push-jitter suppression (250ms), 10-Hz optimistic feedback rate limiting (100ms), continuous rotation streaming, and trailing settle timers (110ms) across all Stream Deck + dial actions.
 
 ---
 
@@ -391,8 +392,8 @@ The browser companion extension runs in the context of `https://music.youtube.co
 | **Track Controller (Dial)** | `TrackDialAction` | `track-dial.ts` |
 | **Volume Controller (Dial)** | `VolumeDialAction` | `volume-dial.ts` |
 | **Seek Controller (Dial)** | `SeekDialAction` | `seek-dial.ts` |
-| **Volume Up / Down** | `VolumeUpAction`, `VolumeDownAction` | `volume-up.ts`, `volume-down.ts` |
-| **Fast Forward / Rewind** | `SeekForwardAction`, `SeekBackwardAction` | `seek-forward.ts`, `seek-backward.ts` |
+| **Volume Up / Down** | `VolumeUpAction`, `VolumeDownAction` (via `BaseVolumeAction` & `BaseKeypadTemplateAction`) | `volume-up.ts`, `volume-down.ts` |
+| **Fast Forward / Rewind** | `SeekForwardAction`, `SeekBackwardAction` (via `BaseSeekAction` & `BaseKeypadTemplateAction`) | `seek-forward.ts`, `seek-backward.ts` |
 | **Mute / Unmute** | `MuteAction` | `mute.ts` |
 | **Next / Previous** | `NextAction`, `PreviousAction` | `next.ts`, `previous.ts` |
 | **Like / Dislike** | `LikeAction`, `DislikeAction` | `like.ts`, `dislike.ts` |
@@ -457,11 +458,11 @@ The Stream Deck + integration combines physical rotary encoders with high-densit
 - **In-Memory Rendering Pipeline & Memoization**: Dynamic canvas drawings, SVG generation, and album cover processing are executed entirely in RAM (`ImageRenderer`) and output as Base64 Data URLs with zero intermediate disk writes. Bounded in-RAM caches (`overlayCache` in `ImageRenderer` and `warningIconCache` in `warning-icons.ts`) eliminate duplicate SVG string templates and URI encoding allocations across render and marquee ticks.
 - **Hardware Refresh Limit & Settings Caching**: Programmatic LCD touchstrip renders and key updates must not exceed **10 updates per second (10 Hz)** to avoid USB bus congestion and Stream Deck firmware latency. Dial actions cache Property Inspector settings in `actionSettings` maps on `onWillAppear` and `onDidReceiveSettings`, completely eliminating IPC `getSettings()` round-trips during render loops and marquee ticks. `updateAllDials` is debounced by 30ms to coalesce rapid state change events.
 
-### 🔄 10-Hz Dial Rotary Streaming & Settle Lifecycle
+### 🔄 10-Hz Dial Rotary Streaming & Settle Lifecycle (`DialRotaryStreamer`)
 - **Zero-Latency First Detent**: The first rotation detent fires immediately with 0ms latency if the dial was idle ($\ge 100\text{ ms}$ since the previous command dispatch).
-- **Active 10-Hz Streaming**: Continuous rotary encoder spinning spins up an active 100ms interval timer (`rotationStreamTimer`). Accumulated rotation ticks in `pendingTicks` are batched and dispatched at the exact 10-Hz boundary, preventing USB bus flooding or dropped ticks.
+- **Active 10-Hz Streaming**: Continuous rotary encoder spinning spins up an active 100ms interval timer via `DialRotaryStreamer`. Accumulated rotation ticks are batched and dispatched at the exact 10-Hz boundary, preventing USB bus flooding or dropped ticks.
 - **Optimistic Target Tracking**: During active rotation, the controller tracks optimistic targets (`lastTargetVolume` / `lastTargetSeconds`). Subsequent ticks increment from the tracked optimistic position rather than stale `StateManager` values pending WebSocket round-trip acknowledgments, preventing dial rubber-banding or display flicker.
-- **Trailing Settle Debounce**: A 110ms trailing debounce timer (`rotationTimer`) fires after rotary movement stops, flushing any final residual ticks, clearing the 10-Hz stream interval, and resetting the optimistic tracking state without redundant `setFeedback` calls if the LCD is already synchronized.
+- **Trailing Settle Debounce**: A 110ms trailing debounce timer fires after rotary movement stops, flushing any final residual ticks, clearing the 10-Hz stream interval, and resetting the optimistic tracking state without redundant `setFeedback` calls if the LCD is already synchronized.
 
 ### ⏱️ Client-Side Time Interpolation
 - YouTube Music does not push continuous WebSocket timestamp ticks during playback (Zero Polling / Zero `timeupdate` over WS).

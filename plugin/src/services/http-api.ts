@@ -20,6 +20,7 @@ import { StateManager } from "./state-manager.js";
 export class HttpApiService extends EventEmitter {
 	private static instance: HttpApiService;
 	private overlayDir: string;
+	private overlayAssetCache: Map<string, { buffer: Buffer; contentType: string }> = new Map();
 
 	private constructor() {
 		super();
@@ -173,6 +174,18 @@ export class HttpApiService extends EventEmitter {
 		}
 
 		try {
+			const cached = this.overlayAssetCache.get(filePath);
+			if (cached) {
+				res.writeHead(200, {
+					"Content-Type": cached.contentType,
+					"Cache-Control": "no-cache, no-store, must-revalidate",
+					Pragma: "no-cache",
+					Expires: "0",
+				});
+				res.end(cached.buffer);
+				return;
+			}
+
 			const ext = path.extname(filePath).toLowerCase();
 			let contentType = "text/plain; charset=utf-8";
 			if (ext === ".html") contentType = "text/html; charset=utf-8";
@@ -184,6 +197,8 @@ export class HttpApiService extends EventEmitter {
 			else if (ext === ".ico") contentType = "image/x-icon";
 
 			const fileContent = await fs.promises.readFile(filePath);
+			this.overlayAssetCache.set(filePath, { buffer: fileContent, contentType });
+
 			res.writeHead(200, {
 				"Content-Type": contentType,
 				"Cache-Control": "no-cache, no-store, must-revalidate",

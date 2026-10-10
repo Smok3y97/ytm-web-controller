@@ -13,7 +13,7 @@ import streamDeck, {
 
 import { copyToClipboard } from "../services/clipboard.js";
 import { StateManager } from "../services/state-manager.js";
-import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
+import { handleKeypadMismatch } from "../services/warning-icons.js";
 import { CopyUrlSettings, YTMPlaybackState } from "../types/index.js";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.copyurl" })
@@ -120,22 +120,18 @@ export class CopyUrlAction extends SingletonAction<CopyUrlSettings> {
 		if (!actionInstance.isKey()) return;
 
 		try {
-			const isMismatch = !!state.isVersionMismatch;
-			const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
+			const { isHandled, recoveredFromMismatch } = await handleKeypadMismatch(
+				actionInstance,
+				actionInstance.id,
+				!!state.isVersionMismatch,
+				"copyurl",
+				this.lastRenderedMismatch,
+			);
+			if (isHandled) return;
 
-			if (isMismatch) {
-				if (prevMismatch !== true) {
-					await actionInstance.setTitle("");
-					await actionInstance.setImage(getActionWarningSvgDataUrl("copyurl"));
-					this.lastRenderedMismatch.set(actionInstance.id, true);
-				}
-				return;
-			}
-
-			if (prevMismatch === true) {
+			if (recoveredFromMismatch) {
 				await actionInstance.setImage(undefined);
 				await actionInstance.setTitle("");
-				this.lastRenderedMismatch.set(actionInstance.id, false);
 			}
 		} catch {}
 	}

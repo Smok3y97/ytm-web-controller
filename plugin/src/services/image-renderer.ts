@@ -29,7 +29,11 @@ export class ImageRenderer {
 		if (!url || !url.startsWith("http")) return null;
 
 		if (this.coverCache.has(url)) {
-			return this.coverCache.get(url)!;
+			const cached = this.coverCache.get(url)!;
+			// Refresh key position to implement true LRU eviction
+			this.coverCache.delete(url);
+			this.coverCache.set(url, cached);
+			return cached;
 		}
 
 		if (this.inFlightRequests.has(url)) {
@@ -77,7 +81,11 @@ export class ImageRenderer {
 		}
 
 		if (this.overlayCache.has(coverBase64)) {
-			return this.overlayCache.get(coverBase64)!;
+			const cached = this.overlayCache.get(coverBase64)!;
+			// Refresh key position to implement true LRU eviction
+			this.overlayCache.delete(coverBase64);
+			this.overlayCache.set(coverBase64, cached);
+			return cached;
 		}
 
 		// Security guard: Validate coverBase64 format to prevent SVG/XML template injection

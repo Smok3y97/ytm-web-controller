@@ -5,7 +5,7 @@ import { KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent } fr
 import type { JsonObject } from "@elgato/utils";
 
 import { StateManager } from "../services/state-manager.js";
-import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
+import { handleKeypadMismatch } from "../services/warning-icons.js";
 import { WebSocketService } from "../services/websocket-server.js";
 import { YTMPlaybackState } from "../types/index.js";
 
@@ -78,30 +78,26 @@ export abstract class BaseStateAction<T extends JsonObject = JsonObject> extends
 		if (!actionInstance.isKey()) return;
 
 		try {
-			const isMismatch = !!state.isVersionMismatch;
-			const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
-
-			if (isMismatch) {
-				if (prevMismatch !== true) {
-					await actionInstance.setTitle("");
-					const key = this.actionKey || this.command;
-					await actionInstance.setImage(getActionWarningSvgDataUrl(key));
-					this.lastRenderedMismatch.set(actionInstance.id, true);
-				}
-				return;
-			}
+			const key = this.actionKey || this.command;
+			const { isHandled, recoveredFromMismatch } = await handleKeypadMismatch(
+				actionInstance,
+				actionInstance.id,
+				!!state.isVersionMismatch,
+				key,
+				this.lastRenderedMismatch,
+			);
+			if (isHandled) return;
 
 			const targetState = this.calculateState(state);
 			const prevState = this.lastRenderedState.get(actionInstance.id);
 
-			if (prevState !== targetState || prevMismatch === true) {
-				if (prevMismatch === true) {
+			if (prevState !== targetState || recoveredFromMismatch) {
+				if (recoveredFromMismatch) {
 					await actionInstance.setImage(undefined);
 					await actionInstance.setTitle("");
 				}
 				await actionInstance.setState(targetState);
 				this.lastRenderedState.set(actionInstance.id, targetState);
-				this.lastRenderedMismatch.set(actionInstance.id, false);
 			}
 		} catch {}
 	}

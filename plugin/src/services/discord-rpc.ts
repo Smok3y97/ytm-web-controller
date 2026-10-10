@@ -238,9 +238,10 @@ export class DiscordRpcService {
 			let startTimestamp: number | undefined;
 			let endTimestamp: number | undefined;
 
-			// Live playback timeline calculation
+			// Live playback timeline calculation (anchored to snapshot timestamp to eliminate debounce drift)
 			if (!state.paused) {
-				startTimestamp = Math.floor(now - Math.max(0, state.currentTime) * 1000);
+				const baseTime = state.timestamp && Math.abs(now - state.timestamp) < 60000 ? state.timestamp : now;
+				startTimestamp = Math.floor(baseTime - Math.max(0, state.currentTime) * 1000);
 				if (state.duration > 0) {
 					endTimestamp = Math.floor(startTimestamp + state.duration * 1000);
 				}

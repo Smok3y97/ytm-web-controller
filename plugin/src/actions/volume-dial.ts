@@ -82,13 +82,30 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 			renderOptimistic: async (ticks) => {
 				await this.renderOptimisticFeedback(ev.action, ev.action.id, ticks);
 			},
-			flush: async (ticks) => {
-				await this.dispatchVolumeDelta(ev.action, ev.action.id, ticks);
+			flush: async (ticks, alreadyRendered) => {
+				await this.dispatchVolumeDelta(ev.action, ev.action.id, ticks, alreadyRendered);
 			},
 			settle: () => {
 				this.lastTargetVolume.delete(ev.action.id);
 			},
 		});
+	}
+
+	private async renderVolumeLcd(
+		action: WillAppearEvent<VolumeDialSettings>["action"],
+		volume: number,
+		muted: boolean,
+	): Promise<void> {
+		if (!action.isDial()) return;
+		const valueText = muted ? "MUTED" : `${volume}%`;
+		const indicatorValue = muted ? 0 : volume;
+
+		try {
+			await action.setFeedback({
+				value: valueText,
+				indicator: indicatorValue,
+			});
+		} catch {}
 	}
 
 	private async renderOptimisticFeedback(
@@ -102,21 +119,15 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		const currentState = StateManager.getInstance().getState();
 		const baseVol = this.lastTargetVolume.get(actionId) ?? currentState.volume ?? 100;
 		const optimisticVolume = Math.min(100, Math.max(0, baseVol + ticks * step));
-		const valueText = currentState.muted ? "MUTED" : `${optimisticVolume}%`;
-		const indicatorValue = currentState.muted ? 0 : optimisticVolume;
 
-		try {
-			await action.setFeedback({
-				value: valueText,
-				indicator: indicatorValue,
-			});
-		} catch {}
+		await this.renderVolumeLcd(action, optimisticVolume, currentState.muted);
 	}
 
 	private async dispatchVolumeDelta(
 		action: WillAppearEvent<VolumeDialSettings>["action"],
 		actionId: string,
 		ticks: number,
+		alreadyRendered?: boolean,
 	): Promise<void> {
 		const settings = this.actionSettings.get(actionId) || {};
 		const step = Math.min(50, Math.max(1, settings.step || 5));
@@ -125,15 +136,8 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		const targetVol = Math.min(100, Math.max(0, baseVol + ticks * step));
 		this.lastTargetVolume.set(actionId, targetVol);
 
-		if (action.isDial()) {
-			const valueText = currentState.muted ? "MUTED" : `${targetVol}%`;
-			const indicatorValue = currentState.muted ? 0 : targetVol;
-			try {
-				await action.setFeedback({
-					value: valueText,
-					indicator: indicatorValue,
-				});
-			} catch {}
+		if (!alreadyRendered) {
+			await this.renderVolumeLcd(action, targetVol, currentState.muted);
 		}
 
 		WebSocketService.getInstance().sendCommand("setVolume", { volume: targetVol });

@@ -16,4 +16,8 @@ export class PreviousAction extends BaseStateAction {
 	protected calculateState(_state: YTMPlaybackState): number {
 		return 0;
 	}
+
+	protected override calculateNextState(_currentState: number): number {
+		return 0;
+	}
 }

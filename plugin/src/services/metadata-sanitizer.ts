@@ -26,6 +26,10 @@ const REGEX_LEADING_EXPLICIT = /^(E|\[E\])\s+/i;
 const REGEX_TRAILING_PUNCTUATION = /[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/;
 
 export class MetadataSanitizer {
+	private static lastRawArtist: string | null = null;
+	private static lastRawAlbum: string | null = null;
+	private static lastResult: { artist: string; extractedAlbum?: string } = { artist: "" };
+
 	/**
 	 * Clean up whitespace and special non-breaking spaces
 	 */
@@ -52,6 +56,10 @@ export class MetadataSanitizer {
 	): { artist: string; extractedAlbum?: string } {
 		if (!rawArtist || typeof rawArtist !== "string") {
 			return { artist: "" };
+		}
+
+		if (rawArtist === MetadataSanitizer.lastRawArtist && album === MetadataSanitizer.lastRawAlbum) {
+			return MetadataSanitizer.lastResult;
 		}
 
 		let cleanArtist = MetadataSanitizer.cleanWhitespace(rawArtist);
@@ -87,10 +95,16 @@ export class MetadataSanitizer {
 		cleanArtist = cleanArtist.replace(REGEX_LEADING_EXPLICIT, "").trim();
 		cleanArtist = cleanArtist.replace(REGEX_TRAILING_PUNCTUATION, "").trim();
 
-		return {
+		const result = {
 			artist: cleanArtist || rawArtist.trim(),
 			extractedAlbum: extractedAlbum || (cleanAlbum ? cleanAlbum : undefined),
 		};
+
+		MetadataSanitizer.lastRawArtist = rawArtist;
+		MetadataSanitizer.lastRawAlbum = album ?? null;
+		MetadataSanitizer.lastResult = result;
+
+		return result;
 	}
 
 	/**

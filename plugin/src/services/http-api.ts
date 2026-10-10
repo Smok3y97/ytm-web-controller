@@ -176,6 +176,10 @@ export class HttpApiService extends EventEmitter {
 		try {
 			const cached = this.overlayAssetCache.get(filePath);
 			if (cached) {
+				// Refresh position for true LRU cache eviction
+				this.overlayAssetCache.delete(filePath);
+				this.overlayAssetCache.set(filePath, cached);
+
 				res.writeHead(200, {
 					"Content-Type": cached.contentType,
 					"Cache-Control": "no-cache, no-store, must-revalidate",
@@ -197,6 +201,13 @@ export class HttpApiService extends EventEmitter {
 			else if (ext === ".ico") contentType = "image/x-icon";
 
 			const fileContent = await fs.promises.readFile(filePath);
+
+			// Evict oldest cached asset if upper memory bound is reached
+			if (this.overlayAssetCache.size >= 10) {
+				const oldestKey = this.overlayAssetCache.keys().next().value;
+				if (oldestKey) this.overlayAssetCache.delete(oldestKey);
+			}
+
 			this.overlayAssetCache.set(filePath, { buffer: fileContent, contentType });
 
 			res.writeHead(200, {

@@ -192,6 +192,10 @@ const REGEX_TRAILING_YEAR = /(?:[\s\u2022\u00B7·•\\-|]|\s+)\b(19|20)\d{2}\b$/
 const REGEX_LEADING_EXPLICIT = /^(E|\[E\])\s+/i;
 const REGEX_TRAILING_PUNCTUATION = /[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/;
 
+let lastSanitizedArtistRaw = null;
+let lastSanitizedAlbumRaw = null;
+let lastSanitizedResult = { artist: '', extractedAlbum: undefined };
+
 /**
  * Clean up raw artist string: separates combined bullet fragments, strips trailing release years,
  * explicit badges, and embedded album titles.
@@ -199,6 +203,10 @@ const REGEX_TRAILING_PUNCTUATION = /[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-
 function sanitizeArtist(rawArtist, album) {
   if (!rawArtist || typeof rawArtist !== 'string') {
     return { artist: '', extractedAlbum: undefined };
+  }
+
+  if (rawArtist === lastSanitizedArtistRaw && album === lastSanitizedAlbumRaw) {
+    return lastSanitizedResult;
   }
 
   let cleanArtist = cleanWhitespace(rawArtist);
@@ -226,10 +234,16 @@ function sanitizeArtist(rawArtist, album) {
   cleanArtist = cleanArtist.replace(REGEX_LEADING_EXPLICIT, '').trim();
   cleanArtist = cleanArtist.replace(REGEX_TRAILING_PUNCTUATION, '').trim();
 
-  return {
+  const result = {
     artist: cleanArtist || rawArtist.trim(),
     extractedAlbum: extractedAlbum || (cleanAlbum ? cleanAlbum : undefined)
   };
+
+  lastSanitizedArtistRaw = rawArtist;
+  lastSanitizedAlbumRaw = album || null;
+  lastSanitizedResult = result;
+
+  return result;
 }
 
 

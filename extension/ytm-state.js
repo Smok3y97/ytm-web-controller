@@ -496,7 +496,8 @@ function setupGlobalMediaListeners() {
       const isForce = pendingForce;
       pendingForce = false;
       mediaEventDebounceTimer = null;
-      notifyState(isForce);
+      const notify = window.YTM.utils?.notifyState || (typeof notifyState === 'function' ? notifyState : null);
+      notify?.(isForce);
     }, 25);
   };
 
@@ -537,7 +538,8 @@ function setupGlobalMediaListeners() {
     if (mutationDebounceTimer) return;
     mutationDebounceTimer = setTimeout(() => {
       mutationDebounceTimer = null;
-      notifyState(false);
+      const notify = window.YTM.utils?.notifyState || (typeof notifyState === 'function' ? notifyState : null);
+      notify?.(false);
     }, 60);
   };
 

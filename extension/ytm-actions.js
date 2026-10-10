@@ -249,8 +249,110 @@ function toggleRepeat() {
   triggerStateNotification([60, 200, 450]);
 }
 
+/**
+ * Dispatch and execute control command
+ */
+function dispatchCommand(message, directPayload) {
+  if (!message) return false;
+
+  try {
+    const command = typeof message === 'string' ? message : message.command;
+    const payload = directPayload || (typeof message === 'object' && message ? message.payload : {}) || {};
+    if (!command) return false;
+
+    switch (command) {
+      case 'playPause':
+        togglePlayPause();
+        return true;
+
+      case 'play':
+        playVideo();
+        return true;
+
+      case 'pause':
+        pauseVideo();
+        return true;
+
+      case 'next':
+        nextTrack();
+        return true;
+
+      case 'previous':
+        previousTrack();
+        return true;
+
+      case 'like':
+        toggleLike();
+        return true;
+
+      case 'dislike':
+        toggleDislike();
+        return true;
+
+      case 'shuffle':
+        toggleShuffle();
+        return true;
+
+      case 'repeat':
+        toggleRepeat();
+        return true;
+
+      case 'volumeUp':
+        adjustPlayerVolume(payload.step || 5);
+        return true;
+
+      case 'volumeDown':
+        adjustPlayerVolume(-(payload.step || 5));
+        return true;
+
+      case 'adjustVolume':
+        adjustPlayerVolume(payload.delta || 0);
+        return true;
+
+      case 'setVolume':
+        if (typeof payload.volume === 'number') {
+          setPlayerVolume(payload.volume);
+        }
+        return true;
+
+      case 'toggleMute':
+      case 'volumeMute':
+        togglePlayerMute();
+        return true;
+
+      case 'seek':
+      case 'seekRelative': {
+        const delta = typeof payload.seconds === 'number' ? payload.seconds : (typeof payload.delta === 'number' ? payload.delta : 0);
+        seekRelative(delta);
+        return true;
+      }
+
+      case 'seekTo': {
+        const time = typeof payload.time === 'number' ? payload.time : (typeof payload.seconds === 'number' ? payload.seconds : 0);
+        seekTo(time);
+        return true;
+      }
+
+      case 'focusTab':
+      case 'bringToFront':
+        try {
+          window.focus();
+          window.postMessage({ type: 'YTM_FOCUS_TAB' }, '*');
+        } catch { }
+        return true;
+
+      default:
+        return false;
+    }
+  } catch (err) {
+    console.error('[YTM Controller] Error executing command:', err);
+    return false;
+  }
+}
+
 // Export actions to YTM namespace
 window.YTM.actions = {
+  dispatchCommand,
   togglePlayPause,
   playVideo,
   pauseVideo,

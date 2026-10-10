@@ -5,6 +5,7 @@
  * push-jitter lock mechanism, and unified state rendering.
  */
 import {
+	type DialAction,
 	DialDownEvent,
 	DialUpEvent,
 	DidReceiveSettingsEvent,
@@ -31,6 +32,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	protected rotationStreamTimer: Map<string, NodeJS.Timeout> = new Map();
 	protected pendingTicks: Map<string, number> = new Map();
 	protected lastFeedbackTime: Map<string, number> = new Map();
+	protected lastCommandTime: Map<string, number> = new Map();
 	protected playbackTimer: NodeJS.Timeout | null = null;
 	protected renderDebounceTimer: NodeJS.Timeout | null = null;
 	protected lastRenderedValue: Map<string, string> = new Map();
@@ -76,6 +78,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		this.lastRenderedTitle.delete(id);
 		this.lastDialPressTime.delete(id);
 		this.lastFeedbackTime.delete(id);
+		this.lastCommandTime.delete(id);
 		this.pendingTicks.delete(id);
 		const timer = this.rotationTimer.get(id);
 		if (timer) {
@@ -154,6 +157,87 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	protected isPushJitterActive(actionId: string): boolean {
 		const pressTime = this.lastDialPressTime.get(actionId) || 0;
 		return Date.now() - pressTime < 250;
+	}
+
+	/**
+	 * Unified 10-Hz rotary streamer & settle controller for Stream Deck + dials
+	 */
+	protected async handleRotaryStream(
+		dialAction: DialAction<TSettings>,
+		ticksDelta: number,
+		handlers: {
+			renderOptimistic: (accumulatedTicks: number) => Promise<void> | void;
+			flush: (accumulatedTicks: number) => Promise<void> | void;
+			settle?: () => void;
+		},
+	): Promise<void> {
+		const actionId = dialAction.id;
+		if (this.isPushJitterActive(actionId)) return;
+
+		if (StateManager.getInstance().isVersionMismatch()) {
+			await dialAction.showAlert();
+			return;
+		}
+
+		const currentTicks = (this.pendingTicks.get(actionId) || 0) + ticksDelta;
+		this.pendingTicks.set(actionId, currentTicks);
+
+		const now = Date.now();
+		const lastCmd = this.lastCommandTime.get(actionId) || 0;
+
+		// 1. Optimistic LCD feedback (strictly rate-limited to <= 10 Hz)
+		const lastFeedback = this.lastFeedbackTime.get(actionId) || 0;
+		if (now - lastFeedback >= 100) {
+			this.lastFeedbackTime.set(actionId, now);
+			await handlers.renderOptimistic(currentTicks);
+		}
+
+		// 2. Dispatch command: if >= 100ms since last dispatch, flush immediately
+		const executeFlush = async () => {
+			const pending = this.pendingTicks.get(actionId) || 0;
+			if (pending === 0) return;
+			if (this.isPushJitterActive(actionId)) {
+				this.pendingTicks.set(actionId, 0);
+				return;
+			}
+			this.pendingTicks.set(actionId, 0);
+			this.lastCommandTime.set(actionId, Date.now());
+			await handlers.flush(pending);
+		};
+
+		if (now - lastCmd >= 100) {
+			await executeFlush();
+		} else if (!this.rotationStreamTimer.has(actionId)) {
+			// Start active 10-Hz interval streamer during continuous rotation
+			const streamTimer = setInterval(async () => {
+				await executeFlush();
+			}, 100);
+			this.rotationStreamTimer.set(actionId, streamTimer);
+		}
+
+		// 3. Trailing settle timer (110ms after last rotation detent)
+		const settleTimer = this.rotationTimer.get(actionId);
+		if (settleTimer) {
+			clearTimeout(settleTimer);
+		}
+		const newSettleTimer = setTimeout(async () => {
+			const activeStreamTimer = this.rotationStreamTimer.get(actionId);
+			if (activeStreamTimer) {
+				clearInterval(activeStreamTimer);
+				this.rotationStreamTimer.delete(actionId);
+			}
+			const activeSettleTimer = this.rotationTimer.get(actionId);
+			if (activeSettleTimer) {
+				clearTimeout(activeSettleTimer);
+				this.rotationTimer.delete(actionId);
+			}
+
+			await executeFlush();
+			if (handlers.settle) {
+				handlers.settle();
+			}
+		}, 110);
+		this.rotationTimer.set(actionId, newSettleTimer);
 	}
 
 	/**

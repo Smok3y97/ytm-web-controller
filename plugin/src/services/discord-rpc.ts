@@ -8,6 +8,7 @@ import { Client, type SetActivity, StatusDisplayType } from "@xhayper/discord-rp
 import { ActivityType } from "discord-api-types/v10";
 
 import { YTMPlaybackState } from "../types/index.js";
+import { MetadataSanitizer } from "./metadata-sanitizer.js";
 
 export const DEFAULT_DISCORD_CLIENT_ID = "1537908230209019954"; // YouTube Music Discord Client ID
 
@@ -142,7 +143,12 @@ export class DiscordRpcService {
 	private handleDisconnect(): void {
 		this.isConnected = false;
 		this.isConnecting = false;
-		this.client = null;
+		if (this.client) {
+			try {
+				this.client.destroy();
+			} catch {}
+			this.client = null;
+		}
 		this.lastCachedActivity = null;
 	}
 
@@ -247,46 +253,11 @@ export class DiscordRpcService {
 				return str;
 			};
 
-			// Clean artist and album strings
-			let cleanArtist = rawArtist.replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, " ").trim();
-			let cleanAlbum = rawAlbum.replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, " ").trim();
-
-			// Guard against view counts, upload dates, and non-album text strings in album field
-			if (cleanAlbum && this.isNonAlbumText(cleanAlbum)) {
-				cleanAlbum = "";
-			}
-
-			// Check if artist contains bullet separator (e.g. "Artist • Album" or "Artist • Views")
-			const bulletSplit = cleanArtist.split(/\s*[\u2022\u00B7·•|]\s*/);
-			if (bulletSplit.length > 1) {
-				cleanArtist = bulletSplit[0].trim();
-				if (!cleanAlbum && bulletSplit[1] && !this.isNonAlbumText(bulletSplit[1])) {
-					cleanAlbum = bulletSplit[1].trim();
-				}
-			}
-
-			// If album name is present as a standalone segment or whole word inside artist, strip it safely
-			if (cleanAlbum && cleanAlbum.length >= 3 && cleanArtist.length > cleanAlbum.length) {
-				const escapedAlbum = cleanAlbum.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-				cleanArtist = cleanArtist
-					.replace(
-						new RegExp(
-							`(^|\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+)${escapedAlbum}(\\s*[\\u2022\\u00B7·•\\-|]\\s*|\\s+|$)`,
-							"gi",
-						),
-						"$1",
-					)
-					.trim();
-			}
-
-			// Strip trailing 4-digit release years at the very end of string
-			cleanArtist = cleanArtist.replace(/(?:[\s\u2022\u00B7·•\\-|]|\s+)\b(19|20)\d{2}\b$/g, "").trim();
-			cleanArtist = cleanArtist.replace(/^(E|\[E\])\s+/i, "").trim();
-			cleanArtist = cleanArtist.replace(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•\-,|\s]+$/, "").trim();
-			if (!cleanArtist) cleanArtist = rawArtist;
-
-			const albumDisplayText = cleanAlbum || "";
-			const albumUrlToUse = cleanAlbum ? albumUrl || "" : "";
+			// Clean artist and album strings via centralized MetadataSanitizer
+			const { artist: cleanArtist, extractedAlbum } = MetadataSanitizer.sanitizeArtist(rawArtist, rawAlbum);
+			const albumDisplayText =
+				extractedAlbum || (rawAlbum && !MetadataSanitizer.isNonAlbumText(rawAlbum) ? rawAlbum.trim() : "");
+			const albumUrlToUse = albumDisplayText ? albumUrl || "" : "";
 
 			// Check if update is redundant (to prevent Discord RPC rate-limiting)
 			if (!force && this.lastCachedActivity) {
@@ -384,66 +355,5 @@ export class DiscordRpcService {
 			const errMsg = err instanceof Error ? err.message : String(err);
 			streamDeck.logger.warn(`[Discord RPC] Error setting presence: ${errMsg}`);
 		}
-	}
-
-	/**
-	 * Determine if a text fragment represents non-album metadata (view count, upload date, year, likes, etc.)
-	 */
-	private isNonAlbumText(text: string): boolean {
-		if (!text || typeof text !== "string") return true;
-		const s = text.trim();
-		if (!s) return true;
-
-		// 1. Year only (e.g. "2024", "1998")
-		if (/^\d{4}$/.test(s)) return true;
-
-		// 2. Explicit / parental badge
-		if (/^(e|\[e\])$/i.test(s)) return true;
-
-		// 3. Time duration format (e.g. "3:45", "01:23:45")
-		if (/^\d+:\d+(?::\d+)?$/.test(s)) return true;
-
-		// 4. Track count format (e.g. "12 tracks", "10 Titel", "8 morceaux", "15 canciones")
-		if (/^\d+\s*(?:tracks?|titel|songs?|morceaux|canciones|brani|трек\w*|піс\w*)$/i.test(s)) return true;
-
-		const hasDigits = /\d/.test(s);
-
-		// 5. View count patterns across all YouTube languages
-		const hasViewKeyword =
-			/(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)/i.test(
-				s,
-			);
-		if (hasDigits && hasViewKeyword) return true;
-
-		// 6. Relative upload times across languages
-		const hasTimeKeyword =
-			/(?:^vor\s|\bago$|^il y a\b|^hace\s|^há\s|\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\s|^pred\s|^acum\s|^πριν\s|^pre\s|לפني|قبل|trước$|ที่แล้ว$|年前|前$|전$)/i.test(
-				s,
-			);
-		if (hasTimeKeyword) return true;
-
-		// 7. Date units with digits (e.g. "3 Jahre", "5 months", "2 days", etc.)
-		const hasDateUnit =
-			/(?:year|jahr|ans?|año|anno|год|лет|рок|month|monat|mois|mes|mese|месяц|місяц|week|woche|semaine|semana|settiman|недел|тижд|day|tag|jour|día|giorno|день|дней|днів|hour|stunde|heure|hora|ora|час|minute|минут|хвилин)/i.test(
-				s,
-			);
-		if (
-			hasDigits &&
-			hasDateUnit &&
-			/(?:vor|ago|hace|há|fa|назад|тому|önce|temu|előtt|sedan|siden|sitten|yang lalu|před|pred|acum|πριν|pre|לפني|قبل|trước|ที่แล้ว)/i.test(
-				s,
-			)
-		) {
-			return true;
-		}
-
-		// 8. Like / reaction / subscriber counts
-		const hasLikeKeyword =
-			/(?:like|gefällt|gusta|j'aime|mi piace|лайк|좋아요|讚|赞|subscribers?|abonnenten?|abonnés?|suscriptores?|iscritti)/i.test(
-				s,
-			);
-		if (hasDigits && hasLikeKeyword) return true;
-
-		return false;
 	}
 }

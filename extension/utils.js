@@ -130,11 +130,22 @@ function notifyState(force = false, delays = []) {
 }
 
 
+const REGEX_WHITESPACE = /[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g;
+const REGEX_YEAR = /^\d{4}$/;
+const REGEX_EXPLICIT = /^(e|\[e\])$/i;
+const REGEX_TIME_DURATION = /^\d+:\d+(?::\d+)?$/;
+const REGEX_TRACK_COUNT = /^\d+\s*(?:tracks?|titel|songs?|morceaux|canciones|brani|трек\w*|піс\w*)$/i;
+const REGEX_VIEW_KEYWORD = /(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)/i;
+const REGEX_TIME_KEYWORD = /(?:^vor\s|\bago$|^il y a\b|^hace\s|^há\s|\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\s|^pred\s|^acum\s|^πριν\s|^pre\s|לפני|قبل|trước$|ที่แล้ว$|年前|前$|전$)/i;
+const REGEX_DATE_UNIT = /(?:year|jahr|ans?|año|anno|год|лет|рок|month|monat|mois|mes|mese|месяц|місяц|week|woche|semaine|semana|settiman|недел|тижд|day|tag|jour|día|giorno|день|дней|днів|hour|stunde|heure|hora|ora|час|minute|минут|хвилин)/i;
+const REGEX_RELATIVE_PAST = /(?:vor|ago|hace|há|fa|назад|тому|önce|temu|előtt|sedan|siden|sitten|yang lalu|před|pred|acum|πριν|pre|לפני|قبل|trước|ที่แล้ว)/i;
+const REGEX_LIKE_KEYWORD = /(?:like|gefällt|gusta|j'aime|mi piace|лайк|좋아요|讚|赞|subscribers?|abonnenten?|abonnés?|suscriptores?|iscritti)/i;
+
 /**
  * Normalize whitespace and special spaces
  */
 function cleanWhitespace(str) {
-  return (str || '').replace(/[\s\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/g, ' ').trim();
+  return (str || '').replace(REGEX_WHITESPACE, ' ').trim();
 }
 
 /**
@@ -146,36 +157,32 @@ function isNonAlbumText(text) {
   if (!s) return true;
 
   // 1. Year only (e.g. "2024", "1998")
-  if (/^\d{4}$/.test(s)) return true;
+  if (REGEX_YEAR.test(s)) return true;
 
   // 2. Explicit / parental badge
-  if (/^(e|\[e\])$/i.test(s)) return true;
+  if (REGEX_EXPLICIT.test(s)) return true;
 
   // 3. Time duration format (e.g. "3:45", "01:23:45")
-  if (/^\d+:\d+(?::\d+)?$/.test(s)) return true;
+  if (REGEX_TIME_DURATION.test(s)) return true;
 
   // 4. Track count format (e.g. "12 tracks", "10 Titel", "8 morceaux", "15 canciones")
-  if (/^\d+\s*(?:tracks?|titel|songs?|morceaux|canciones|brani|трек\w*|піс\w*)$/i.test(s)) return true;
+  if (REGEX_TRACK_COUNT.test(s)) return true;
 
   const hasDigits = /\d/.test(s);
 
   // 5. View count patterns across all YouTube languages
-  const hasViewKeyword = /(?:aufruf|view|vue|visualiza|visualizz|просмотр|перегляд|wyświetle|görüntüleme|weergaven|visning|katselukert|zhlédnut|zhliadnut|megtekintés|vizionar|προβολ|pregled|צפי|مشاهد|ditonton|lượt\s*xem|回視聴|次观看|次觀看|조회|ครั้ง)/i.test(s);
-  if (hasDigits && hasViewKeyword) return true;
+  if (hasDigits && REGEX_VIEW_KEYWORD.test(s)) return true;
 
   // 6. Relative upload times across languages
-  const hasTimeKeyword = /(?:^vor\s|\bago$|^il y a\b|^hace\s|^há\s|\bfa$|назад$|тому$|önce$|temu$|előtt$|sedan$|siden$|sitten$|yang lalu$|^před\s|^pred\s|^acum\s|^πριν\s|^pre\s|לפני|قبل|trước$|ที่แล้ว$|年前|前$|전$)/i.test(s);
-  if (hasTimeKeyword) return true;
+  if (REGEX_TIME_KEYWORD.test(s)) return true;
 
   // 7. Date units with digits (e.g. "3 Jahre", "5 months", "2 days", etc.)
-  const hasDateUnit = /(?:year|jahr|ans?|año|anno|год|лет|рок|month|monat|mois|mes|mese|месяц|місяц|week|woche|semaine|semana|settiman|недел|тижд|day|tag|jour|día|giorno|день|дней|днів|hour|stunde|heure|hora|ora|час|minute|минут|хвилин)/i.test(s);
-  if (hasDigits && hasDateUnit && /(?:vor|ago|hace|há|fa|назад|тому|önce|temu|előtt|sedan|siden|sitten|yang lalu|před|pred|acum|πριν|pre|לפני|قبل|trước|ที่แล้ว)/i.test(s)) {
+  if (hasDigits && REGEX_DATE_UNIT.test(s) && REGEX_RELATIVE_PAST.test(s)) {
     return true;
   }
 
   // 8. Like / reaction / subscriber counts (e.g. "500k likes", "12 Tsd. Gefällt mir", "1.2M subscribers")
-  const hasLikeKeyword = /(?:like|gefällt|gusta|j'aime|mi piace|лайк|좋아요|讚|赞|subscribers?|abonnenten?|abonnés?|suscriptores?|iscritti)/i.test(s);
-  if (hasDigits && hasLikeKeyword) return true;
+  if (hasDigits && REGEX_LIKE_KEYWORD.test(s)) return true;
 
   return false;
 }

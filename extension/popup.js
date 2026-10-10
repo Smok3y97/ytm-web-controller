@@ -20,19 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const mismatchBanner = document.getElementById('mismatch-banner');
   const mismatchText = document.getElementById('mismatch-text');
 
-  function compareVersions(v1, v2) {
-    const parts1 = (v1 || '').split('.').map((p) => parseInt(p, 10) || 0);
-    const parts2 = (v2 || '').split('.').map((p) => parseInt(p, 10) || 0);
-    const maxLen = Math.max(parts1.length, parts2.length, 4);
-
-    for (let i = 0; i < maxLen; i++) {
-      const n1 = parts1[i] || 0;
-      const n2 = parts2[i] || 0;
-      if (n1 > n2) return 1;
-      if (n1 < n2) return -1;
-    }
-    return 0;
-  }
+  const compareVersions = window.YTM?.utils?.compareVersions || ((v1, v2) => 0);
+  const detectBrowserPlatform = window.YTM?.utils?.detectBrowserPlatform || (() => 'browser');
 
   function getManifestVersion() {
     try {
@@ -52,18 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) { }
     return '';
-  }
-
-  function detectBrowserPlatform() {
-    const ua = (navigator.userAgent || '').toLowerCase();
-    if (ua.includes('firefox') || ua.includes('fxios')) return 'firefox';
-    if (ua.includes('edg/') || ua.includes('edge/')) return 'edge';
-    if (navigator.brave && typeof navigator.brave.isBrave === 'function') return 'brave';
-    if (ua.includes('opr/') || ua.includes('opera')) return 'opera';
-    if (ua.includes('vivaldi')) return 'vivaldi';
-    if (ua.includes('chrome') || ua.includes('crios')) return 'chromium';
-    if (ua.includes('safari')) return 'safari';
-    return 'browser';
   }
 
   if (versionText) {

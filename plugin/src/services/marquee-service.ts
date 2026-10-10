@@ -28,12 +28,15 @@ export function estimateTextWidthPx(text: string): number {
 }
 
 export function findMaxMarqueeOffset(fullText: string, maxPx: number = MAX_LCD_PIXEL_WIDTH): number {
-	if (!fullText || estimateTextWidthPx(fullText) <= maxPx) {
+	if (!fullText) return 0;
+	let remainingWidth = estimateTextWidthPx(fullText);
+	if (remainingWidth <= maxPx) {
 		return 0;
 	}
-	for (let offset = 0; offset < fullText.length; offset++) {
-		if (estimateTextWidthPx(fullText.substring(offset)) <= maxPx) {
-			return offset;
+	for (let offset = 0; offset < fullText.length - 1; offset++) {
+		remainingWidth -= estimateCharWidthPx(fullText[offset]);
+		if (remainingWidth <= maxPx) {
+			return offset + 1;
 		}
 	}
 	return Math.max(0, fullText.length - 1);

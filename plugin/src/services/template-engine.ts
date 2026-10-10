@@ -25,6 +25,33 @@ export class TemplateEngine {
 	}
 
 	/**
+	 * Format remaining track time as string (e.g. "-2:45")
+	 */
+	private static formatRemainingTime(currentTime: number, duration: number, fallbackCurrentStr?: string): string {
+		if (duration > 0) {
+			const effectiveCurrent = Math.min(duration, Math.max(0, currentTime));
+			const remainingSeconds = Math.max(0, duration - effectiveCurrent);
+			return "-" + TemplateEngine.formatTime(remainingSeconds);
+		}
+		if (currentTime > 0) {
+			return fallbackCurrentStr || TemplateEngine.formatTime(currentTime);
+		}
+		return "-0:00";
+	}
+
+	/**
+	 * Strip empty brackets, collapse whitespace, and trim dangling leading/trailing separators
+	 */
+	private static cleanDanglingSeparators(text: string): string {
+		return text
+			.replace(/\(\s*\)/g, "")
+			.replace(/\[\s*\]/g, "")
+			.replace(/^[\s\-–—•|:]+/, "")
+			.replace(/[\s\-–—•|:]+$/, "")
+			.trim();
+	}
+
+	/**
 	 * Render custom title template with placeholders: {artist}, {title}, {album}
 	 */
 	public static formatTitleTemplate(
@@ -46,19 +73,10 @@ export class TemplateEngine {
 			.replace(/{(artist|kuenstler|künstler|interpret|author|channel)}/gi, artistStr)
 			.replace(/{(album)}/gi, albumStr);
 
-		// Clean up empty parentheses/brackets if album or variable was empty: e.g. " ()", " []"
-		output = output.replace(/\(\s*\)/g, "").replace(/\[\s*\]/g, "");
-
 		// Collapse multiple spaces
-		output = output.replace(/\s+/g, " ").trim();
+		output = output.replace(/\s+/g, " ");
 
-		// Clean up dangling leading or trailing dashes / separators
-		output = output
-			.replace(/^[\s\-–—•|:]+/, "")
-			.replace(/[\s\-–—•|:]+$/, "")
-			.trim();
-
-		return output || "No Media";
+		return TemplateEngine.cleanDanglingSeparators(output) || "No Media";
 	}
 
 	/**
@@ -78,15 +96,7 @@ export class TemplateEngine {
 		const currentStr = TemplateEngine.formatTime(currentTime);
 		const durationStr = TemplateEngine.formatTime(duration);
 		const bothStr = `${currentStr} / ${durationStr}`;
-
-		let remainingStr = "-0:00";
-		if (duration > 0) {
-			const effectiveCurrent = Math.min(duration, Math.max(0, currentTime));
-			const remainingSeconds = Math.max(0, duration - effectiveCurrent);
-			remainingStr = "-" + TemplateEngine.formatTime(remainingSeconds);
-		} else if (currentTime > 0) {
-			remainingStr = currentStr;
-		}
+		const remainingStr = TemplateEngine.formatRemainingTime(currentTime, duration, currentStr);
 
 		return (template || "{remaining}")
 			.replace(/{(both|current_duration|current_and_duration|beides)}/gi, bothStr)
@@ -115,15 +125,7 @@ export class TemplateEngine {
 		const durationStr = TemplateEngine.formatTime(state.duration);
 		const currentStr = TemplateEngine.formatTime(currentTime);
 		const bothStr = `${currentStr} / ${durationStr}`;
-
-		let remainingStr = "-0:00";
-		if (state.duration > 0) {
-			const effectiveCurrent = Math.min(state.duration, Math.max(0, currentTime));
-			const remainingSeconds = Math.max(0, state.duration - effectiveCurrent);
-			remainingStr = "-" + TemplateEngine.formatTime(remainingSeconds);
-		} else if (currentTime > 0) {
-			remainingStr = currentStr;
-		}
+		const remainingStr = TemplateEngine.formatRemainingTime(currentTime, state.duration, currentStr);
 
 		let output = rawTemplate
 			.replace(/\\n/g, "\n")
@@ -136,18 +138,12 @@ export class TemplateEngine {
 			.replace(/{(currentTime|current|current_time|aktuell|zeit|elapsed|time)}/gi, currentStr)
 			.replace(/{(remaining|remainingTime|remaining_time|rest|restzeit|left)}/gi, remainingStr);
 
-		output = output.replace(/\(\s*\)/g, "").replace(/\[\s*\]/g, "");
 		output = output
 			.split("\n")
 			.map((line) => line.replace(/[^\S\r\n]+/g, " ").trim())
-			.join("\n")
-			.trim();
-		output = output
-			.replace(/^[\s\-–—•|:]+/, "")
-			.replace(/[\s\-–—•|:]+$/, "")
-			.trim();
+			.join("\n");
 
-		return output;
+		return TemplateEngine.cleanDanglingSeparators(output);
 	}
 
 	/**

@@ -173,116 +173,22 @@ function handleCommand(message) {
 
   try {
     const command = typeof message === 'string' ? message : message.command;
-    const payload = (typeof message === 'object' && message ? message.payload : {}) || {};
     if (!command) return;
 
-    const actions = window.YTM.actions || {};
+    // Transport-level state synchronization
+    if (command === 'requestState') {
+      lastSentState = {};
+      sendState(true);
+      scheduleStateUpdates([50, 200]);
+      return;
+    }
 
-    switch (command) {
-      case 'playPause': {
-        actions.togglePlayPause?.();
-        break;
-      }
+    // Delegate player control commands to Action Orchestrator
+    const dispatcher = window.YTM.actions?.dispatchCommand || (typeof dispatchCommand === 'function' ? dispatchCommand : null);
+    const handled = dispatcher ? dispatcher(message) : false;
 
-      case 'play': {
-        actions.playVideo?.();
-        break;
-      }
-
-      case 'pause': {
-        actions.pauseVideo?.();
-        break;
-      }
-
-      case 'next': {
-        actions.nextTrack?.();
-        break;
-      }
-
-      case 'previous': {
-        actions.previousTrack?.();
-        break;
-      }
-
-      case 'like': {
-        actions.toggleLike?.();
-        break;
-      }
-
-      case 'dislike': {
-        actions.toggleDislike?.();
-        break;
-      }
-
-      case 'shuffle': {
-        actions.toggleShuffle?.();
-        break;
-      }
-
-      case 'repeat': {
-        actions.toggleRepeat?.();
-        break;
-      }
-
-      case 'volumeUp': {
-        actions.adjustPlayerVolume?.(payload.step || 5);
-        break;
-      }
-
-      case 'volumeDown': {
-        actions.adjustPlayerVolume?.(-(payload.step || 5));
-        break;
-      }
-
-      case 'adjustVolume': {
-        actions.adjustPlayerVolume?.(payload.delta || 0);
-        break;
-      }
-
-      case 'setVolume': {
-        if (typeof payload.volume === 'number') {
-          actions.setPlayerVolume?.(payload.volume);
-        }
-        break;
-      }
-
-      case 'toggleMute':
-      case 'volumeMute': {
-        actions.togglePlayerMute?.();
-        break;
-      }
-
-      case 'seek':
-      case 'seekRelative': {
-        const delta = typeof payload.seconds === 'number' ? payload.seconds : (typeof payload.delta === 'number' ? payload.delta : 0);
-        actions.seekRelative?.(delta);
-        break;
-      }
-
-      case 'seekTo': {
-        const time = typeof payload.time === 'number' ? payload.time : (typeof payload.seconds === 'number' ? payload.seconds : 0);
-        actions.seekTo?.(time);
-        break;
-      }
-
-      case 'requestState': {
-        lastSentState = {};
-        sendState(true);
-        scheduleStateUpdates([50, 200]);
-        break;
-      }
-
-      case 'focusTab':
-      case 'bringToFront': {
-        try {
-          window.focus();
-          window.postMessage({ type: 'YTM_FOCUS_TAB' }, '*');
-        } catch { }
-        break;
-      }
-
-      default:
-        console.warn('[YTM Controller] Unknown command:', command);
+    if (!handled) {
+      console.warn('[YTM Controller] Unknown command:', command);
     }
   } catch (err) {
     console.error('[YTM Controller] Error executing command:', err);
@@ -295,7 +201,8 @@ function handleCommand(message) {
 function sendHandshake(version) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
   const extVersion = version || bridgeVersion || '';
-  const platform = detectBrowserPlatform();
+  const getPlatform = window.YTM.utils?.detectBrowserPlatform || (typeof detectBrowserPlatform === 'function' ? detectBrowserPlatform : () => 'browser');
+  const platform = getPlatform();
   try {
     ws.send(JSON.stringify({
       type: 'handshake',
@@ -312,7 +219,8 @@ function sendHandshake(version) {
 function registerClient(version) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
   const extVersion = version || bridgeVersion || '';
-  const platform = detectBrowserPlatform();
+  const getPlatform = window.YTM.utils?.detectBrowserPlatform || (typeof detectBrowserPlatform === 'function' ? detectBrowserPlatform : () => 'browser');
+  const platform = getPlatform();
   try {
     const msPlaying = window.YTM.mediaSession?.getPlaybackState?.() === 'playing';
     const video = (typeof findVideoElement === 'function' ? findVideoElement() : null) || window.YTM?.utils?.findVideoElement?.();
@@ -374,27 +282,29 @@ function connectWebSocket(port) {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        const cmpVersions = window.YTM.utils?.compareVersions || (typeof compareVersions === 'function' ? compareVersions : () => 0);
+        const reportStatus = window.YTM.utils?.reportMismatchStatus || (typeof reportMismatchStatus === 'function' ? reportMismatchStatus : () => {});
 
         if (data.type === 'handshake_ack') {
-          const comp = compareVersions(bridgeVersion, data.version);
+          const comp = cmpVersions(bridgeVersion, data.version);
           if (comp === 0) {
             console.info('[YTM Controller] 🟢 Handshake ACK received (Plugin v%s)', data.version);
-            reportMismatchStatus(false);
+            reportStatus(false);
             sendState(true);
             scheduleStateUpdates([50, 200]);
           } else if (comp > 0) {
             console.warn('[YTM Controller] ⚠️ Plugin is older than Extension (Plugin v%s, Extension v%s)', data.version, bridgeVersion);
-            reportMismatchStatus(true, bridgeVersion, data.version, `Stream Deck Plugin (v${data.version}) is outdated!`);
+            reportStatus(true, bridgeVersion, data.version, `Stream Deck Plugin (v${data.version}) is outdated!`);
           } else {
             console.warn('[YTM Controller] ⚠️ Extension is older than Plugin (Extension v%s, Plugin v%s)', bridgeVersion, data.version);
-            reportMismatchStatus(true, data.version, data.version, `Browser Extension (v${bridgeVersion}) is outdated!`);
+            reportStatus(true, data.version, data.version, `Browser Extension (v${bridgeVersion}) is outdated!`);
           }
           return;
         }
 
         if (data.type === 'version_mismatch') {
           console.warn(`[YTM Controller] ⚠️ Version mismatch from Stream Deck Plugin:`, data);
-          reportMismatchStatus(true, data.requiredPluginVersion, data.currentPluginVersion, data.message);
+          reportStatus(true, data.requiredPluginVersion, data.currentPluginVersion, data.message);
           return;
         }
 

@@ -8,7 +8,7 @@ This directory houses specialized agentic workflow skills for Google Antigravity
 
 | Skill | Slash Command | Category | Primary Purpose | When to Use |
 | :--- | :--- | :--- | :--- | :--- |
-| [**`code-audit`**](skills/code-audit/SKILL.md) | `/code-audit` | Quality & Performance | Read-only architectural, memory, SRP, and performance audit. | Inspect bottlenecks, hardware throttle limits (10 Hz), or review code without modifications. |
+| [**`code-audit`**](skills/code-audit/SKILL.md) | `/code-audit [scope]` | Quality & Performance | Scoped read-only architectural, memory, and performance audit (`plugin`, `extension`, `diff`, `all`). | Inspect bottlenecks, throttle limits (10 Hz), or review code with strict token boundaries. |
 | [**`create-pr`**](skills/create-pr/SKILL.md) | `/create-pr` | Git & Release | Pre-flight quality gates, semantic branch creation, and PR opening via `gh`. | When code changes, bugfixes, or documentation edits are finished and ready for review. |
 | [**`publish-release`**](skills/publish-release/SKILL.md) | `/publish-release` | Git & Release | Central 4-digit version bump (`npm run bump`), manifest sync, and git release tagging. | When publishing a new version to trigger the automated GitHub Actions release workflow. |
 | [**`generate-assets`**](skills/generate-assets/SKILL.md) | `/generate-assets` | Assets & Compliance | Rebuild vector SVGs and PNG badges; validate against Elgato Marketplace guidelines. | When icons, dial layouts, or branding assets are modified or re-rendered. |

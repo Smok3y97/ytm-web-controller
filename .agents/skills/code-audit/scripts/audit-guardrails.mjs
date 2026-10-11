@@ -6,16 +6,48 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../../..');
 
+// Parse CLI scope: plugin | extension | diff | all
+const args = process.argv.slice(2);
+let scope = 'all';
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--scope' && args[i + 1]) {
+    scope = args[i + 1].toLowerCase();
+    i++;
+  } else if (['plugin', 'extension', 'diff', 'all'].includes(args[i].toLowerCase())) {
+    scope = args[i].toLowerCase();
+  }
+}
+
+let diffFiles = [];
+if (scope === 'diff') {
+  try {
+    const { execSync } = await import('node:child_process');
+    const branchDiff = execSync('git diff --name-only origin/main...HEAD', { cwd: ROOT_DIR, encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+    const uncommittedDiff = execSync('git status --porcelain', { cwd: ROOT_DIR, encoding: 'utf8' }).trim().split('\n').filter(Boolean).map(line => line.slice(3).trim());
+    diffFiles = Array.from(new Set([...branchDiff, ...uncommittedDiff])).map(f => f.replace(/\\/g, '/'));
+  } catch {
+    diffFiles = [];
+  }
+}
+
 let errorCount = 0;
 let warningCount = 0;
 
-console.log('🛡️ Auditing project guardrails and architectural constraints...\n');
+console.log(`🛡️ Auditing project guardrails and architectural constraints (Scope: ${scope})...\n`);
+
+const shouldCheckExtension = scope === 'all' || scope === 'extension' || (scope === 'diff' && diffFiles.some(f => f.startsWith('extension/')));
+const shouldCheckPlugin = scope === 'all' || scope === 'plugin' || (scope === 'diff' && diffFiles.some(f => f.startsWith('plugin/src/')));
+const shouldCheckPatterns = scope === 'all' || scope === 'plugin' || scope === 'extension' || (scope === 'diff' && diffFiles.some(f => f.startsWith('shared/') || f.includes('patterns')));
+
+const extensionDir = path.join(ROOT_DIR, 'extension');
 
 // 1. Zero Polling Overhead (extension/content.js and extension/ytm-*.js)
-console.log('📌 1. Verifying Zero Polling Overhead in Browser Extension...');
-const extensionDir = path.join(ROOT_DIR, 'extension');
-if (fs.existsSync(extensionDir)) {
-  const extFiles = fs.readdirSync(extensionDir).filter(f => f.endsWith('.js') && f !== 'background.js');
+if (shouldCheckExtension && fs.existsSync(extensionDir)) {
+  console.log('📌 1. Verifying Zero Polling Overhead in Browser Extension...');
+  let extFiles = fs.readdirSync(extensionDir).filter(f => f.endsWith('.js') && f !== 'background.js');
+  if (scope === 'diff') {
+    extFiles = extFiles.filter(f => diffFiles.includes(`extension/${f}`));
+  }
   for (const file of extFiles) {
     const fullPath = path.join(extensionDir, file);
     const content = fs.readFileSync(fullPath, 'utf8');
@@ -33,10 +65,13 @@ if (fs.existsSync(extensionDir)) {
 }
 
 // 2. Context Isolation (MAIN vs ISOLATED World)
-console.log('📌 2. Verifying Context Isolation Boundaries...');
-if (fs.existsSync(extensionDir)) {
+if (shouldCheckExtension && fs.existsSync(extensionDir)) {
+  console.log('📌 2. Verifying Context Isolation Boundaries...');
   // MAIN World files must NEVER access chrome.* APIs
-  const mainWorldFiles = fs.readdirSync(extensionDir).filter(f => f.startsWith('ytm-') || f === 'content.js');
+  let mainWorldFiles = fs.readdirSync(extensionDir).filter(f => f.startsWith('ytm-') || f === 'content.js');
+  if (scope === 'diff') {
+    mainWorldFiles = mainWorldFiles.filter(f => diffFiles.includes(`extension/${f}`));
+  }
   for (const file of mainWorldFiles) {
     const fullPath = path.join(extensionDir, file);
     const content = fs.readFileSync(fullPath, 'utf8');
@@ -53,7 +88,7 @@ if (fs.existsSync(extensionDir)) {
 
   // ISOLATED World (bridge.js) must NEVER query player DOM elements directly
   const bridgePath = path.join(extensionDir, 'bridge.js');
-  if (fs.existsSync(bridgePath)) {
+  if (fs.existsSync(bridgePath) && (scope !== 'diff' || diffFiles.includes('extension/bridge.js'))) {
     const bridgeContent = fs.readFileSync(bridgePath, 'utf8');
     const bridgeLines = bridgeContent.split('\n');
     for (let i = 0; i < bridgeLines.length; i++) {
@@ -68,7 +103,6 @@ if (fs.existsSync(extensionDir)) {
 }
 
 // 3. Strict Typing Discipline in plugin/src/
-console.log('📌 3. Verifying TypeScript Typing Discipline in plugin/src/...');
 function getTsFiles(dir) {
   const results = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -84,8 +118,15 @@ function getTsFiles(dir) {
 }
 
 const pluginSrcDir = path.join(ROOT_DIR, 'plugin/src');
-if (fs.existsSync(pluginSrcDir)) {
-  const tsFiles = getTsFiles(pluginSrcDir);
+if (shouldCheckPlugin && fs.existsSync(pluginSrcDir)) {
+  console.log('📌 3. Verifying TypeScript Typing Discipline in plugin/src/...');
+  let tsFiles = getTsFiles(pluginSrcDir);
+  if (scope === 'diff') {
+    tsFiles = tsFiles.filter(f => {
+      const relPath = path.relative(ROOT_DIR, f).replace(/\\/g, '/');
+      return diffFiles.includes(relPath);
+    });
+  }
   for (const file of tsFiles) {
     const relPath = path.relative(ROOT_DIR, file).replace(/\\/g, '/');
     const content = fs.readFileSync(file, 'utf8');
@@ -114,13 +155,13 @@ if (fs.existsSync(pluginSrcDir)) {
 }
 
 // 4. Synchronized Metadata Patterns (SSOT: shared/metadata-patterns.json)
-console.log('📌 4. Verifying Metadata Patterns Synchronization...');
 const syncScriptPath = path.join(ROOT_DIR, 'scripts/sync-patterns.mjs');
-if (fs.existsSync(syncScriptPath)) {
+if (shouldCheckPatterns && fs.existsSync(syncScriptPath)) {
+  console.log('📌 4. Verifying Metadata Patterns Synchronization...');
   try {
     const { execFileSync } = await import('node:child_process');
     execFileSync(process.execPath, [syncScriptPath, '--check'], { stdio: 'pipe' });
-  } catch (err) {
+  } catch {
     console.error('  ❌ Generated pattern files are out of date! Run "npm run sync:patterns" to synchronize.');
     errorCount++;
   }

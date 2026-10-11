@@ -33,6 +33,8 @@ Consult the specialized documentation before modifying components:
 
 ## 💬 3. Code Style & Commenting
 
+- **No Unnecessary Restyling (Minimal Diff Footprint):** Never reformat, reorder, or cosmetically restyle working code unrelated to the active task. Avoid subjective rewrites (e.g. converting arrow functions to function declarations, arbitrary variable renames, or whitespace churning outside touched lines). Keep git diffs strictly focused on functional requirements.
+- **Preserve Existing Comments & Idioms:** Retain surrounding comments and established code patterns. Never delete or rewrite valid comments unless they become factually obsolete due to the change.
 - **Intent Over Syntax ("Why over What"):** Explain *why* a particular branch, fallback, or guard exists. Avoid narrating obvious syntax.
 - **Document Quirks & Workarounds:** Explicitly document mitigations for YouTube Music DOM mutations, Sandboxing/MAIN-world isolation, and Stream Deck SDK quirks.
 - **Visual Section Separators:** Use concise single-line comment anchors above major logical phases.

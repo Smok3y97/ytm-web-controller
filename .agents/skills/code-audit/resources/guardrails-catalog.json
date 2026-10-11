@@ -5,6 +5,7 @@
     {
       "id": "zero-polling",
       "name": "Zero Polling Overhead",
+      "scope": "extension",
       "severity": "critical",
       "description": "Never introduce setInterval() or polling loops in extension/content.js or ytm-*.js. State extraction must be strictly reactive via HTML5 <video> events and scoped MutationObserver callbacks.",
       "target_paths": ["extension/content.js", "extension/ytm-*.js"]
@@ -12,27 +13,79 @@
     {
       "id": "context-isolation",
       "name": "Context Isolation Boundary",
+      "scope": "extension",
       "severity": "critical",
       "description": "MAIN World scripts (content.js, ytm-*.js) have zero access to chrome.* APIs. ISOLATED World (bridge.js) has zero access to YouTube DOM or #movie_player. Communication is strictly bidirectional via window.postMessage.",
       "target_paths": ["extension/**"]
     },
     {
-      "id": "in-memory-rendering",
-      "name": "In-Memory Asset Pipeline",
+      "id": "bfcache-teardown",
+      "name": "BFCache & Lifecycle Teardown",
+      "scope": "extension",
+      "severity": "critical",
+      "description": "Ensure full MutationObserver and EventListener teardown on tab unload (beforeunload/pagehide) and clean BFCache freeze/resume handling to prevent memory leaks in long sessions.",
+      "target_paths": ["extension/**"]
+    },
+    {
+      "id": "websocket-reconnect-guard",
+      "name": "WebSocket Hygiene & Loop Prevention",
+      "scope": "extension",
+      "severity": "critical",
+      "description": "Guard WebSocket reconnection loops with isTabClosing flag on tab unload. Provide prompt heartbeat ping/pong responses.",
+      "target_paths": ["extension/bridge.js", "extension/popup.js"]
+    },
+    {
+      "id": "scrubbing-dom-cache",
+      "name": "Scrubbing DOM Query Avoidance",
+      "scope": "extension",
       "severity": "high",
-      "description": "Album cover art, thumbnails, and dynamic canvas drawings must remain strictly in RAM as Base64 Data URLs. Never write intermediate image assets to disk.",
-      "target_paths": ["plugin/src/services/image-renderer.ts"]
+      "description": "Avoid repetitive DOM queries during scrubbing and high-frequency timeupdate events. Utilize negative caching and dirty-checking before message dispatches.",
+      "target_paths": ["extension/ytm-*.js", "extension/content.js"]
     },
     {
       "id": "hardware-refresh-limit",
       "name": "Hardware Refresh Limit (10 Hz)",
+      "scope": "plugin",
       "severity": "high",
       "description": "Programmatic updates to Stream Deck keys, canvas drawings, and LCD touchstrips must never exceed 10 updates per second (10 Hz).",
       "target_paths": ["plugin/src/actions/**", "plugin/src/services/**"]
     },
     {
+      "id": "dial-rotary-throttle",
+      "name": "Dial Rotary Streaming & Debounce",
+      "scope": "plugin",
+      "severity": "high",
+      "description": "Enforce DialRotaryStreamer with 100-ms throttle and 110-ms settle debounce across all rotary dials to prevent hardware message queue saturation.",
+      "target_paths": ["plugin/src/actions/**"]
+    },
+    {
+      "id": "streamdeck-ipc-hygiene",
+      "name": "Stream Deck IPC Deduplication",
+      "scope": "plugin",
+      "severity": "high",
+      "description": "Deduplicate setFeedback calls to avoid identical UI payloads and prevent redundant setState invocations when state is unchanged.",
+      "target_paths": ["plugin/src/actions/**"]
+    },
+    {
+      "id": "timer-hygiene",
+      "name": "Timer Lifecycle Hygiene",
+      "scope": "plugin",
+      "severity": "high",
+      "description": "Ensure no running setInterval or setTimeout timers persist on inactive profiles or dials (strict willDisappear lifecycle cleanup).",
+      "target_paths": ["plugin/src/actions/**", "plugin/src/services/**"]
+    },
+    {
+      "id": "in-memory-rendering",
+      "name": "In-Memory Asset Pipeline & Bounded Caching",
+      "scope": "plugin",
+      "severity": "high",
+      "description": "Album cover art, thumbnails, and dynamic canvas drawings must remain strictly in RAM as Base64 Data URLs. Use FNV-1a hashing and LRU cache eviction in ImageRenderer to prevent unbounded memory growth.",
+      "target_paths": ["plugin/src/services/image-renderer.ts"]
+    },
+    {
       "id": "strict-typing",
       "name": "Strict Typing Discipline",
+      "scope": "plugin",
       "severity": "error",
       "description": "Prohibited in TypeScript: 'as any', '@ts-ignore', '@ts-expect-error'. All types and settings must be defined or extended in plugin/src/types/.",
       "target_paths": ["plugin/src/**/*.ts"]
@@ -40,6 +93,7 @@
     {
       "id": "clean-logging",
       "name": "Clean Production Logging",
+      "scope": "plugin",
       "severity": "warning",
       "description": "No orphaned console.log() or console.debug() statements in plugin production code. Use the dedicated project logger.",
       "target_paths": ["plugin/src/**/*.ts"]

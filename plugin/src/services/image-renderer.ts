@@ -134,4 +134,56 @@ export class ImageRenderer {
 		this.overlayCache.set(cacheKey, dataUrl);
 		return dataUrl;
 	}
+
+	/**
+	 * Produce a full 200x100 touchstrip background from album artwork
+	 * with dark scrim for overlay text readability and pause indicator when paused
+	 */
+	public getFullBleedCover(coverBase64: string, paused: boolean): string {
+		if (!coverBase64) return "";
+
+		const cacheKey = ImageRenderer.hashKey(`${coverBase64}:fullbleed:${paused}`);
+
+		if (this.overlayCache.has(cacheKey)) {
+			const cached = this.overlayCache.get(cacheKey)!;
+			// Refresh key position to implement true LRU eviction
+			this.overlayCache.delete(cacheKey);
+			this.overlayCache.set(cacheKey, cached);
+			return cached;
+		}
+
+		// Security guard: Validate coverBase64 format to prevent SVG/XML template injection
+		if (
+			!coverBase64.startsWith("data:image/") ||
+			coverBase64.includes('"') ||
+			coverBase64.includes("<") ||
+			coverBase64.includes(">")
+		) {
+			return "";
+		}
+
+		// 200x100 SVG with dark scrim (0.55 opacity) to guarantee crisp title/timestamp legibility
+		const pauseBadge = paused
+			? `  <circle cx="100" cy="50" r="22" fill="#000000" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/>
+  <rect x="94" y="41" width="4.5" height="18" fill="#ffffff" rx="1.5"/>
+  <rect x="101.5" y="41" width="4.5" height="18" fill="#ffffff" rx="1.5"/>`
+			: "";
+
+		const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 100" width="200" height="100">
+  <image href="${coverBase64}" xlink:href="${coverBase64}" x="0" y="0" width="200" height="100" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="0" y="0" width="200" height="100" fill="#000000" fill-opacity="0.55"/>
+${pauseBadge}
+</svg>`;
+
+		const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+
+		// Evict oldest cached overlay in RAM to maintain memory bounds
+		if (this.overlayCache.size >= this.maxCacheSize) {
+			const firstKey = this.overlayCache.keys().next().value;
+			if (firstKey !== undefined) this.overlayCache.delete(firstKey);
+		}
+
+		this.overlayCache.set(cacheKey, dataUrl);
+		return dataUrl;
+	}
 }

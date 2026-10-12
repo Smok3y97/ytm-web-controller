@@ -21,7 +21,7 @@ import {
 import { ImageRenderer } from "../services/image-renderer.js";
 import { StateManager } from "../services/state-manager.js";
 import { WebSocketService } from "../services/websocket-server.js";
-import { VolumeDialSettings, YTMPlaybackState } from "../types/index.js";
+import { TouchstripCoverLayout, VolumeDialSettings, YTMPlaybackState } from "../types/index.js";
 import { BaseDialAction } from "./base-dial-action.js";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.volumedial" })
@@ -45,6 +45,22 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 			((settings as Record<string, unknown>).titleTemplate as string) ||
 			"YouTube Music Volume"
 		);
+	}
+
+	protected override getFormattedMarqueeArtist(settings: VolumeDialSettings, actionId?: string): string {
+		const state = StateManager.getInstance().getState();
+		if (!state.artist && !state.title) {
+			return "YouTube Music";
+		}
+		return super.getFormattedMarqueeArtist(settings, actionId);
+	}
+
+	protected override getFormattedMarqueeTrackTitle(settings: VolumeDialSettings, actionId?: string): string {
+		const state = StateManager.getInstance().getState();
+		if (!state.artist && !state.title) {
+			return "Volume";
+		}
+		return super.getFormattedMarqueeTrackTitle(settings, actionId);
 	}
 
 	protected handleDialPress(
@@ -142,23 +158,44 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 
 				const valueText = state.muted ? "MUTED" : `${volPercent}%`;
 				const indicatorValue = state.muted ? 0 : volPercent;
-				const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
+				const layout = this.getTouchstripLayout(settings);
+				const coverImage = state.coverBase64
+					? layout === TouchstripCoverLayout.FULL_BLEED
+						? ImageRenderer.getInstance().getFullBleedCover(state.coverBase64, state.paused)
+						: ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
+					: state.muted
+						? "assets/actions/mute/muted.svg"
+						: "assets/actions/volumedial/icon.svg";
 
-				const coverImage =
-					settings.showCover !== false && state.coverBase64
-						? ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
-						: state.muted
-							? "assets/actions/mute/muted.svg"
-							: "assets/actions/volumedial/icon.svg";
+				this.lastRenderedValue.set(dialAction.id, valueText);
+				this.lastRenderedIndicator.set(dialAction.id, indicatorValue);
 
-				await dialAction.setFeedback({
-					title: titleText,
-					value: valueText,
-					icon: coverImage,
-					indicator: indicatorValue,
-				});
+				if (this.isThreeLineLayout(layout)) {
+					const artistText = this.getFormattedMarqueeArtist(settings, dialAction.id);
+					const trackTitle = this.getFormattedMarqueeTrackTitle(settings, dialAction.id);
+					this.lastRenderedArtist.set(dialAction.id, artistText);
+					this.lastRenderedTrack.set(dialAction.id, trackTitle);
+
+					await dialAction.setFeedback({
+						artist: artistText,
+						track: trackTitle,
+						value: valueText,
+						icon: coverImage,
+						indicator: indicatorValue,
+					});
+				} else {
+					const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
+					this.lastRenderedTitle.set(dialAction.id, titleText);
+
+					await dialAction.setFeedback({
+						title: titleText,
+						value: valueText,
+						icon: coverImage,
+						indicator: indicatorValue,
+					});
+				}
 			} else if (dialAction.isKey()) {
-				await this.updateKeyCoverImage(dialAction, state, settings.showCover);
+				await this.updateKeyCoverImage(dialAction, state);
 			}
 		} catch {}
 	}

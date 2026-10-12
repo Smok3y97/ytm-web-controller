@@ -1,22 +1,35 @@
 /**
  * Property Inspector for Stream Deck + Track Dial Action
  */
+const titleTemplateGroup = document.getElementById("titleTemplateGroup");
 const titleTemplateInput = document.getElementById("titleTemplate");
 const timeTemplateInput = document.getElementById("timeTemplate");
-const showCoverCheckbox = document.getElementById("showCover");
+const touchstripLayoutSelect = document.getElementById("touchstripLayout");
+
+function updateLayoutVisibility() {
+	if (titleTemplateGroup && touchstripLayoutSelect) {
+		const isHeader = touchstripLayoutSelect.value === "header_collapsed";
+		titleTemplateGroup.style.display = isHeader ? "" : "none";
+	}
+}
 
 StreamDeckClient.onLocalSettings((settings) => {
 	if (titleTemplateInput) titleTemplateInput.value = settings.titleTemplate || "{artist} - {title}";
 	if (timeTemplateInput) timeTemplateInput.value = settings.timeTemplate || "{both}";
-	if (showCoverCheckbox) showCoverCheckbox.checked = settings.showCover !== false;
+	if (touchstripLayoutSelect) touchstripLayoutSelect.value = settings.touchstripLayout || "compact";
+	updateLayoutVisibility();
 });
+
+if (touchstripLayoutSelect) {
+	touchstripLayoutSelect.addEventListener("change", updateLayoutVisibility);
+}
 
 function saveSettings() {
 	StreamDeckClient.saveLocalSettings({
 		titleTemplate: titleTemplateInput ? titleTemplateInput.value : "{artist} - {title}",
 		timeTemplate: timeTemplateInput ? timeTemplateInput.value : "{both}",
-		showCover: showCoverCheckbox ? showCoverCheckbox.checked : true,
+		touchstripLayout: touchstripLayoutSelect ? touchstripLayoutSelect.value : "compact",
 	});
 }
 
-StreamDeckClient.bindAutoSave([titleTemplateInput, timeTemplateInput, showCoverCheckbox], saveSettings);
+StreamDeckClient.bindAutoSave([titleTemplateInput, timeTemplateInput, touchstripLayoutSelect], saveSettings);

@@ -21,7 +21,7 @@ import {
 import { ImageRenderer } from "../services/image-renderer.js";
 import { StateManager } from "../services/state-manager.js";
 import { WebSocketService } from "../services/websocket-server.js";
-import { SeekDialSettings, YTMPlaybackState } from "../types/index.js";
+import { SeekDialSettings, TouchstripCoverLayout, YTMPlaybackState } from "../types/index.js";
 import { BaseDialAction } from "./base-dial-action.js";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.seekdial" })
@@ -173,31 +173,49 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 						? this.lastTargetSeconds.get(dialAction.id)!
 						: StateManager.getInstance().getInterpolatedCurrentTime();
 
-				const marqueeTitle = this.getFormattedMarqueeTitle(settings, dialAction.id);
 				const timeTemplate = settings.timeTemplate || "{both}";
 				const timeText = StateManager.getInstance().formatTimeTemplate(timeTemplate, curTime, state.duration);
 				const indicatorValue =
 					state.duration > 0 ? Math.min(100, Math.max(0, Math.round((curTime / state.duration) * 100))) : 0;
 
-				const coverImage =
-					settings.showCover !== false && state.coverBase64
-						? ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
-						: state.paused
-							? "assets/actions/playpause/play.svg"
-							: "assets/actions/seekdial/icon.svg";
+				const layout = this.getTouchstripLayout(settings);
+				const coverImage = state.coverBase64
+					? layout === TouchstripCoverLayout.FULL_BLEED
+						? ImageRenderer.getInstance().getFullBleedCover(state.coverBase64, state.paused)
+						: ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
+					: state.paused
+						? "assets/actions/playpause/play.svg"
+						: "assets/actions/seekdial/icon.svg";
 
-				this.lastRenderedTitle.set(dialAction.id, marqueeTitle);
 				this.lastRenderedValue.set(dialAction.id, timeText);
 				this.lastRenderedIndicator.set(dialAction.id, indicatorValue);
 
-				await dialAction.setFeedback({
-					title: marqueeTitle,
-					value: timeText,
-					icon: coverImage,
-					indicator: indicatorValue,
-				});
+				if (this.isThreeLineLayout(layout)) {
+					const artistText = this.getFormattedMarqueeArtist(settings, dialAction.id);
+					const trackTitle = this.getFormattedMarqueeTrackTitle(settings, dialAction.id);
+					this.lastRenderedArtist.set(dialAction.id, artistText);
+					this.lastRenderedTrack.set(dialAction.id, trackTitle);
+
+					await dialAction.setFeedback({
+						artist: artistText,
+						track: trackTitle,
+						value: timeText,
+						icon: coverImage,
+						indicator: indicatorValue,
+					});
+				} else {
+					const marqueeTitle = this.getFormattedMarqueeTitle(settings, dialAction.id);
+					this.lastRenderedTitle.set(dialAction.id, marqueeTitle);
+
+					await dialAction.setFeedback({
+						title: marqueeTitle,
+						value: timeText,
+						icon: coverImage,
+						indicator: indicatorValue,
+					});
+				}
 			} else if (dialAction.isKey()) {
-				await this.updateKeyCoverImage(dialAction, state, settings.showCover);
+				await this.updateKeyCoverImage(dialAction, state);
 			}
 		} catch {}
 	}

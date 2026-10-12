@@ -98,11 +98,18 @@ export interface PlayPauseSettings extends JsonObject {
 	titleTemplate?: string;
 }
 
+export enum TouchstripCoverLayout {
+	COMPACT = "compact",
+	FULL_BLEED = "full_bleed",
+	HEADER_COLLAPSED = "header_collapsed",
+}
+
 export interface TrackDialSettings extends JsonObject {
 	[key: string]: JsonValue | undefined;
 	titleTemplate?: string;
 	timeTemplate?: string;
 	showCover?: boolean;
+	touchstripLayout?: TouchstripCoverLayout;
 }
 
 export interface VolumeSettings extends JsonObject {
@@ -117,6 +124,7 @@ export interface VolumeDialSettings extends JsonObject {
 	step?: number;
 	titleTemplate?: string;
 	showCover?: boolean;
+	touchstripLayout?: TouchstripCoverLayout;
 }
 
 export interface SeekDialSettings extends JsonObject {
@@ -125,6 +133,7 @@ export interface SeekDialSettings extends JsonObject {
 	titleTemplate?: string;
 	timeTemplate?: string;
 	showCover?: boolean;
+	touchstripLayout?: TouchstripCoverLayout;
 }
 
 export interface SeekButtonSettings extends JsonObject {

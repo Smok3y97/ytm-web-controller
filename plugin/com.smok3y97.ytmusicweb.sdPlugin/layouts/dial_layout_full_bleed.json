@@ -1,0 +1,50 @@
+{
+    "id": "com.smok3y97.ytmusicweb.diallayout.fullbleed",
+    "items": [
+        {
+            "key": "icon",
+            "type": "pixmap",
+            "rect": [0, 0, 200, 100],
+            "enabled": true,
+            "zOrder": 0
+        },
+        {
+            "key": "artist",
+            "type": "text",
+            "font": { "size": 11, "weight": 700 },
+            "rect": [6, 8, 188, 22],
+            "alignment": "left",
+            "value": "Artist",
+            "zOrder": 1
+        },
+        {
+            "key": "track",
+            "type": "text",
+            "font": { "size": 13, "weight": 700 },
+            "rect": [6, 32, 188, 24],
+            "alignment": "left",
+            "value": "Song Title",
+            "zOrder": 1
+        },
+        {
+            "key": "value",
+            "type": "text",
+            "font": { "size": 14, "weight": 600 },
+            "rect": [6, 58, 188, 22],
+            "alignment": "right",
+            "value": "-0:00",
+            "zOrder": 2
+        },
+        {
+            "key": "indicator",
+            "type": "bar",
+            "subtype": 0,
+            "rect": [6, 82, 188, 10],
+            "border_w": 0,
+            "bar_fill_c": "#FF0000",
+            "bar_bg_c": "#333333",
+            "value": 0,
+            "zOrder": 3
+        }
+    ]
+}

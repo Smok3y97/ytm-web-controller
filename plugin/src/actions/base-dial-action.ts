@@ -19,23 +19,26 @@ import {
 import type { JsonObject } from "@elgato/utils";
 
 import { ImageRenderer } from "../services/image-renderer.js";
-import { MarqueeService } from "../services/marquee-service.js";
+import { getTouchstripAvailableWidth, MarqueeService } from "../services/marquee-service.js";
 import { DialRotaryStreamer, RotaryStreamHandlers } from "../services/rotary-streamer.js";
 import { StateManager } from "../services/state-manager.js";
 import { VersionControlService } from "../services/version-control.js";
 import { WebSocketService } from "../services/websocket-server.js";
-import { YTMPlaybackState } from "../types/index.js";
+import { TouchstripCoverLayout, YTMPlaybackState } from "../types/index.js";
 
 export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> extends SingletonAction<TSettings> {
 	protected activeDials: Map<string, WillAppearEvent<TSettings>["action"]> = new Map();
 	protected actionSettings: Map<string, TSettings> = new Map();
 	protected dialTitles: Map<string, string> = new Map();
+	protected appliedLayout: Map<string, TouchstripCoverLayout> = new Map();
 	protected rotaryStreamer: DialRotaryStreamer = new DialRotaryStreamer();
 	protected playbackTimer: NodeJS.Timeout | null = null;
 	protected renderDebounceTimer: NodeJS.Timeout | null = null;
 	protected lastRenderedValue: Map<string, string> = new Map();
 	protected lastRenderedIndicator: Map<string, number> = new Map();
 	protected lastRenderedTitle: Map<string, string> = new Map();
+	protected lastRenderedArtist: Map<string, string> = new Map();
+	protected lastRenderedTrack: Map<string, string> = new Map();
 
 	constructor() {
 		super();
@@ -57,12 +60,22 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		if ("title" in ev.payload && typeof ev.payload.title === "string" && ev.payload.title) {
 			this.dialTitles.set(ev.action.id, ev.payload.title);
 		}
-		MarqueeService.getInstance().registerConsumer();
 
 		if (ev.action.isDial()) {
+			const layout = this.getTouchstripLayout(ev.payload.settings);
+			const availableWidth = getTouchstripAvailableWidth(layout);
+			MarqueeService.getInstance().registerTouchstripConsumer(ev.action.id, availableWidth, 12, 600);
+			if (this.isThreeLineLayout(layout)) {
+				MarqueeService.getInstance().registerTouchstripConsumer(`${ev.action.id}:artist`, availableWidth, 11, 700);
+				MarqueeService.getInstance().registerTouchstripConsumer(`${ev.action.id}:track`, availableWidth, 13, 700);
+			}
+
 			try {
-				await ev.action.setFeedbackLayout("layouts/dial_layout.json");
+				await ev.action.setFeedbackLayout(this.getFeedbackLayoutPath(layout));
+				this.appliedLayout.set(ev.action.id, layout);
 			} catch {}
+		} else {
+			MarqueeService.getInstance().registerConsumer(ev.action.id);
 		}
 		const state = StateManager.getInstance().getState();
 		await this.updateDialDisplay(ev.action, state, ev.payload.settings);
@@ -78,6 +91,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		this.lastRenderedValue.delete(id);
 		this.lastRenderedIndicator.delete(id);
 		this.lastRenderedTitle.delete(id);
+		this.lastRenderedArtist.delete(id);
+		this.lastRenderedTrack.delete(id);
+		this.appliedLayout.delete(id);
 		this.rotaryStreamer.cleanup(id);
 		this.activeDials.delete(id);
 		this.actionSettings.delete(id);
@@ -85,7 +101,10 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			clearTimeout(this.renderDebounceTimer);
 			this.renderDebounceTimer = null;
 		}
-		MarqueeService.getInstance().unregisterConsumer();
+		MarqueeService.getInstance().unregisterTouchstripConsumer(id);
+		MarqueeService.getInstance().unregisterTouchstripConsumer(`${id}:artist`);
+		MarqueeService.getInstance().unregisterTouchstripConsumer(`${id}:track`);
+		MarqueeService.getInstance().unregisterTouchstripConsumer(`${id}:title`);
 		this.checkPlaybackTimer();
 	}
 
@@ -122,6 +141,24 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<TSettings>): Promise<void> {
 		this.actionSettings.set(ev.action.id, ev.payload.settings);
+
+		if (ev.action.isDial()) {
+			const layout = this.getTouchstripLayout(ev.payload.settings);
+			const availableWidth = getTouchstripAvailableWidth(layout);
+			MarqueeService.getInstance().updateConsumerWidth(ev.action.id, availableWidth, 12, 600);
+			MarqueeService.getInstance().updateConsumerWidth(`${ev.action.id}:artist`, availableWidth, 11, 700);
+			MarqueeService.getInstance().updateConsumerWidth(`${ev.action.id}:track`, availableWidth, 13, 700);
+			MarqueeService.getInstance().updateConsumerWidth(`${ev.action.id}:title`, availableWidth, 12, 600);
+
+			const prevLayout = this.appliedLayout.get(ev.action.id);
+			if (prevLayout !== layout) {
+				try {
+					await ev.action.setFeedbackLayout(this.getFeedbackLayoutPath(layout));
+					this.appliedLayout.set(ev.action.id, layout);
+				} catch {}
+			}
+		}
+
 		const state = StateManager.getInstance().getState();
 		await this.updateDialDisplay(ev.action, state, ev.payload.settings);
 	}
@@ -162,6 +199,38 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	}
 
 	/**
+	 * Resolves configured or default TouchstripCoverLayout
+	 */
+	protected getTouchstripLayout(settings: TSettings): TouchstripCoverLayout {
+		const raw = (settings as Record<string, unknown>).touchstripLayout;
+		if (raw === TouchstripCoverLayout.FULL_BLEED) return TouchstripCoverLayout.FULL_BLEED;
+		if (raw === TouchstripCoverLayout.HEADER_COLLAPSED) return TouchstripCoverLayout.HEADER_COLLAPSED;
+		return TouchstripCoverLayout.COMPACT;
+	}
+
+	/**
+	 * Returns true if the layout uses the 3-line presentation (artist, track, value)
+	 */
+	public isThreeLineLayout(layout: TouchstripCoverLayout): boolean {
+		return layout === TouchstripCoverLayout.COMPACT || layout === TouchstripCoverLayout.FULL_BLEED;
+	}
+
+	/**
+	 * Resolves feedback layout JSON path for Elgato SDK
+	 */
+	protected getFeedbackLayoutPath(layout: TouchstripCoverLayout): string {
+		switch (layout) {
+			case TouchstripCoverLayout.FULL_BLEED:
+				return "layouts/dial_layout_full_bleed.json";
+			case TouchstripCoverLayout.HEADER_COLLAPSED:
+				return "layouts/dial_layout_header_collapsed.json";
+			case TouchstripCoverLayout.COMPACT:
+			default:
+				return "layouts/dial_layout.json";
+		}
+	}
+
+	/**
 	 * Resolves the title template for marquee LCD display (can be overridden)
 	 */
 	protected getTitleTemplate(settings: TSettings, actionId?: string): string {
@@ -178,7 +247,42 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	protected getFormattedMarqueeTitle(settings: TSettings, actionId?: string): string {
 		const rawTitle = this.getTitleTemplate(settings, actionId);
 		const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
-		return MarqueeService.getInstance().getDisplayText(fullTitle);
+		const layout = this.getTouchstripLayout(settings);
+		const availableWidth = getTouchstripAvailableWidth(layout);
+		const fontSize = 12;
+		const fontWeight = 600;
+		return MarqueeService.getInstance().getTouchstripDisplayText(
+			fullTitle,
+			availableWidth,
+			actionId,
+			fontSize,
+			fontWeight,
+		);
+	}
+
+	/**
+	 * Gets the formatted, marquee-scrolled display artist for LCD touchstrips
+	 */
+	protected getFormattedMarqueeArtist(settings: TSettings, actionId?: string): string {
+		const state = StateManager.getInstance().getState();
+		const artist = (state.artist || "").trim() || "YouTube Music";
+		const layout = this.getTouchstripLayout(settings);
+		const availableWidth = getTouchstripAvailableWidth(layout);
+		const consumerId = actionId ? `${actionId}:artist` : undefined;
+		return MarqueeService.getInstance().getTouchstripDisplayText(artist, availableWidth, consumerId, 11, 700);
+	}
+
+	/**
+	 * Gets the formatted, marquee-scrolled display track title for LCD touchstrips in COMPACT layout.
+	 * Decoupled from Stream Deck software title overrides (behaves identically to artist).
+	 */
+	protected getFormattedMarqueeTrackTitle(settings: TSettings, actionId?: string): string {
+		const state = StateManager.getInstance().getState();
+		const title = (state.title || "").trim() || (state.paused ? "Ready" : "No Track");
+		const layout = this.getTouchstripLayout(settings);
+		const availableWidth = getTouchstripAvailableWidth(layout);
+		const consumerId = actionId ? `${actionId}:track` : undefined;
+		return MarqueeService.getInstance().getTouchstripDisplayText(title, availableWidth, consumerId, 13, 700);
 	}
 
 	/**
@@ -208,10 +312,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	protected async updateKeyCoverImage(
 		dialAction: WillAppearEvent<TSettings>["action"],
 		state: YTMPlaybackState,
-		showCover: boolean = true,
 	): Promise<void> {
 		if (!dialAction.isKey()) return;
-		if (showCover !== false && state.coverBase64 && !state.isVersionMismatch) {
+		if (state.coverBase64 && !state.isVersionMismatch) {
 			const keyImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused);
 			await dialAction.setImage(keyImage);
 		} else {
@@ -327,16 +430,38 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			try {
 				if (dialAction.isDial()) {
 					const settings = this.actionSettings.get(actionId) ?? (await dialAction.getSettings());
-					const rawTitle = this.getTitleTemplate(settings, dialAction.id);
-					const fullTitle = StateManager.getInstance().formatTitleTemplate(rawTitle);
-					const currentText = MarqueeService.getInstance().getDisplayText(fullTitle);
+					const layout = this.getTouchstripLayout(settings);
+					const feedback: {
+						artist?: string;
+						track?: string;
+						title?: string;
+						value?: string;
+						indicator?: number;
+					} = {};
 
-					const titleChanged = currentText !== this.lastRenderedTitle.get(dialAction.id);
-					const feedback: { title?: string; value?: string; indicator?: number } = {};
+					if (this.isThreeLineLayout(layout)) {
+						const currentArtist = this.getFormattedMarqueeArtist(settings, dialAction.id);
+						const currentTrack = this.getFormattedMarqueeTrackTitle(settings, dialAction.id);
 
-					if (titleChanged) {
-						this.lastRenderedTitle.set(dialAction.id, currentText);
-						feedback.title = currentText;
+						const artistChanged = currentArtist !== this.lastRenderedArtist.get(dialAction.id);
+						const trackChanged = currentTrack !== this.lastRenderedTrack.get(dialAction.id);
+
+						if (artistChanged) {
+							this.lastRenderedArtist.set(dialAction.id, currentArtist);
+							feedback.artist = currentArtist;
+						}
+						if (trackChanged) {
+							this.lastRenderedTrack.set(dialAction.id, currentTrack);
+							feedback.track = currentTrack;
+						}
+					} else {
+						const currentText = this.getFormattedMarqueeTitle(settings, dialAction.id);
+						const titleChanged = currentText !== this.lastRenderedTitle.get(dialAction.id);
+
+						if (titleChanged) {
+							this.lastRenderedTitle.set(dialAction.id, currentText);
+							feedback.title = currentText;
+						}
 					}
 
 					// Harmonize: Bundle progress updates into same feedback packet if changed and not actively rotating

@@ -10,6 +10,38 @@
 			<div class="sdpi-heading" data-i18n="volumedial.heading">Volume Dial Settings</div>
 
 			<div class="sdpi-item">
+				<div class="sdpi-item-label" data-i18n="dial.layout.label">Touchstrip Layout</div>
+				<div class="sdpi-item-value">
+					<select id="touchstripLayout">
+						<option value="compact" data-i18n="dial.layout.compact">Compact (Side-by-Side)</option>
+						<option value="full_bleed" data-i18n="dial.layout.full_bleed">Full Bleed (Background Cover)</option>
+						<option value="header_collapsed" data-i18n="dial.layout.header_collapsed">
+							Header Collapsed (Top Title)
+						</option>
+					</select>
+				</div>
+			</div>
+
+			<div id="titleTemplateGroup">
+				<div class="sdpi-item">
+					<div class="sdpi-item-label" data-i18n="volumedial.title_template.label">Title Template</div>
+					<div class="sdpi-item-value">
+						<input
+							type="text"
+							id="titleTemplate"
+							placeholder="YouTube Music Volume"
+							value="YouTube Music Volume"
+							data-i18n-placeholder="volumedial.title_template.placeholder"
+						/>
+					</div>
+				</div>
+				<div class="sdpi-hint" data-i18n="volumedial.title_template.hint">
+					Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code> (or static title like
+					<code>YouTube Music Volume</code>)
+				</div>
+			</div>
+
+			<div class="sdpi-item">
 				<div class="sdpi-item-label" data-i18n="volumedial.step.label">Step Size</div>
 				<div class="sdpi-item-value sdpi-range-wrap">
 					<input type="range" id="volumeStep" min="5" max="50" step="5" value="5" />
@@ -18,30 +50,6 @@
 			</div>
 			<div class="sdpi-hint" data-i18n="volumedial.step.hint">
 				Percentage amount adjusted per dial tick (5% – 50%, Default: 5%).
-			</div>
-
-			<div class="sdpi-item">
-				<div class="sdpi-item-label" data-i18n="volumedial.title_template.label">Title Template</div>
-				<div class="sdpi-item-value">
-					<input
-						type="text"
-						id="titleTemplate"
-						placeholder="YouTube Music Volume"
-						value="YouTube Music Volume"
-						data-i18n-placeholder="volumedial.title_template.placeholder"
-					/>
-				</div>
-			</div>
-			<div class="sdpi-hint" data-i18n="volumedial.title_template.hint">
-				Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code> (or static title like
-				<code>YouTube Music Volume</code>)
-			</div>
-
-			<div class="sdpi-item">
-				<label class="sdpi-checkbox-wrap">
-					<input type="checkbox" id="showCover" checked />
-					<span data-i18n="volumedial.show_cover.label">Show cover thumbnail on touchstrip</span>
-				</label>
 			</div>
 
 			<!-- Global Settings container dynamically rendered by global-settings.js -->

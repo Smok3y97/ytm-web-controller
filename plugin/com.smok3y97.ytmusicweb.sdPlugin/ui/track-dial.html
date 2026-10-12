@@ -10,13 +10,28 @@
 			<div class="sdpi-heading" data-i18n="trackdial.heading">Track Dial Settings</div>
 
 			<div class="sdpi-item">
-				<div class="sdpi-item-label" data-i18n="trackdial.title_template.label">Title Template</div>
+				<div class="sdpi-item-label" data-i18n="dial.layout.label">Touchstrip Layout</div>
 				<div class="sdpi-item-value">
-					<input type="text" id="titleTemplate" placeholder="{artist} - {title}" value="{artist} - {title}" />
+					<select id="touchstripLayout">
+						<option value="compact" data-i18n="dial.layout.compact">Compact (Side-by-Side)</option>
+						<option value="full_bleed" data-i18n="dial.layout.full_bleed">Full Bleed (Background Cover)</option>
+						<option value="header_collapsed" data-i18n="dial.layout.header_collapsed">
+							Header Collapsed (Top Title)
+						</option>
+					</select>
 				</div>
 			</div>
-			<div class="sdpi-hint" data-i18n="trackdial.title_template.hint">
-				Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>
+
+			<div id="titleTemplateGroup">
+				<div class="sdpi-item">
+					<div class="sdpi-item-label" data-i18n="trackdial.title_template.label">Title Template</div>
+					<div class="sdpi-item-value">
+						<input type="text" id="titleTemplate" placeholder="{artist} - {title}" value="{artist} - {title}" />
+					</div>
+				</div>
+				<div class="sdpi-hint" data-i18n="trackdial.title_template.hint">
+					Placeholders: <code>{artist}</code>, <code>{title}</code>, <code>{album}</code>
+				</div>
 			</div>
 
 			<div class="sdpi-item">
@@ -27,13 +42,6 @@
 			</div>
 			<div class="sdpi-hint" data-i18n="trackdial.time_template.hint">
 				Placeholders: <code>{current}</code>, <code>{duration}</code>, <code>{remaining}</code>, <code>{both}</code>
-			</div>
-
-			<div class="sdpi-item">
-				<label class="sdpi-checkbox-wrap">
-					<input type="checkbox" id="showCover" checked />
-					<span data-i18n="trackdial.show_cover.label">Show cover thumbnail on touchstrip</span>
-				</label>
 			</div>
 
 			<!-- Global Settings container dynamically rendered by global-settings.js -->

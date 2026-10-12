@@ -62,9 +62,12 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔄 **Rotate Counter-Clockwise**: Skip to previous track or restart current track.
   - 🔘 **Push Dial**: Toggle Play / Pause (protected by 250ms push-jitter suppression).
   - 👆 **Touchstrip Tap**: Toggle Play / Pause.
-- **Title Template**: Format string for LCD song banner (Default: `{artist} - {title}`). Automatically uses Ping-Pong marquee bounce scrolling if text exceeds LCD width (198px).
+- **Touchstrip Layout**: Configurable layout variant for the 200 × 100 px LCD touchstrip (placed at the top of dial settings):
+  - **`Compact (Side-by-Side)`** _(Default)_: 88×88 px square cover art maximizing height on the left, with a 3-line information layout on the right (Line 1: Artist, Line 2: Song Name, Line 3: Time readout + progress bar).
+  - **`Full Bleed (Background Cover)`**: Cover art fills the entire 200×100 px touchstrip as an in-RAM background with a dark scrim (`55%` opacity) and the 3-line layout across the full 188 px width (Line 1: Artist, Line 2: Song Name, Line 3: Time readout + progress bar).
+  - **`Header Collapsed (Top Title)`**: Song title spans the full 188 px width across the top (24 px height). Cover thumbnail (60×60 px) sits below on the left with live time and progress controls on the right.
+- **Title Template**: Format string for LCD song banner (Default: `{artist} - {title}`). Dynamically displayed in the Property Inspector when **Header Collapsed** layout is selected. In the 3-line layouts (_Compact_ and _Full Bleed_), Artist and Song Name are cleanly displayed on separate lines automatically.
 - **Time Template**: Format string for LCD duration indicator (Default: `{both}`). Supports `{both}` (`{current} / {duration}`), `{current}`, `{duration}`, and `{remaining}`.
-- **Show Cover**: Toggles the 35×35 px album thumbnail on the left side of the LCD touchstrip.
 
 ### Volume Controller (Dial)
 - **Controls & Interactions**:
@@ -72,8 +75,8 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔄 **Rotate Counter-Clockwise**: Decrease volume (-Step Size).
   - 🔘 **Push Dial**: Toggle Mute / Unmute.
   - 👆 **Touchstrip Tap**: Toggle Mute / Unmute.
+- **Touchstrip Layout**: Select between `Compact (Side-by-Side)`, `Full Bleed (Background Cover)`, or `Header Collapsed (Top Title)`.
 - **Step Size (%)**: Adjust volume step per dial tick from **1% to 50%** (configured via range slider in 5% increments, Default: `5%`).
-- **Show Cover**: Toggles the album cover thumbnail on the touchstrip.
 - **LCD Feedback**: Displays real-time graphical volume bar, percentage readout (`100%`, `MUTED`), and cover artwork.
 
 ### Seek Controller (Dial)
@@ -82,9 +85,9 @@ Global settings are accessible in the Property Inspector of **every single butto
   - 🔄 **Rotate Counter-Clockwise**: Seek / scrub backward (-Seek Step).
   - 🔘 **Push Dial**: Toggle Play / Pause.
   - 👆 **Touchstrip Tap**: Toggle Play / Pause.
+- **Touchstrip Layout**: Select between `Compact (Side-by-Side)`, `Full Bleed (Background Cover)`, or `Header Collapsed (Top Title)`.
 - **Seek Step (s)**: Scrubbing duration per dial tick from **1s to 120s** (configured via range slider in 5s increments, Default: `10s`).
 - **Title & Time Templates**: Configurable text templates for LCD readouts (Default Time Template: `{both}`). Supports `{both}`, `{current}`, `{duration}`, and `{remaining}`.
-- **Show Cover**: Toggles album art thumbnail on the LCD strip.
 
 ---
 

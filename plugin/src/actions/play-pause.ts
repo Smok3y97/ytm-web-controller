@@ -16,7 +16,7 @@ import {
 } from "@elgato/streamdeck";
 
 import { ImageRenderer } from "../services/image-renderer.js";
-import { MarqueeService } from "../services/marquee-service.js";
+import { KEYPAD_MAX_PIXEL_WIDTH, MarqueeService } from "../services/marquee-service.js";
 import { StateManager } from "../services/state-manager.js";
 import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
 import { WebSocketService } from "../services/websocket-server.js";
@@ -90,10 +90,10 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		const isRegistered = this.registeredConsumers.has(actionId);
 		if (needsMarquee && !isRegistered) {
 			this.registeredConsumers.add(actionId);
-			MarqueeService.getInstance().registerConsumer();
+			MarqueeService.getInstance().registerKeypadConsumer(actionId);
 		} else if (!needsMarquee && isRegistered) {
 			this.registeredConsumers.delete(actionId);
-			MarqueeService.getInstance().unregisterConsumer();
+			MarqueeService.getInstance().unregisterKeypadConsumer(actionId);
 		}
 	}
 
@@ -212,7 +212,11 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 				const rawTemplate = settings.titleTemplate?.trim();
 				const template = rawTemplate || DEFAULT_PLAYPAUSE_TEMPLATE;
 				const rawFormatted = this.getFormattedTrackText(actionId, template, state);
-				const marqueeTitle = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
+				const marqueeTitle = MarqueeService.getInstance().formatKeypadMarqueeText(
+					rawFormatted,
+					KEYPAD_MAX_PIXEL_WIDTH,
+					actionId,
+				);
 
 				const prevTitle = this.lastRenderedTitle.get(actionId);
 				if (prevTitle !== marqueeTitle) {
@@ -275,7 +279,11 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 				const rawTemplate = settings.titleTemplate?.trim();
 				const template = rawTemplate || DEFAULT_PLAYPAUSE_TEMPLATE;
 				const rawFormatted = this.getFormattedTrackText(actionInstance.id, template, state);
-				titleText = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
+				titleText = MarqueeService.getInstance().formatKeypadMarqueeText(
+					rawFormatted,
+					KEYPAD_MAX_PIXEL_WIDTH,
+					actionInstance.id,
+				);
 			}
 
 			const prevTitle = this.lastRenderedTitle.get(actionInstance.id);

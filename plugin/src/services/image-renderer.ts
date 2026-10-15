@@ -10,6 +10,7 @@ export class ImageRenderer {
 	private static instance: ImageRenderer;
 	private coverCache: Map<string, string> = new Map();
 	private overlayCache: Map<number, string> = new Map();
+	private fullBleedCache: Map<number, string> = new Map();
 	private inFlightRequests: Map<string, Promise<string | null>> = new Map();
 	private maxCacheSize = 20;
 
@@ -24,10 +25,10 @@ export class ImageRenderer {
 
 	/**
 	 * Compute compact 32-bit FNV-1a hash for large base64 strings
-	 * Prevents storing 150-350 KB strings as Map keys in RAM
+	 * Incorporates string length in initial seed to prevent collisions
 	 */
 	private static hashKey(str: string): number {
-		let hash = 2166136261;
+		let hash = (2166136261 ^ str.length) >>> 0;
 		const len = Math.min(str.length, 1024);
 		for (let i = 0; i < len; i++) {
 			hash ^= str.charCodeAt(i);
@@ -94,7 +95,7 @@ export class ImageRenderer {
 			return coverBase64;
 		}
 
-		const cacheKey = ImageRenderer.hashKey(coverBase64);
+		const cacheKey = ImageRenderer.hashKey(`overlay:${coverBase64}`);
 
 		if (this.overlayCache.has(cacheKey)) {
 			const cached = this.overlayCache.get(cacheKey)!;
@@ -142,13 +143,13 @@ export class ImageRenderer {
 	public getFullBleedCover(coverBase64: string, paused: boolean): string {
 		if (!coverBase64) return "";
 
-		const cacheKey = ImageRenderer.hashKey(`${coverBase64}:fullbleed:${paused}`);
+		const cacheKey = ImageRenderer.hashKey(`fullbleed:${paused ? "paused" : "playing"}:${coverBase64}`);
 
-		if (this.overlayCache.has(cacheKey)) {
-			const cached = this.overlayCache.get(cacheKey)!;
+		if (this.fullBleedCache.has(cacheKey)) {
+			const cached = this.fullBleedCache.get(cacheKey)!;
 			// Refresh key position to implement true LRU eviction
-			this.overlayCache.delete(cacheKey);
-			this.overlayCache.set(cacheKey, cached);
+			this.fullBleedCache.delete(cacheKey);
+			this.fullBleedCache.set(cacheKey, cached);
 			return cached;
 		}
 
@@ -178,12 +179,12 @@ ${pauseBadge}
 		const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 
 		// Evict oldest cached overlay in RAM to maintain memory bounds
-		if (this.overlayCache.size >= this.maxCacheSize) {
-			const firstKey = this.overlayCache.keys().next().value;
-			if (firstKey !== undefined) this.overlayCache.delete(firstKey);
+		if (this.fullBleedCache.size >= this.maxCacheSize) {
+			const firstKey = this.fullBleedCache.keys().next().value;
+			if (firstKey !== undefined) this.fullBleedCache.delete(firstKey);
 		}
 
-		this.overlayCache.set(cacheKey, dataUrl);
+		this.fullBleedCache.set(cacheKey, dataUrl);
 		return dataUrl;
 	}
 }

@@ -395,7 +395,7 @@ The browser companion extension runs in the context of `https://music.youtube.co
 - **`StateManager`**: Stores active playback state, performs local timestamp-based time interpolation (`getInterpolatedCurrentTime()`), and manages state change lifecycle events.
 - **`TemplateEngine`**: Isolated placeholder formatting engine for Track Titles, Times, Formatted Tracks, Volume readouts, and Seek button labels across keypad buttons and LCD touchstrips.
 - **`MetadataSanitizer`**: Multi-language DOM metadata filtering engine that strips out non-album tokens (view counts, upload timestamps, release years, like counts) across internationalized YouTube Music interfaces. Pattern constants are imported directly from `plugin/src/services/metadata-patterns.ts`, auto-generated from `shared/metadata-patterns.json` (Single Source of Truth) via `npm run sync:patterns` to maintain 100% parity across Plugin and Browser Extension.
-- **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs, featuring LRU eviction and CJK full-width character detection for accurate LCD text width estimation.
+- **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs and keypad buttons, powered by isolated `MarqueeController` instances with DirectWrite-calibrated upper-bound metrics to prevent native ellipsis truncation.
 - **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs with bounded in-RAM LRU overlay caching.
 - **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with timeline calculations anchored to the state snapshot timestamp, eliminating debounce drift. Consumes pre-sanitized metadata directly from `StateManager`, eliminating redundant re-sanitization cycles.
 - **`ObsExporterService`**: Debounced safe writer for OBS Text (GDI+) file sources (`.txt`).
@@ -488,16 +488,15 @@ The Stream Deck + integration combines physical rotary encoders with high-densit
 
 ```mermaid
 graph TD
-    MS["MarqueeService\n(Central Master Ticker / ~3.1 Hz)"]
+    MS["MarqueeService\n(Central Master Ticker / 4.0 Hz / 250ms)"]
 
     subgraph Viewports ["Independent Viewport Controllers"]
         TS["MarqueeController: Touchstrip\n(Stream Deck + LCD Dials)"]
         KP["MarqueeController: Keypad\n(Play/Pause Buttons)"]
     end
 
-    subgraph Metrics ["High-Precision Text Measurement (LRU Cache)"]
-        CANVAS["Canvas API (ctx.measureText)\nOffscreenCanvas / DOM Canvas"]
-        FALLBACK["Proportional Font Metrics Fallback\nUnicode NFC Normalization\nFull-Width CJK (1.0 em) & Emoji (1.1 em)\nDiacritics & Umlaute Base Metrics\nKerning Pair Heuristics"]
+    subgraph Metrics ["DirectWrite Font Metrics"]
+        PM["Upper-Bound Font Metrics\nestimateTextWidthPx (Zero Ellipsis)\nZero LRU Allocation Overhead"]
     end
 
     subgraph Output ["Hardware Feedback"]
@@ -516,9 +515,12 @@ graph TD
 ```
 
 - **Separation of Concerns**: Keypads (64 px usable width) and LCD Touchstrips (96–188 px available width) never share scroll offsets or max offset caches. Each registered consumer or action ID maintains an isolated `MarqueeController` instance.
-- **Strict Offset Clamping**: The visible character offset is always hard-clamped via $\text{currentOffset} = \max(0, \min(\text{maxOffset}, \text{currentOffset}))$, completely eliminating blank/empty-space overshoot when a narrow keypad requires more scroll steps than a wide LCD strip.
+- **Qt SVG 1.2 Tiny Hardware Limitation**: Elgato's `QSvgRenderer` implements SVG 1.2 Tiny, which ignores SVG `<text>` elements and `<clipPath>` inside `pixmap` items. LCD Touchstrip text is therefore strictly rendered via native `type: "text"` layout items using `setFeedback({ title, artist, track })`.
+- **DirectWrite Ellipsis Truncation Mitigation**: Windows DirectWrite automatically truncates strings and appends `...` if rendered width overflows the container by $\ge 1\text{ px}$. `estimateTextWidthPx` implements a DirectWrite-calibrated upper-bound font metric ($\text{estimatedWidth} \ge \text{actualWidth}$ across Segoe UI and SF Pro). Using a 2 px safety margin ($\text{safeWidth} = \text{availableWidth} - 2$) guarantees that text slices never exceed the layout boundaries while utilizing $>95\%$ of available horizontal display width without native ellipsis.
+- **Unicode Grapheme Boundary Slicing**: Slices sliding windows along grapheme cluster boundaries using the built-in V8 `Intl.Segmenter`, preventing broken multi-byte sequences, split surrogate pairs, or orphaned diacritics.
+- **Strict Offset Clamping & Ping-Pong Lifecycle**: The visible character offset is always hard-clamped via $\text{currentOffset} = \max(0, \min(\text{maxOffset}, \text{currentOffset}))$, completely eliminating blank/empty-space overshoot. The controller cycles through 4 start pause ticks, step-by-step forward advance, 3 end pause ticks, and step-by-step reverse scrolling back to 0.
 - **Dynamic Remaining Width Deduction**: Usable title width is computed dynamically based on layout type ($\text{availableWidth} = 200\text{px} - \text{coverWidth} - \text{padding}$). In `Compact` (88×88 px square cover art), available text width is strictly 96 px. In `Full Bleed` (background cover) and `Header Collapsed` (title bar top), available width expands to 188 px.
-- **Zero Animation for Fitting Text**: Strings where $\text{textWidth} \le \text{availableWidth}$ evaluate to $\text{maxOffset} = 0$, remain strictly fixed at offset 0, and never trigger animation timers.
+- **Zero Polling & Inactive Standby**: Strings where $\text{textWidth} \le \text{availableWidth}$ evaluate to $\text{maxOffset} = 0$, remain strictly fixed at offset 0, and never trigger animation timers. The central `setInterval` timer runs strictly when consumers are registered, playback is active (`!state.paused`), and at least one registered text exceeds its container width.
 
 ### 🔄 10-Hz Dial Rotary Streaming & Settle Lifecycle (`DialRotaryStreamer`)
 - **Zero-Latency First Detent**: The first rotation detent fires immediately with 0ms latency if the dial was idle ($\ge 100\text{ ms}$ since the previous command dispatch).

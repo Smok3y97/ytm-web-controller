@@ -70,9 +70,11 @@ function updateJsonFile(filePath, updater) {
     return;
   }
   const content = fs.readFileSync(filePath, 'utf8');
+  const indentMatch = content.match(/^[ \t]+/m);
+  const indent = indentMatch ? indentMatch[0] : 2;
   const json = JSON.parse(content);
   updater(json);
-  fs.writeFileSync(filePath, JSON.stringify(json, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(filePath, JSON.stringify(json, null, indent) + '\n', 'utf8');
   console.log(`  ✓ Updated: ${path.relative(rootDir, filePath)}`);
 }
 

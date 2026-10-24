@@ -63,19 +63,10 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 
 		if (ev.action.isDial()) {
 			const layout = this.getTouchstripLayout(ev.payload.settings);
-			const availableWidth = getTouchstripAvailableWidth(layout);
-			MarqueeService.getInstance().registerTouchstripConsumer(ev.action.id, availableWidth, 12, 600);
-			if (this.isThreeLineLayout(layout)) {
-				MarqueeService.getInstance().registerTouchstripConsumer(`${ev.action.id}:artist`, availableWidth, 11, 700);
-				MarqueeService.getInstance().registerTouchstripConsumer(`${ev.action.id}:track`, availableWidth, 13, 700);
-			}
-
 			try {
 				await ev.action.setFeedbackLayout(this.getFeedbackLayoutPath(layout));
 				this.appliedLayout.set(ev.action.id, layout);
 			} catch {}
-		} else {
-			MarqueeService.getInstance().registerConsumer(ev.action.id);
 		}
 		const state = StateManager.getInstance().getState();
 		await this.updateDialDisplay(ev.action, state, ev.payload.settings);
@@ -101,10 +92,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			clearTimeout(this.renderDebounceTimer);
 			this.renderDebounceTimer = null;
 		}
-		MarqueeService.getInstance().unregisterTouchstripConsumer(id);
-		MarqueeService.getInstance().unregisterTouchstripConsumer(`${id}:artist`);
-		MarqueeService.getInstance().unregisterTouchstripConsumer(`${id}:track`);
-		MarqueeService.getInstance().unregisterTouchstripConsumer(`${id}:title`);
+		MarqueeService.getInstance().unregisterConsumer(id);
 		this.checkPlaybackTimer();
 	}
 
@@ -144,14 +132,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 
 		if (ev.action.isDial()) {
 			const layout = this.getTouchstripLayout(ev.payload.settings);
-			const availableWidth = getTouchstripAvailableWidth(layout);
-			MarqueeService.getInstance().updateConsumerWidth(ev.action.id, availableWidth, 12, 600);
-			MarqueeService.getInstance().updateConsumerWidth(`${ev.action.id}:artist`, availableWidth, 11, 700);
-			MarqueeService.getInstance().updateConsumerWidth(`${ev.action.id}:track`, availableWidth, 13, 700);
-			MarqueeService.getInstance().updateConsumerWidth(`${ev.action.id}:title`, availableWidth, 12, 600);
-
 			const prevLayout = this.appliedLayout.get(ev.action.id);
 			if (prevLayout !== layout) {
+				MarqueeService.getInstance().unregisterConsumer(ev.action.id);
 				try {
 					await ev.action.setFeedbackLayout(this.getFeedbackLayoutPath(layout));
 					this.appliedLayout.set(ev.action.id, layout);
@@ -294,6 +277,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		iconPath: string,
 	): Promise<boolean> {
 		if (!state.isVersionMismatch) return false;
+		MarqueeService.getInstance().unregisterConsumer(dialAction.id);
 		if (dialAction.isDial()) {
 			const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
 			await dialAction.setFeedback({

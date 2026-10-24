@@ -9,11 +9,7 @@ import { TouchstripCoverLayout, YTMPlaybackState } from "../types/index.js";
 import { StateManager } from "./state-manager.js";
 
 // --- Layout Constants & Geometry ---
-export const TOUCHSTRIP_WIDTH_PX = 200;
-export const TOUCHSTRIP_HEIGHT_PX = 100;
-export const KEYPAD_KEY_WIDTH_PX = 72;
 export const KEYPAD_MAX_PIXEL_WIDTH = 64;
-export const MAX_LCD_PIXEL_WIDTH = 198;
 export const DEFAULT_MARQUEE_SPEED_MS = 250;
 export const START_PAUSE_TICKS = 4;
 export const END_PAUSE_TICKS = 3;
@@ -22,10 +18,7 @@ export const END_PAUSE_TICKS = 3;
  * Computes available text width based on dial touchstrip layout
  * Compact layout allocates 96px beside cover art; Full Bleed and Header Collapsed allocate 188px
  */
-export function getTouchstripAvailableWidth(
-	layout: TouchstripCoverLayout = TouchstripCoverLayout.COMPACT,
-	_showCover?: boolean,
-): number {
+export function getTouchstripAvailableWidth(layout: TouchstripCoverLayout = TouchstripCoverLayout.COMPACT): number {
 	switch (layout) {
 		case TouchstripCoverLayout.FULL_BLEED:
 		case TouchstripCoverLayout.HEADER_COLLAPSED:
@@ -36,7 +29,10 @@ export function getTouchstripAvailableWidth(
 	}
 }
 
-// --- Font Width Estimation (DirectWrite Upper-Bound) ---
+// --- Font Width Estimation & Grapheme Segmentation ---
+
+// Built-in V8 grapheme segmenter guarantees surrogate pairs and accents are never torn apart
+const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
 /**
  * DirectWrite-calibrated upper-bound character width estimation for Segoe UI (Windows) and SF Pro (macOS).
@@ -85,24 +81,61 @@ export function estimateTextWidthPx(text: string, fontSize = 12, fontWeight: num
 }
 
 /**
- * Measures text width in pixels using the upper-bound metric
- */
-export function measureTextPx(text: string, options?: { fontSize?: number; fontWeight?: number | string }): number {
-	return estimateTextWidthPx(text, options?.fontSize ?? 12, options?.fontWeight ?? 600);
-}
-
-// --- Grapheme Segmentation ---
-
-// Built-in V8 grapheme segmenter guarantees surrogate pairs and accents are never torn apart
-const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-
-/**
  * Splits text into user-perceived grapheme clusters using Intl.Segmenter
  * Prevents broken Unicode sequences when slicing sliding windows across multi-byte characters
  */
 export function splitGraphemes(text: string): string[] {
 	if (!text) return [];
 	return Array.from(graphemeSegmenter.segment(text), (s) => s.segment);
+}
+
+interface ParsedLine {
+	raw: string;
+	graphemes: string[];
+	widths: number[];
+	maxOffset: number;
+}
+
+/**
+ * Precomputes grapheme clusters, advance widths, and maximum scroll offset for a single line.
+ * Skips grapheme segmentation entirely when the line already fits within safeWidth.
+ */
+function parseLine(raw: string, safeWidth: number, fontSize: number, fontWeight: number | string): ParsedLine {
+	if (!raw || estimateTextWidthPx(raw, fontSize, fontWeight) <= safeWidth) {
+		return { raw, graphemes: [], widths: [], maxOffset: 0 };
+	}
+
+	const graphemes = splitGraphemes(raw);
+	const widths = graphemes.map((g) => estimateTextWidthPx(g, fontSize, fontWeight));
+
+	// Walk backwards from end of line to find smallest character index where remaining suffix fits safeWidth
+	let suffixWidth = 0;
+	let maxOffset = Math.max(0, graphemes.length - 1);
+	for (let i = graphemes.length - 1; i >= 1; i--) {
+		suffixWidth += widths[i];
+		if (suffixWidth > safeWidth) break;
+		maxOffset = i;
+	}
+
+	return { raw, graphemes, widths, maxOffset };
+}
+
+/**
+ * Extracts visible substring slice fitting safeWidth from precomputed grapheme widths
+ */
+function sliceLine(line: ParsedLine, currentOffset: number, safeWidth: number): string {
+	if (line.maxOffset <= 0) return line.raw;
+
+	const start = Math.max(0, Math.min(line.maxOffset, currentOffset));
+	let end = start;
+	let currentWidth = 0;
+
+	while (end < line.graphemes.length && currentWidth + line.widths[end] <= safeWidth) {
+		currentWidth += line.widths[end];
+		end++;
+	}
+
+	return line.graphemes.slice(start, end).join("");
 }
 
 // --- Independent Marquee Controller ---
@@ -117,7 +150,7 @@ export interface MarqueeControllerOptions {
 
 /**
  * Manages viewport boundaries, character sliding windows, and ping-pong animation state
- * for an isolated display element (dial title, artist, track, or keypad key).
+ * for an isolated display element (dial title, artist, track, or multi-line keypad key).
  */
 export class MarqueeController {
 	private availableWidthPx: number;
@@ -131,7 +164,7 @@ export class MarqueeController {
 	private pauseTicks: number;
 	private maxOffset = 0;
 	private rawText = "";
-	private graphemes: string[] = [];
+	private lines: ParsedLine[] = [];
 
 	constructor(options: MarqueeControllerOptions) {
 		this.availableWidthPx = options.availableWidthPx;
@@ -142,23 +175,11 @@ export class MarqueeController {
 		this.pauseTicks = this.startPauseTicks;
 	}
 
-	public setAvailableWidth(width: number): void {
-		if (this.availableWidthPx !== width) {
+	public setMetrics(width: number, fontSize: number, fontWeight: number | string): void {
+		if (this.availableWidthPx !== width || this.fontSize !== fontSize || this.fontWeight !== fontWeight) {
 			this.availableWidthPx = width;
-			this.recalculate();
-		}
-	}
-
-	public setFontSize(size: number): void {
-		if (this.fontSize !== size) {
-			this.fontSize = size;
-			this.recalculate();
-		}
-	}
-
-	public setFontWeight(weight: number | string): void {
-		if (this.fontWeight !== weight) {
-			this.fontWeight = weight;
+			this.fontSize = fontSize;
+			this.fontWeight = fontWeight;
 			this.recalculate();
 		}
 	}
@@ -166,14 +187,17 @@ export class MarqueeController {
 	public setText(text: string): void {
 		if (this.rawText !== text) {
 			this.rawText = text;
-			this.graphemes = splitGraphemes(text);
 			this.reset();
 			this.recalculate();
 		}
 	}
 
-	public getRawText(): string {
-		return this.rawText;
+	public setMultiLineText(multiLineText: string): void {
+		if (this.rawText === multiLineText) return;
+		this.rawText = multiLineText;
+		// Reuse unchanged parsed lines so live timestamp updates ({both}) do not re-segment static artist/title lines
+		const prevByRaw = new Map(this.lines.map((l) => [l.raw, l]));
+		this.recalculate(prevByRaw);
 	}
 
 	public isScrollable(): boolean {
@@ -222,98 +246,36 @@ export class MarqueeController {
 	}
 
 	/**
-	 * Extracts visible substring slice fitting safe viewport width without triggering native ellipsis (...)
+	 * Extracts visible substring slice(s) fitting safe viewport width without triggering native ellipsis (...)
 	 */
 	public getDisplayText(): string {
-		if (!this.rawText || this.graphemes.length === 0) return "";
+		if (this.lines.length === 0) return "";
 		// 2px safety margin guarantees remainder text strictly fits layout rectangle
 		const safeWidth = Math.max(20, this.availableWidthPx - 2);
-		const totalWidth = estimateTextWidthPx(this.rawText, this.fontSize, this.fontWeight);
-		if (totalWidth <= safeWidth) return this.rawText;
-
-		const start = Math.max(0, Math.min(this.graphemes.length, this.currentOffset));
-		let end = start;
-		let currentWidth = 0;
-
-		while (end < this.graphemes.length) {
-			const charWidth = estimateTextWidthPx(this.graphemes[end], this.fontSize, this.fontWeight);
-			if (currentWidth + charWidth > safeWidth) break;
-			currentWidth += charWidth;
-			end++;
+		if (this.lines.length === 1) {
+			return sliceLine(this.lines[0], this.currentOffset, safeWidth);
 		}
-
-		return this.graphemes.slice(start, end).join("");
+		return this.lines.map((line) => sliceLine(line, this.currentOffset, safeWidth)).join("\n");
 	}
 
-	/**
-	 * Keypad button text sliding window helper for standard multi-line push buttons
-	 */
-	public formatKeypadMultiLineText(multiLineText: string, maxPx: number = KEYPAD_MAX_PIXEL_WIDTH): string {
-		if (!multiLineText) return "";
-		const safeWidth = Math.max(20, maxPx - 2);
-
-		return multiLineText
-			.split("\n")
-			.map((line) => {
-				const trimmed = line.trim();
-				if (!trimmed) return "";
-				const lineWidth = estimateTextWidthPx(trimmed, 10, 600);
-				if (lineWidth <= safeWidth) return trimmed;
-
-				const graphemes = splitGraphemes(trimmed);
-				let maxLineOffset = 0;
-				for (let offset = 1; offset < graphemes.length; offset++) {
-					const rem = graphemes.slice(offset).join("");
-					if (estimateTextWidthPx(rem, 10, 600) <= safeWidth) {
-						maxLineOffset = offset;
-						break;
-					}
-				}
-				const clampedOffset = Math.min(this.currentOffset, maxLineOffset);
-				const start = Math.max(0, Math.min(graphemes.length, clampedOffset));
-				let end = start;
-				let currentWidth = 0;
-
-				while (end < graphemes.length) {
-					const charWidth = estimateTextWidthPx(graphemes[end], 10, 600);
-					if (currentWidth + charWidth > safeWidth) break;
-					currentWidth += charWidth;
-					end++;
-				}
-
-				return graphemes.slice(start, end).join("");
-			})
-			.join("\n");
-	}
-
-	/**
-	 * Recalculates maximum scroll offset based on available viewport width and text metrics
-	 */
-	private recalculate(): void {
-		if (!this.rawText || this.graphemes.length === 0) {
-			this.maxOffset = 0;
-			return;
-		}
-
-		const safeWidth = Math.max(20, this.availableWidthPx - 2);
-		const totalWidth = estimateTextWidthPx(this.rawText, this.fontSize, this.fontWeight);
-		if (totalWidth <= safeWidth) {
+	private recalculate(reuseCache?: Map<string, ParsedLine>): void {
+		if (!this.rawText) {
+			this.lines = [];
 			this.maxOffset = 0;
 			this.currentOffset = 0;
 			return;
 		}
 
-		// Find exact character index where remainder string fits safe viewport
-		let foundMax = Math.max(0, this.graphemes.length - 1);
-		for (let offset = 1; offset < this.graphemes.length; offset++) {
-			const rem = this.graphemes.slice(offset).join("");
-			if (estimateTextWidthPx(rem, this.fontSize, this.fontWeight) <= safeWidth) {
-				foundMax = offset;
-				break;
-			}
-		}
+		const safeWidth = Math.max(20, this.availableWidthPx - 2);
+		let maxOff = 0;
+		this.lines = this.rawText.split("\n").map((line) => {
+			const trimmed = line.trim();
+			const parsed = reuseCache?.get(trimmed) ?? parseLine(trimmed, safeWidth, this.fontSize, this.fontWeight);
+			if (parsed.maxOffset > maxOff) maxOff = parsed.maxOffset;
+			return parsed;
+		});
 
-		this.maxOffset = foundMax;
+		this.maxOffset = maxOff;
 		this.currentOffset = Math.max(0, Math.min(this.maxOffset, this.currentOffset));
 	}
 }
@@ -321,19 +283,14 @@ export class MarqueeController {
 // --- Central Marquee Service ---
 
 /**
- * Singleton service coordinating animation ticks, consumer registries, and lifecycle updates
+ * Singleton service coordinating animation ticks, consumer controllers, and lifecycle updates
  */
 export class MarqueeService extends EventEmitter {
 	private static instance: MarqueeService;
 	private marqueeTimer: NodeJS.Timeout | null = null;
 	private speedMs = DEFAULT_MARQUEE_SPEED_MS;
 	private lastTrackKey = "";
-
-	private defaultTouchstripController = new MarqueeController({ availableWidthPx: 96 });
-	private defaultKeypadController = new MarqueeController({ availableWidthPx: KEYPAD_MAX_PIXEL_WIDTH, fontSize: 10 });
 	private controllers = new Map<string, MarqueeController>();
-	private registeredConsumers = new Set<string>();
-	private anonymousConsumerCount = 0;
 
 	private constructor() {
 		super();
@@ -359,101 +316,28 @@ export class MarqueeService extends EventEmitter {
 		}
 	}
 
-	public registerConsumer(consumerId?: string): void {
-		if (consumerId) this.registeredConsumers.add(consumerId);
-		else this.anonymousConsumerCount++;
-		this.checkTimer();
-	}
-
-	public unregisterConsumer(consumerId?: string): void {
-		if (consumerId) {
-			this.registeredConsumers.delete(consumerId);
-			this.controllers.delete(consumerId);
-		} else {
-			this.anonymousConsumerCount = Math.max(0, this.anonymousConsumerCount - 1);
-		}
-		this.checkTimer();
-	}
-
 	/**
-	 * Registers a dedicated Touchstrip consumer with specified available pixel width and font metrics
+	 * Removes a consumer controller and any associated sub-controllers (e.g. :artist, :track)
 	 */
-	public registerTouchstripConsumer(
-		id: string,
-		availableWidthPx: number,
-		fontSize = 12,
-		fontWeight: number | string = 600,
-	): MarqueeController {
-		this.registeredConsumers.add(id);
-		let controller = this.controllers.get(id);
-		if (!controller) {
-			controller = new MarqueeController({ availableWidthPx, fontSize, fontWeight });
-			this.controllers.set(id, controller);
-		} else {
-			controller.setAvailableWidth(availableWidthPx);
-			controller.setFontSize(fontSize);
-			controller.setFontWeight(fontWeight);
+	public unregisterConsumer(consumerId: string): void {
+		let removed = this.controllers.delete(consumerId);
+		const prefix = `${consumerId}:`;
+		for (const key of this.controllers.keys()) {
+			if (key.startsWith(prefix)) {
+				this.controllers.delete(key);
+				removed = true;
+			}
 		}
-
-		// Initialize with current playback state text immediately
-		const state = StateManager.getInstance().getState();
-		const artist = (state.artist || "").replace(/[\r\n]+/g, " ").trim();
-		const title = (state.title || "").replace(/[\r\n]+/g, " ").trim();
-		const rawTitle = artist && title ? `${artist} - ${title}` : artist || title;
-
-		if (id.endsWith(":artist")) controller.setText(artist);
-		else if (id.endsWith(":title") || id.endsWith(":track")) controller.setText(title);
-		else controller.setText(rawTitle);
-
-		this.checkTimer();
-		return controller;
-	}
-
-	public unregisterTouchstripConsumer(id: string): void {
-		this.unregisterConsumer(id);
+		if (removed) this.checkTimer();
 	}
 
 	/**
-	 * Registers a dedicated Keypad consumer for push button marquee text
-	 */
-	public registerKeypadConsumer(id: string, width: number = KEYPAD_MAX_PIXEL_WIDTH): MarqueeController {
-		this.registeredConsumers.add(id);
-		let controller = this.controllers.get(id);
-		if (!controller) {
-			controller = new MarqueeController({ availableWidthPx: width, fontSize: 10 });
-			this.controllers.set(id, controller);
-		} else {
-			controller.setAvailableWidth(width);
-		}
-		this.checkTimer();
-		return controller;
-	}
-
-	public unregisterKeypadConsumer(id: string): void {
-		this.unregisterConsumer(id);
-	}
-
-	/**
-	 * Updates available container width and optional font metrics for a registered consumer
-	 */
-	public updateConsumerWidth(id: string, width: number, fontSize?: number, fontWeight?: number | string): void {
-		const controller = this.controllers.get(id);
-		if (controller) {
-			controller.setAvailableWidth(width);
-			if (fontSize !== undefined) controller.setFontSize(fontSize);
-			if (fontWeight !== undefined) controller.setFontWeight(fontWeight);
-			this.checkTimer();
-		}
-	}
-
-	/**
-	 * Returns formatted marquee display text for LCD touchstrips.
-	 * If consumerId is supplied, retrieves or lazily creates that consumer's isolated controller.
+	 * Returns formatted marquee display text for LCD touchstrips
 	 */
 	public getTouchstripDisplayText(
 		fullText: string,
 		availableWidthPx = 96,
-		consumerId?: string,
+		consumerId = "default:touchstrip",
 		fontSize = 12,
 		fontWeight: number | string = 600,
 	): string {
@@ -461,29 +345,10 @@ export class MarqueeService extends EventEmitter {
 		const sanitized = fullText.replace(/[\r\n]+/g, " ").trim();
 		if (!sanitized) return "";
 
-		const controller = consumerId
-			? this.getOrCreateController(consumerId, availableWidthPx, fontSize, fontWeight)
-			: this.defaultTouchstripController;
-
-		if (!consumerId) {
-			controller.setAvailableWidth(availableWidthPx);
-			controller.setFontSize(fontSize);
-			controller.setFontWeight(fontWeight);
-		}
-
-		if (controller.getRawText() !== sanitized) {
-			controller.setText(sanitized);
-			this.checkTimer();
-		}
-
+		const controller = this.getOrCreateController(consumerId, availableWidthPx, fontSize, fontWeight);
+		controller.setText(sanitized);
+		this.checkTimer();
 		return controller.getDisplayText();
-	}
-
-	/**
-	 * Backward compatible LCD touchstrip formatting function
-	 */
-	public getDisplayText(fullText: string, availableWidthPx: number = MAX_LCD_PIXEL_WIDTH): string {
-		return this.getTouchstripDisplayText(fullText, availableWidthPx);
 	}
 
 	/**
@@ -492,14 +357,13 @@ export class MarqueeService extends EventEmitter {
 	public formatKeypadMarqueeText(
 		multiLineText: string,
 		maxPx: number = KEYPAD_MAX_PIXEL_WIDTH,
-		consumerId?: string,
+		consumerId = "default:keypad",
 	): string {
 		if (!multiLineText) return "";
-		const controller =
-			consumerId && this.controllers.has(consumerId) ? this.controllers.get(consumerId)! : this.defaultKeypadController;
-		const result = controller.formatKeypadMultiLineText(multiLineText, maxPx);
+		const controller = this.getOrCreateController(consumerId, maxPx, 10, 600);
+		controller.setMultiLineText(multiLineText);
 		this.checkTimer();
-		return result;
+		return controller.getDisplayText();
 	}
 
 	private getOrCreateController(
@@ -512,33 +376,25 @@ export class MarqueeService extends EventEmitter {
 		if (!controller) {
 			controller = new MarqueeController({ availableWidthPx: width, fontSize, fontWeight });
 			this.controllers.set(id, controller);
-			this.registeredConsumers.add(id);
 		} else {
-			controller.setAvailableWidth(width);
-			controller.setFontSize(fontSize);
-			controller.setFontWeight(fontWeight);
+			controller.setMetrics(width, fontSize, fontWeight);
 		}
 		return controller;
 	}
 
 	/**
-	 * Resets animation offsets on track change
+	 * Resets animation offsets on track change and syncs timer with playback state
 	 */
 	private handleStateChange(state: YTMPlaybackState): void {
 		const artist = (state.artist || "").replace(/[\r\n]+/g, " ").trim();
 		const title = (state.title || "").replace(/[\r\n]+/g, " ").trim();
 		const key = `${artist} - ${title}`;
-		if (key === this.lastTrackKey) return;
-		this.lastTrackKey = key;
 
-		const fullTitle = artist && title ? `${artist} - ${title}` : artist || title;
-		this.defaultTouchstripController.setText(fullTitle);
-		this.defaultKeypadController.reset();
-
-		for (const [id, controller] of this.controllers.entries()) {
-			if (id.endsWith(":artist")) controller.setText(artist);
-			else if (id.endsWith(":title") || id.endsWith(":track")) controller.setText(title);
-			else controller.setText(fullTitle);
+		if (key !== this.lastTrackKey) {
+			this.lastTrackKey = key;
+			for (const controller of this.controllers.values()) {
+				controller.reset();
+			}
 		}
 		this.checkTimer();
 	}
@@ -548,13 +404,8 @@ export class MarqueeService extends EventEmitter {
 	 */
 	private checkTimer(): void {
 		const state = StateManager.getInstance().getState();
-		const hasConsumers = this.registeredConsumers.size + this.anonymousConsumerCount > 0;
-		const anyScrollable =
-			this.defaultTouchstripController.isScrollable() ||
-			this.defaultKeypadController.isScrollable() ||
-			Array.from(this.controllers.values()).some((c) => c.isScrollable());
-
-		const shouldRun = hasConsumers && !state.paused && anyScrollable;
+		const anyScrollable = Array.from(this.controllers.values()).some((c) => c.isScrollable());
+		const shouldRun = this.controllers.size > 0 && !state.paused && anyScrollable;
 
 		if (shouldRun && !this.marqueeTimer) {
 			this.marqueeTimer = setInterval(() => this.tick(), this.speedMs);
@@ -566,8 +417,6 @@ export class MarqueeService extends EventEmitter {
 
 	private tick(): void {
 		let changed = false;
-		if (this.defaultTouchstripController.tick()) changed = true;
-		if (this.defaultKeypadController.tick()) changed = true;
 		for (const controller of this.controllers.values()) {
 			if (controller.tick()) changed = true;
 		}

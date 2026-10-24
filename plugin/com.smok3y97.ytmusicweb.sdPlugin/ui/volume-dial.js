@@ -3,8 +3,9 @@
  */
 const volumeStepInput = document.getElementById("volumeStep");
 const volumeStepVal = document.getElementById("volumeStepVal");
+const titleTemplateGroup = document.getElementById("titleTemplateGroup");
 const titleTemplateInput = document.getElementById("titleTemplate");
-const showCoverCheckbox = document.getElementById("showCover");
+const touchstripLayoutSelect = document.getElementById("touchstripLayout");
 
 function updateStepLabel() {
 	if (volumeStepVal && volumeStepInput) {
@@ -12,12 +13,24 @@ function updateStepLabel() {
 	}
 }
 
+function updateLayoutVisibility() {
+	if (titleTemplateGroup && touchstripLayoutSelect) {
+		const isHeader = touchstripLayoutSelect.value === "header_collapsed";
+		titleTemplateGroup.style.display = isHeader ? "" : "none";
+	}
+}
+
 StreamDeckClient.onLocalSettings((settings) => {
 	if (volumeStepInput) volumeStepInput.value = settings.step || 5;
 	updateStepLabel();
 	if (titleTemplateInput) titleTemplateInput.value = settings.titleTemplate || "YouTube Music Volume";
-	if (showCoverCheckbox) showCoverCheckbox.checked = settings.showCover !== false;
+	if (touchstripLayoutSelect) touchstripLayoutSelect.value = settings.touchstripLayout || "compact";
+	updateLayoutVisibility();
 });
+
+if (touchstripLayoutSelect) {
+	touchstripLayoutSelect.addEventListener("change", updateLayoutVisibility);
+}
 
 if (volumeStepInput) {
 	volumeStepInput.addEventListener("input", updateStepLabel);
@@ -31,8 +44,8 @@ function saveSettings() {
 	StreamDeckClient.saveLocalSettings({
 		step: stepVal,
 		titleTemplate: titleTemplateInput ? titleTemplateInput.value : "YouTube Music Volume",
-		showCover: showCoverCheckbox ? showCoverCheckbox.checked : true,
+		touchstripLayout: touchstripLayoutSelect ? touchstripLayoutSelect.value : "compact",
 	});
 }
 
-StreamDeckClient.bindAutoSave([volumeStepInput, titleTemplateInput, showCoverCheckbox], saveSettings);
+StreamDeckClient.bindAutoSave([volumeStepInput, titleTemplateInput, touchstripLayoutSelect], saveSettings);

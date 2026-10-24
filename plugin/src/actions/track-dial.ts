@@ -20,7 +20,7 @@ import {
 import { ImageRenderer } from "../services/image-renderer.js";
 import { StateManager } from "../services/state-manager.js";
 import { WebSocketService } from "../services/websocket-server.js";
-import { TrackDialSettings, YTMPlaybackState } from "../types/index.js";
+import { TouchstripCoverLayout, TrackDialSettings, YTMPlaybackState } from "../types/index.js";
 import { BaseDialAction } from "./base-dial-action.js";
 
 @action({ UUID: "com.smok3y97.ytmusicweb.trackdial" })
@@ -86,30 +86,47 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 					const clampedTime = Math.min(curTime, state.duration);
 					progressPercent = Math.min(100, Math.max(0, Math.round((clampedTime / state.duration) * 100)));
 				}
-				const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
 				const timeText = StateManager.getInstance().formatTimeTemplate(
 					settings.timeTemplate || "{both}",
 					curTime,
 					state.duration,
 				);
+				const layout = this.getTouchstripLayout(settings);
+				const coverImage = state.coverBase64
+					? layout === TouchstripCoverLayout.FULL_BLEED
+						? ImageRenderer.getInstance().getFullBleedCover(state.coverBase64, state.paused)
+						: ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
+					: "assets/actions/trackdial/icon.svg";
 
-				const coverImage =
-					settings.showCover !== false && state.coverBase64
-						? ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
-						: "assets/actions/trackdial/icon.svg";
-
-				this.lastRenderedTitle.set(dialAction.id, titleText);
 				this.lastRenderedValue.set(dialAction.id, timeText);
 				this.lastRenderedIndicator.set(dialAction.id, progressPercent);
 
-				await dialAction.setFeedback({
-					title: titleText,
-					value: timeText,
-					icon: coverImage,
-					indicator: progressPercent,
-				});
+				if (this.isThreeLineLayout(layout)) {
+					const artistText = this.getFormattedMarqueeArtist(settings, dialAction.id);
+					const trackTitle = this.getFormattedMarqueeTrackTitle(settings, dialAction.id);
+					this.lastRenderedArtist.set(dialAction.id, artistText);
+					this.lastRenderedTrack.set(dialAction.id, trackTitle);
+
+					await dialAction.setFeedback({
+						artist: artistText,
+						track: trackTitle,
+						value: timeText,
+						icon: coverImage,
+						indicator: progressPercent,
+					});
+				} else {
+					const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
+					this.lastRenderedTitle.set(dialAction.id, titleText);
+
+					await dialAction.setFeedback({
+						title: titleText,
+						value: timeText,
+						icon: coverImage,
+						indicator: progressPercent,
+					});
+				}
 			} else if (dialAction.isKey()) {
-				await this.updateKeyCoverImage(dialAction, state, settings.showCover);
+				await this.updateKeyCoverImage(dialAction, state);
 			}
 		} catch {}
 	}

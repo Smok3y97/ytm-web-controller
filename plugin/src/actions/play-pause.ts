@@ -16,7 +16,7 @@ import {
 } from "@elgato/streamdeck";
 
 import { ImageRenderer } from "../services/image-renderer.js";
-import { MarqueeService } from "../services/marquee-service.js";
+import { KEYPAD_MAX_PIXEL_WIDTH, MarqueeService } from "../services/marquee-service.js";
 import { StateManager } from "../services/state-manager.js";
 import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
 import { WebSocketService } from "../services/websocket-server.js";
@@ -34,7 +34,6 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 	private lastRenderedImage: Map<string, string | undefined> = new Map();
 	private lastRenderedTitle: Map<string, string> = new Map();
 	private lastRenderedMismatch: Map<string, boolean> = new Map();
-	private registeredConsumers: Set<string> = new Set();
 	private keyPressTimers: Map<string, NodeJS.Timeout> = new Map();
 	private isLongPressTriggered: Map<string, boolean> = new Map();
 	private staticTrackFormattedCache: Map<string, { trackKey: string; text: string }> = new Map();
@@ -77,23 +76,12 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		this.lastRenderedTitle.delete(actionId);
 		this.lastRenderedMismatch.delete(actionId);
 		this.staticTrackFormattedCache.delete(actionId);
-		this.syncConsumerState(actionId, false);
+		MarqueeService.getInstance().unregisterConsumer(actionId);
 		this.activeActions.delete(actionId);
 		this.actionSettings.delete(actionId);
 		if (this.activeActions.size === 0 && this.renderDebounceTimer) {
 			clearTimeout(this.renderDebounceTimer);
 			this.renderDebounceTimer = null;
-		}
-	}
-
-	private syncConsumerState(actionId: string, needsMarquee: boolean): void {
-		const isRegistered = this.registeredConsumers.has(actionId);
-		if (needsMarquee && !isRegistered) {
-			this.registeredConsumers.add(actionId);
-			MarqueeService.getInstance().registerConsumer();
-		} else if (!needsMarquee && isRegistered) {
-			this.registeredConsumers.delete(actionId);
-			MarqueeService.getInstance().unregisterConsumer();
 		}
 	}
 
@@ -212,7 +200,11 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 				const rawTemplate = settings.titleTemplate?.trim();
 				const template = rawTemplate || DEFAULT_PLAYPAUSE_TEMPLATE;
 				const rawFormatted = this.getFormattedTrackText(actionId, template, state);
-				const marqueeTitle = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
+				const marqueeTitle = MarqueeService.getInstance().formatKeypadMarqueeText(
+					rawFormatted,
+					KEYPAD_MAX_PIXEL_WIDTH,
+					actionId,
+				);
 
 				const prevTitle = this.lastRenderedTitle.get(actionId);
 				if (prevTitle !== marqueeTitle) {
@@ -235,7 +227,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 			const prevMismatch = this.lastRenderedMismatch.get(actionInstance.id);
 
 			if (isMismatch) {
-				this.syncConsumerState(actionInstance.id, false);
+				MarqueeService.getInstance().unregisterConsumer(actionInstance.id);
 				if (prevMismatch !== true) {
 					await actionInstance.setTitle("");
 					await actionInstance.setImage(getActionWarningSvgDataUrl("playpause"));
@@ -268,14 +260,17 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 
 			// 2. Calculate and set key title (Artist / Title / Time with Marquee support)
 			let titleText = "";
-			const needsMarquee = !!settings.showTitle;
-			this.syncConsumerState(actionInstance.id, needsMarquee);
-
 			if (settings.showTitle) {
 				const rawTemplate = settings.titleTemplate?.trim();
 				const template = rawTemplate || DEFAULT_PLAYPAUSE_TEMPLATE;
 				const rawFormatted = this.getFormattedTrackText(actionInstance.id, template, state);
-				titleText = MarqueeService.getInstance().formatKeypadMarqueeText(rawFormatted);
+				titleText = MarqueeService.getInstance().formatKeypadMarqueeText(
+					rawFormatted,
+					KEYPAD_MAX_PIXEL_WIDTH,
+					actionInstance.id,
+				);
+			} else {
+				MarqueeService.getInstance().unregisterConsumer(actionInstance.id);
 			}
 
 			const prevTitle = this.lastRenderedTitle.get(actionInstance.id);

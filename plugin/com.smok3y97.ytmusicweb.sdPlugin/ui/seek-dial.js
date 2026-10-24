@@ -3,13 +3,21 @@
  */
 const seekStepInput = document.getElementById("seekStep");
 const seekStepVal = document.getElementById("seekStepVal");
+const titleTemplateGroup = document.getElementById("titleTemplateGroup");
 const titleTemplateInput = document.getElementById("titleTemplate");
 const timeTemplateInput = document.getElementById("timeTemplate");
-const showCoverCheckbox = document.getElementById("showCover");
+const touchstripLayoutSelect = document.getElementById("touchstripLayout");
 
 function updateStepLabel() {
 	if (seekStepVal && seekStepInput) {
 		seekStepVal.textContent = `${seekStepInput.value}s`;
+	}
+}
+
+function updateLayoutVisibility() {
+	if (titleTemplateGroup && touchstripLayoutSelect) {
+		const isHeader = touchstripLayoutSelect.value === "header_collapsed";
+		titleTemplateGroup.style.display = isHeader ? "" : "none";
 	}
 }
 
@@ -18,8 +26,13 @@ StreamDeckClient.onLocalSettings((settings) => {
 	updateStepLabel();
 	if (titleTemplateInput) titleTemplateInput.value = settings.titleTemplate || "{artist} - {title}";
 	if (timeTemplateInput) timeTemplateInput.value = settings.timeTemplate || "{both}";
-	if (showCoverCheckbox) showCoverCheckbox.checked = settings.showCover !== false;
+	if (touchstripLayoutSelect) touchstripLayoutSelect.value = settings.touchstripLayout || "compact";
+	updateLayoutVisibility();
 });
+
+if (touchstripLayoutSelect) {
+	touchstripLayoutSelect.addEventListener("change", updateLayoutVisibility);
+}
 
 if (seekStepInput) {
 	seekStepInput.addEventListener("input", updateStepLabel);
@@ -34,8 +47,11 @@ function saveSettings() {
 		seekStep: stepVal,
 		titleTemplate: titleTemplateInput ? titleTemplateInput.value : "{artist} - {title}",
 		timeTemplate: timeTemplateInput ? timeTemplateInput.value : "{both}",
-		showCover: showCoverCheckbox ? showCoverCheckbox.checked : true,
+		touchstripLayout: touchstripLayoutSelect ? touchstripLayoutSelect.value : "compact",
 	});
 }
 
-StreamDeckClient.bindAutoSave([seekStepInput, titleTemplateInput, timeTemplateInput, showCoverCheckbox], saveSettings);
+StreamDeckClient.bindAutoSave(
+	[seekStepInput, titleTemplateInput, timeTemplateInput, touchstripLayoutSelect],
+	saveSettings,
+);

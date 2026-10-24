@@ -10,6 +10,7 @@ export class ImageRenderer {
 	private static instance: ImageRenderer;
 	private coverCache: Map<string, string> = new Map();
 	private overlayCache: Map<number, string> = new Map();
+	private fullBleedCache: Map<number, string> = new Map();
 	private inFlightRequests: Map<string, Promise<string | null>> = new Map();
 	private maxCacheSize = 20;
 
@@ -24,10 +25,10 @@ export class ImageRenderer {
 
 	/**
 	 * Compute compact 32-bit FNV-1a hash for large base64 strings
-	 * Prevents storing 150-350 KB strings as Map keys in RAM
+	 * Incorporates string length in initial seed to prevent collisions
 	 */
 	private static hashKey(str: string): number {
-		let hash = 2166136261;
+		let hash = (2166136261 ^ str.length) >>> 0;
 		const len = Math.min(str.length, 1024);
 		for (let i = 0; i < len; i++) {
 			hash ^= str.charCodeAt(i);
@@ -94,7 +95,7 @@ export class ImageRenderer {
 			return coverBase64;
 		}
 
-		const cacheKey = ImageRenderer.hashKey(coverBase64);
+		const cacheKey = ImageRenderer.hashKey(`overlay:${coverBase64}`);
 
 		if (this.overlayCache.has(cacheKey)) {
 			const cached = this.overlayCache.get(cacheKey)!;
@@ -132,6 +133,58 @@ export class ImageRenderer {
 		}
 
 		this.overlayCache.set(cacheKey, dataUrl);
+		return dataUrl;
+	}
+
+	/**
+	 * Produce a full 200x100 touchstrip background from album artwork
+	 * with dark scrim for overlay text readability and pause indicator when paused
+	 */
+	public getFullBleedCover(coverBase64: string, paused: boolean): string {
+		if (!coverBase64) return "";
+
+		const cacheKey = ImageRenderer.hashKey(`fullbleed:${paused ? "paused" : "playing"}:${coverBase64}`);
+
+		if (this.fullBleedCache.has(cacheKey)) {
+			const cached = this.fullBleedCache.get(cacheKey)!;
+			// Refresh key position to implement true LRU eviction
+			this.fullBleedCache.delete(cacheKey);
+			this.fullBleedCache.set(cacheKey, cached);
+			return cached;
+		}
+
+		// Security guard: Validate coverBase64 format to prevent SVG/XML template injection
+		if (
+			!coverBase64.startsWith("data:image/") ||
+			coverBase64.includes('"') ||
+			coverBase64.includes("<") ||
+			coverBase64.includes(">")
+		) {
+			return "";
+		}
+
+		// 200x100 SVG with dark scrim (0.55 opacity) to guarantee crisp title/timestamp legibility
+		const pauseBadge = paused
+			? `  <circle cx="100" cy="50" r="22" fill="#000000" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/>
+  <rect x="94" y="41" width="4.5" height="18" fill="#ffffff" rx="1.5"/>
+  <rect x="101.5" y="41" width="4.5" height="18" fill="#ffffff" rx="1.5"/>`
+			: "";
+
+		const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 100" width="200" height="100">
+  <image href="${coverBase64}" xlink:href="${coverBase64}" x="0" y="0" width="200" height="100" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="0" y="0" width="200" height="100" fill="#000000" fill-opacity="0.55"/>
+${pauseBadge}
+</svg>`;
+
+		const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+
+		// Evict oldest cached overlay in RAM to maintain memory bounds
+		if (this.fullBleedCache.size >= this.maxCacheSize) {
+			const firstKey = this.fullBleedCache.keys().next().value;
+			if (firstKey !== undefined) this.fullBleedCache.delete(firstKey);
+		}
+
+		this.fullBleedCache.set(cacheKey, dataUrl);
 		return dataUrl;
 	}
 }

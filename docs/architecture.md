@@ -223,7 +223,10 @@ plugin/
 │   │   ├── actions/         # SVG action glyphs (white default, red active state)
 │   │   └── overlay/         # OBS Studio Browser Source web widget (/overlay)
 │   ├── bin/                 # Compiled plugin bundle (plugin.js) & native helper (ytm-focus.exe)
-│   ├── layouts/             # Stream Deck + Dial LCD JSON layouts (dial_layout.json)
+│   ├── layouts/             # Stream Deck + Dial LCD JSON layout definitions
+│   │   ├── dial_layout.json # Default Compact side-by-side 3-line layout
+│   │   ├── dial_layout_full_bleed.json # Full bleed background cover 3-line layout
+│   │   └── dial_layout_header_collapsed.json # Collapsed top title marquee banner layout
 │   └── ui/                  # Modular Property Inspector (PI) HTML/JS Frontend
 │       ├── common.html/.js  # Dynamic inspector for stateless/trigger keypad actions
 │       ├── copy-url.html/.js # Copy Song URL inspector with template builder
@@ -392,8 +395,8 @@ The browser companion extension runs in the context of `https://music.youtube.co
 - **`StateManager`**: Stores active playback state, performs local timestamp-based time interpolation (`getInterpolatedCurrentTime()`), and manages state change lifecycle events.
 - **`TemplateEngine`**: Isolated placeholder formatting engine for Track Titles, Times, Formatted Tracks, Volume readouts, and Seek button labels across keypad buttons and LCD touchstrips.
 - **`MetadataSanitizer`**: Multi-language DOM metadata filtering engine that strips out non-album tokens (view counts, upload timestamps, release years, like counts) across internationalized YouTube Music interfaces. Pattern constants are imported directly from `plugin/src/services/metadata-patterns.ts`, auto-generated from `shared/metadata-patterns.json` (Single Source of Truth) via `npm run sync:patterns` to maintain 100% parity across Plugin and Browser Extension.
-- **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs, featuring LRU eviction and CJK full-width character detection for accurate LCD text width estimation.
-- **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs with bounded in-RAM LRU overlay caching.
+- **`MarqueeService`**: Ping-pong bounce scroller for long titles on Stream Deck + LCDs and keypad buttons, powered by isolated `MarqueeController` instances with DirectWrite-calibrated upper-bound metrics to prevent native ellipsis truncation.
+- **`ImageRenderer`**: Generates volume bars, mute states, and fetches cover art into RAM buffers as Base64 Data URLs with bounded in-RAM LRU overlay and full-bleed caching.
 - **`DiscordRpcService`**: Broadcasts rich presence to Discord Desktop with timeline calculations anchored to the state snapshot timestamp, eliminating debounce drift. Consumes pre-sanitized metadata directly from `StateManager`, eliminating redundant re-sanitization cycles.
 - **`ObsExporterService`**: Debounced safe writer for OBS Text (GDI+) file sources (`.txt`).
 - **`VersionControlService`**: Dynamic manifest reader and version compatibility validator.
@@ -471,9 +474,53 @@ The Property Inspector frontend uses a modular architecture with centralized int
 The Stream Deck + integration combines physical rotary encoders with high-density LCD touchstrips (`200 × 100 px` per dial slot).
 
 ### 🎛️ Touchstrip Layout & Visual Pipeline
-- **Layout Definition (`layouts/dial_layout.json`)**: Single Source of Truth 4-item LCD layout rendering track artwork/title, artist/album, volume level/progress bar, and playback state icon.
-- **In-Memory Rendering Pipeline & Memoization**: Dynamic canvas drawings, SVG generation, and album cover processing are executed entirely in RAM (`ImageRenderer`) and output as Base64 Data URLs with zero intermediate disk writes. Bounded in-RAM caches (`overlayCache` in `ImageRenderer` and `warningIconCache` in `warning-icons.ts`) eliminate duplicate SVG string templates and URI encoding allocations across render and marquee ticks.
+- **Layout Definition**: Stream Deck + Touchstrip layouts defined in JSON (`com.smok3y97.ytmusicweb.sdPlugin/layouts/`):
+  - **`Compact (Side-by-Side)`** (`layouts/dial_layout.json`): 88×88 px square album cover left (`[6, 6, 88, 88]`) maximizing available height, with a 3-line information layout on the right (`[98, y, 96, h]`, available marquee width: 96 px):
+    1. Line 1: `artist` (left-aligned, 11px font weight 700, starting adjacent to cover at `x: 98`).
+    2. Line 2: `track` (Song Title, left-aligned, 13px font weight 700, starting adjacent to cover at `x: 98`; decoupled from Stream Deck action title overrides).
+    3. Line 3: `value` (right-aligned time / status, 14px font weight 600) with a dedicated progress/volume bar (`indicator`) underneath. If cover is disabled, text area expands to full 184 px width.
+  - **`Full Bleed (Background Cover)`** (`layouts/dial_layout_full_bleed.json`): 200×100 px in-RAM album artwork background (`[0, 0, 200, 100]`) with 55% dark scrim and centered pause overlay. Features the 3-line information layout across the full 188 px available width: Line 1: `artist` (`[6, 8, 188, 22]`, 11px font weight 700), Line 2: `track` (`[6, 32, 188, 24]`, 13px font weight 700), Line 3: `value` (`[6, 58, 188, 22]`, 14px font weight 600) and `indicator` (`[6, 82, 188, 10]`).
+  - **`Header Collapsed (Top Title)`** (`layouts/dial_layout_header_collapsed.json`): Full-width marquee banner spanning across the top (`[6, 4, 188, 24]`, available width: 188 px). Below the banner: 60×60 px square cover left (`[6, 32, 60, 60]`) with time readout (`[74, 34, 120, 24]`) and progress bar (`[74, 66, 120, 12]`) on the right.
+- **In-Memory Rendering Pipeline & Memoization**: Dynamic canvas drawings, SVG generation, and album cover processing are executed entirely in RAM (`ImageRenderer`) and output as Base64 Data URLs with zero intermediate disk writes. Bounded in-RAM caches (`overlayCache` and `fullBleedCache` in `ImageRenderer`, and `warningIconCache` in `warning-icons.ts`) eliminate duplicate SVG string templates and URI encoding allocations across render and marquee ticks.
 - **Hardware Refresh Limit & Settings Caching**: Programmatic LCD touchstrip renders and key updates must not exceed **10 updates per second (10 Hz)** to avoid USB bus congestion and Stream Deck firmware latency. Dial actions cache Property Inspector settings in `actionSettings` maps on `onWillAppear` and `onDidReceiveSettings`, completely eliminating IPC `getSettings()` round-trips during render loops and marquee ticks. `updateAllDials` is debounced by 30ms to coalesce rapid state change events.
+
+### 🔤 Decoupled Marquee Architecture & Layout Engine
+
+```mermaid
+graph TD
+    MS["MarqueeService\n(Central Master Ticker / 4.0 Hz / 250ms)"]
+
+    subgraph Viewports ["Independent Viewport Controllers"]
+        TS["MarqueeController: Touchstrip\n(Stream Deck + LCD Dials)"]
+        KP["MarqueeController: Keypad\n(Play/Pause Buttons)"]
+    end
+
+    subgraph Metrics ["DirectWrite Font Metrics"]
+        PM["Upper-Bound Font Metrics\nestimateTextWidthPx (Zero Ellipsis)\nZero LRU Allocation Overhead"]
+    end
+
+    subgraph Output ["Hardware Feedback"]
+        LCD["LCD Touchstrip (200 × 100 px)\nCompact: 96 px Artist & Track\nFull Bleed: 188 px Artist & Track\nHeader Collapsed: 188 px Title"]
+        KEYS["Stream Deck Keys (72 × 72 px)\nMulti-Line Clamped (64 px)"]
+    end
+
+    MS --> TS
+    MS --> KP
+
+    TS --> Metrics
+    KP --> Metrics
+
+    TS --> LCD
+    KP --> KEYS
+```
+
+- **Separation of Concerns**: Keypads (64 px usable width) and LCD Touchstrips (96–188 px available width) never share scroll offsets or max offset caches. Each registered consumer or action ID maintains an isolated `MarqueeController` instance.
+- **Qt SVG 1.2 Tiny Hardware Limitation**: Elgato's `QSvgRenderer` implements SVG 1.2 Tiny, which ignores SVG `<text>` elements and `<clipPath>` inside `pixmap` items. LCD Touchstrip text is therefore strictly rendered via native `type: "text"` layout items using `setFeedback({ title, artist, track })`.
+- **DirectWrite Ellipsis Truncation Mitigation**: Windows DirectWrite automatically truncates strings and appends `...` if rendered width overflows the container by $\ge 1\text{ px}$. `estimateTextWidthPx` implements a DirectWrite-calibrated upper-bound font metric ($\text{estimatedWidth} \ge \text{actualWidth}$ across Segoe UI and SF Pro). Using a 2 px safety margin ($\text{safeWidth} = \text{availableWidth} - 2$) guarantees that text slices never exceed the layout boundaries while utilizing $>95\%$ of available horizontal display width without native ellipsis.
+- **Unicode Grapheme Boundary Slicing**: Slices sliding windows along grapheme cluster boundaries using the built-in V8 `Intl.Segmenter`, preventing broken multi-byte sequences, split surrogate pairs, or orphaned diacritics.
+- **Strict Offset Clamping & Ping-Pong Lifecycle**: The visible character offset is always hard-clamped via $\text{currentOffset} = \max(0, \min(\text{maxOffset}, \text{currentOffset}))$, completely eliminating blank/empty-space overshoot. The controller cycles through 4 start pause ticks, step-by-step forward advance, 3 end pause ticks, and step-by-step reverse scrolling back to 0.
+- **Dynamic Remaining Width Deduction**: Usable title width is computed dynamically based on layout type ($\text{availableWidth} = 200\text{px} - \text{coverWidth} - \text{padding}$). In `Compact` (88×88 px square cover art), available text width is strictly 96 px. In `Full Bleed` (background cover) and `Header Collapsed` (title bar top), available width expands to 188 px.
+- **Zero Polling & Inactive Standby**: Strings where $\text{textWidth} \le \text{availableWidth}$ evaluate to $\text{maxOffset} = 0$, remain strictly fixed at offset 0, and never trigger animation timers. The central `setInterval` timer runs strictly when consumers are registered, playback is active (`!state.paused`), and at least one registered text exceeds its container width.
 
 ### 🔄 10-Hz Dial Rotary Streaming & Settle Lifecycle (`DialRotaryStreamer`)
 - **Zero-Latency First Detent**: The first rotation detent fires immediately with 0ms latency if the dial was idle ($\ge 100\text{ ms}$ since the previous command dispatch).

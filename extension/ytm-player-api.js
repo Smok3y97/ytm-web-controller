@@ -9,6 +9,21 @@
 
 window.YTM = window.YTM || {};
 
+let cachedPlayerBar = null;
+let cachedMoviePlayer = null;
+let cachedYtPlayer = null;
+let cachedTimeInfo = null;
+
+/**
+ * Locate and cache the YouTube Music player bar element
+ */
+function getPlayerBarElement() {
+  if (cachedPlayerBar && cachedPlayerBar.isConnected) return cachedPlayerBar;
+  const selectors = window.YTM.selectors?.player || {};
+  cachedPlayerBar = document.querySelector(selectors.playerBar || 'ytmusic-player-bar');
+  return cachedPlayerBar;
+}
+
 /**
  * Locate the YouTube Music player API instance
  */
@@ -16,19 +31,23 @@ function getPlayerApi() {
   const selectors = window.YTM.selectors?.player || {};
 
   // 1. Polymer playerBar API instance
-  const playerBar = document.querySelector(selectors.playerBar || 'ytmusic-player-bar');
+  const playerBar = getPlayerBarElement();
   if (playerBar?.playerApi_) return playerBar.playerApi_;
 
   // 2. Direct #movie_player element
-  const moviePlayer = document.querySelector(selectors.moviePlayer || '#movie_player');
-  if (moviePlayer && typeof moviePlayer.playVideo === 'function') return moviePlayer;
+  if (!cachedMoviePlayer || !cachedMoviePlayer.isConnected) {
+    cachedMoviePlayer = document.querySelector(selectors.moviePlayer || '#movie_player');
+  }
+  if (cachedMoviePlayer && typeof cachedMoviePlayer.playVideo === 'function') return cachedMoviePlayer;
 
   // 3. YouTube player container
-  const ytPlayer = document.querySelector(selectors.ytPlayer || 'ytmusic-player');
-  if (ytPlayer?.playerApi_) return ytPlayer.playerApi_;
-  if (ytPlayer?.getPlayer && typeof ytPlayer.getPlayer === 'function') {
+  if (!cachedYtPlayer || !cachedYtPlayer.isConnected) {
+    cachedYtPlayer = document.querySelector(selectors.ytPlayer || 'ytmusic-player');
+  }
+  if (cachedYtPlayer?.playerApi_) return cachedYtPlayer.playerApi_;
+  if (cachedYtPlayer?.getPlayer && typeof cachedYtPlayer.getPlayer === 'function') {
     try {
-      const p = ytPlayer.getPlayer();
+      const p = cachedYtPlayer.getPlayer();
       if (p) return p;
     } catch { }
   }
@@ -255,10 +274,12 @@ function getCurrentTime() {
  */
 function getDuration() {
   // Primary: YouTube Music UI time display (.time-info)
-  const sel = window.YTM.selectors?.player?.timeInfo || 'ytmusic-player-bar .time-info, .time-info';
-  const timeInfo = document.querySelector(sel);
-  if (timeInfo) {
-    const parts = (timeInfo.textContent || '').split('/');
+  if (!cachedTimeInfo || !cachedTimeInfo.isConnected) {
+    const sel = window.YTM.selectors?.player?.timeInfo || 'ytmusic-player-bar .time-info, .time-info';
+    cachedTimeInfo = document.querySelector(sel);
+  }
+  if (cachedTimeInfo) {
+    const parts = (cachedTimeInfo.textContent || '').split('/');
     if (parts.length >= 2) {
       const parseFn = window.YTM.utils?.parseTimeToSeconds || parseTimeToSeconds;
       const sec = typeof parseFn === 'function' ? parseFn(parts[parts.length - 1]) : 0;
@@ -280,6 +301,7 @@ function getDuration() {
 
 // Export Native Player API
 window.YTM.playerApi = {
+  getPlayerBarElement,
   getPlayerApi,
   getPlayerState,
   playVideo,

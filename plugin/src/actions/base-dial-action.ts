@@ -311,12 +311,23 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 				this.clearRenderedCache(dialAction.id);
 				this.lastRenderedMismatch.set(dialAction.id, true);
 				this.lastRenderedTitle.set(dialAction.id, warningTitle);
-				await dialAction.setFeedback({
-					title: warningTitle,
-					value: "Mismatch",
-					icon: iconPath,
-					indicator: 0,
-				});
+				const layout = this.appliedLayout.get(dialAction.id) ?? TouchstripCoverLayout.COMPACT;
+				if (this.isThreeLineLayout(layout)) {
+					await dialAction.setFeedback({
+						artist: "⚠️ Version Mismatch",
+						track: warningTitle,
+						value: "Mismatch",
+						icon: iconPath,
+						indicator: 0,
+					});
+				} else {
+					await dialAction.setFeedback({
+						title: warningTitle,
+						value: "Mismatch",
+						icon: iconPath,
+						indicator: 0,
+					});
+				}
 			}
 		}
 		return true;

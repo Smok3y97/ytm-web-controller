@@ -272,7 +272,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 			// 1. Calculate target custom image (Cover art or standard Play/Pause SVG icon)
 			let targetImage: string | undefined = undefined;
 			if (settings.showCoverAsBackground !== false && (state.coverBase64 || state.coverUrl)) {
-				const rawCover = state.coverBase64 || (await ImageRenderer.getInstance().getCoverAsBase64(state.coverUrl));
+				const rawCover = state.coverBase64 || ImageRenderer.getInstance().getCachedCover(state.coverUrl);
 				if (rawCover) {
 					targetImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(rawCover, state.paused);
 				}

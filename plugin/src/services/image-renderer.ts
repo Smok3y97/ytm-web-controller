@@ -6,11 +6,24 @@
  */
 import streamDeck from "@elgato/streamdeck";
 
+const FULL_BLEED_ICON_SHAPES: Record<string, string> = {
+	"assets/actions/trackdial/icon.svg":
+		'<circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="45 10"/><polygon points="10,8.5 15.5,12 10,15.5" fill="#FFFFFF"/>',
+	"assets/actions/volumedial/icon.svg":
+		'<circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="45 10"/><path d="M7 9v6h3l4 4V5l-4 4H7zm7.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="#FFFFFF"/>',
+	"assets/actions/seekdial/icon.svg":
+		'<circle cx="12" cy="12" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="45 10"/><path d="M7 8.5v7l4.5-3.5zm5 0v7l4.5-3.5z" fill="#FFFFFF"/>',
+	"assets/actions/mute/muted.svg":
+		'<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" fill="#FF0033"/>',
+	"assets/actions/playpause/play.svg": '<path d="M8 5v14l11-7z" fill="#FFFFFF"/>',
+};
+
 export class ImageRenderer {
 	private static instance: ImageRenderer;
 	private coverCache: Map<string, string> = new Map();
 	private overlayCache: Map<number, string> = new Map();
 	private fullBleedCache: Map<number, string> = new Map();
+	private fullBleedIconCache: Map<string, string> = new Map();
 	private inFlightRequests: Map<string, Promise<string | null>> = new Map();
 	private maxCacheSize = 20;
 
@@ -195,6 +208,31 @@ ${pauseBadge}
 		}
 
 		this.fullBleedCache.set(cacheKey, dataUrl);
+		return dataUrl;
+	}
+
+	/**
+	 * Produce an aspect-ratio-preserving, dimmed 200x100 SVG watermark from a 24x24 action icon
+	 * so Full Bleed touchstrip layouts do not stretch 1:1 icons to 2:1 or obscure foreground text
+	 */
+	public getFullBleedFallbackIcon(iconPath: string): string {
+		if (!iconPath || iconPath.startsWith("data:")) {
+			return iconPath;
+		}
+		const cached = this.fullBleedIconCache.get(iconPath);
+		if (cached) {
+			return cached;
+		}
+
+		const shape = FULL_BLEED_ICON_SHAPES[iconPath] || FULL_BLEED_ICON_SHAPES["assets/actions/trackdial/icon.svg"];
+		const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" width="200" height="100">
+  <g transform="translate(64, 8) scale(3)" opacity="0.22">
+    ${shape}
+  </g>
+</svg>`;
+
+		const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+		this.fullBleedIconCache.set(iconPath, dataUrl);
 		return dataUrl;
 	}
 }

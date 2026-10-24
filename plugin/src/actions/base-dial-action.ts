@@ -23,6 +23,7 @@ import { getTouchstripAvailableWidth, MarqueeService } from "../services/marquee
 import { DialRotaryStreamer, RotaryStreamHandlers } from "../services/rotary-streamer.js";
 import { StateManager } from "../services/state-manager.js";
 import { VersionControlService } from "../services/version-control.js";
+import { getActionWarningSvgDataUrl } from "../services/warning-icons.js";
 import { WebSocketService } from "../services/websocket-server.js";
 import { TouchstripCoverLayout, YTMPlaybackState } from "../types/index.js";
 
@@ -304,27 +305,31 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		}
 		MarqueeService.getInstance().unregisterConsumer(dialAction.id);
 		if (dialAction.isDial()) {
-			const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
+			const warning = VersionControlService.getInstance().getCompactDialWarning(state.extensionVersion);
 			const prevMismatch = this.lastRenderedMismatch.get(dialAction.id);
 			const prevTitle = this.lastRenderedTitle.get(dialAction.id);
-			if (prevMismatch !== true || prevTitle !== warningTitle) {
+			if (prevMismatch !== true || prevTitle !== warning.title) {
 				this.clearRenderedCache(dialAction.id);
 				this.lastRenderedMismatch.set(dialAction.id, true);
-				this.lastRenderedTitle.set(dialAction.id, warningTitle);
+				this.lastRenderedTitle.set(dialAction.id, warning.title);
 				const layout = this.appliedLayout.get(dialAction.id) ?? TouchstripCoverLayout.COMPACT;
+				const resolvedIcon =
+					layout === TouchstripCoverLayout.FULL_BLEED
+						? ImageRenderer.getInstance().getFullBleedFallbackIcon(iconPath)
+						: iconPath;
 				if (this.isThreeLineLayout(layout)) {
 					await dialAction.setFeedback({
-						artist: "⚠️ Version Mismatch",
-						track: warningTitle,
-						value: "Mismatch",
-						icon: iconPath,
+						artist: warning.artist,
+						track: warning.track,
+						value: warning.value,
+						icon: resolvedIcon,
 						indicator: 0,
 					});
 				} else {
 					await dialAction.setFeedback({
-						title: warningTitle,
-						value: "Mismatch",
-						icon: iconPath,
+						title: warning.title,
+						value: warning.value,
+						icon: resolvedIcon,
 						indicator: 0,
 					});
 				}
@@ -346,6 +351,10 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		if (!dialAction.isDial()) return;
 		const id = dialAction.id;
 		const layout = this.getTouchstripLayout(settings);
+		const resolvedCover =
+			layout === TouchstripCoverLayout.FULL_BLEED && !coverImage.startsWith("data:")
+				? ImageRenderer.getInstance().getFullBleedFallbackIcon(coverImage)
+				: coverImage;
 		const feedback: {
 			artist?: string;
 			track?: string;
@@ -383,9 +392,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			this.lastRenderedIndicator.set(id, indicatorValue);
 			feedback.indicator = indicatorValue;
 		}
-		if (this.lastRenderedIcon.get(id) !== coverImage) {
-			this.lastRenderedIcon.set(id, coverImage);
-			feedback.icon = coverImage;
+		if (this.lastRenderedIcon.get(id) !== resolvedCover) {
+			this.lastRenderedIcon.set(id, resolvedCover);
+			feedback.icon = resolvedCover;
 		}
 
 		if (Object.keys(feedback).length > 0) {
@@ -399,10 +408,12 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	protected async updateKeyCoverImage(
 		dialAction: WillAppearEvent<TSettings>["action"],
 		state: YTMPlaybackState,
+		warningIconKey: string = "playpause",
 	): Promise<void> {
 		if (!dialAction.isKey()) return;
-		const keyImage =
-			state.coverBase64 && !state.isVersionMismatch
+		const keyImage = state.isVersionMismatch
+			? getActionWarningSvgDataUrl(warningIconKey)
+			: state.coverBase64
 				? ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
 				: undefined;
 
@@ -526,6 +537,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 						track?: string;
 						title?: string;
 						value?: string;
+						icon?: string;
 						indicator?: number;
 					} = {};
 

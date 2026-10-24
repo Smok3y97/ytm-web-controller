@@ -36,16 +36,30 @@ export class TabManager {
 	}
 
 	/**
-	 * Remove a client tab and return its playback status
+	 * Remove a client tab and return its playback and overlay status
 	 */
-	public removeTab(ws: WebSocket): { wasPlaying: boolean; remainingTabsCount: number } {
+	public removeTab(ws: WebSocket): { wasPlaying: boolean; wasOverlay: boolean; remainingTabsCount: number } {
 		const tabInfo = this.clientTabs.get(ws);
 		const wasPlaying = tabInfo?.isPlaying === true;
+		const wasOverlay = tabInfo?.isOverlay === true;
 		this.clientTabs.delete(ws);
 		return {
 			wasPlaying,
+			wasOverlay,
 			remainingTabsCount: this.clientTabs.size,
 		};
+	}
+
+	/**
+	 * Synchronize extension version and mismatch status across all tracked non-overlay tabs
+	 */
+	public applyExtensionHandshake(version: string, isMismatch: boolean): void {
+		for (const info of this.clientTabs.values()) {
+			if (!info.isOverlay) {
+				info.version = version;
+				info.isMismatch = isMismatch;
+			}
+		}
 	}
 
 	/**

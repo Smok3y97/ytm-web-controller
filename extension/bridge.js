@@ -53,6 +53,7 @@
   const DEFAULT_PORT = 39865;
 
   function dispatchStoredConfig() {
+    sendConfigToPage(DEFAULT_PORT);
     try {
       const storage = getStorage();
       if (storage) {
@@ -62,12 +63,8 @@
             sendConfigToPage(items?.wsPort || DEFAULT_PORT);
           } catch (e) { }
         });
-      } else {
-        sendConfigToPage(DEFAULT_PORT);
       }
-    } catch (e) {
-      sendConfigToPage(DEFAULT_PORT);
-    }
+    } catch (e) { }
   }
 
   // 1. Initial config dispatch & storage watcher

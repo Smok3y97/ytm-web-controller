@@ -165,7 +165,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 
 				await this.applyDialFeedback(dialAction, settings, valueText, indicatorValue, coverImage);
 			} else if (dialAction.isKey()) {
-				await this.updateKeyCoverImage(dialAction, state);
+				await this.updateKeyCoverImage(dialAction, state, "mute");
 			}
 		} catch {}
 	}

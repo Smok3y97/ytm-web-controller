@@ -10,8 +10,9 @@ updates:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
     groups:
-      dev-dependencies:
-        dependency-type: "development"
+      plugin-dependencies:
+        patterns:
+          - "*"
         update-types: ["minor", "patch"]
     ignore:
       # Keep TypeScript on 5.x for Elgato SDK & Rollup compatibility (minor & patch updates allowed)

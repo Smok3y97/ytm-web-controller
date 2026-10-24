@@ -25,16 +25,29 @@ export class ImageRenderer {
 
 	/**
 	 * Compute compact 32-bit FNV-1a hash for large base64 strings
-	 * Incorporates string length in initial seed to prevent collisions
+	 * Incorporates string length in initial seed and strides across the payload to prevent collisions without string allocations
 	 */
-	private static hashKey(str: string): number {
-		let hash = (2166136261 ^ str.length) >>> 0;
-		const len = Math.min(str.length, 1024);
-		for (let i = 0; i < len; i++) {
+	private static hashKey(str: string, seed = 2166136261): number {
+		let hash = (seed ^ str.length) >>> 0;
+		const len = str.length;
+		const step = Math.max(1, Math.floor(len / 512));
+		for (let i = 0; i < len; i += step) {
 			hash ^= str.charCodeAt(i);
 			hash = Math.imul(hash, 16777619);
 		}
 		return hash >>> 0;
+	}
+
+	/**
+	 * Synchronously retrieve a cached Base64 cover from RAM if already fetched
+	 */
+	public getCachedCover(url: string): string | undefined {
+		if (!url || !this.coverCache.has(url)) return undefined;
+		const cached = this.coverCache.get(url)!;
+		// Refresh key position to implement true LRU eviction
+		this.coverCache.delete(url);
+		this.coverCache.set(url, cached);
+		return cached;
 	}
 
 	/**
@@ -43,11 +56,8 @@ export class ImageRenderer {
 	public async getCoverAsBase64(url: string): Promise<string | null> {
 		if (!url || !url.startsWith("http")) return null;
 
-		if (this.coverCache.has(url)) {
-			const cached = this.coverCache.get(url)!;
-			// Refresh key position to implement true LRU eviction
-			this.coverCache.delete(url);
-			this.coverCache.set(url, cached);
+		const cached = this.getCachedCover(url);
+		if (cached) {
 			return cached;
 		}
 
@@ -95,7 +105,7 @@ export class ImageRenderer {
 			return coverBase64;
 		}
 
-		const cacheKey = ImageRenderer.hashKey(`overlay:${coverBase64}`);
+		const cacheKey = ImageRenderer.hashKey(coverBase64, 2166136261);
 
 		if (this.overlayCache.has(cacheKey)) {
 			const cached = this.overlayCache.get(cacheKey)!;
@@ -143,7 +153,7 @@ export class ImageRenderer {
 	public getFullBleedCover(coverBase64: string, paused: boolean): string {
 		if (!coverBase64) return "";
 
-		const cacheKey = ImageRenderer.hashKey(`fullbleed:${paused ? "paused" : "playing"}:${coverBase64}`);
+		const cacheKey = ImageRenderer.hashKey(coverBase64, paused ? 2166136261 ^ 16777619 : 2166136261);
 
 		if (this.fullBleedCache.has(cacheKey)) {
 			const cached = this.fullBleedCache.get(cacheKey)!;

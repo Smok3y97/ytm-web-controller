@@ -102,13 +102,20 @@ export class WebSocketService extends EventEmitter {
 					},
 				});
 
+				// Prevent unhandled error crashes when ws forwards underlying HTTP server errors
+				this.wss.on("error", (err) => {
+					streamDeck.logger.debug(`[WebSocket] WSS error event handled: ${err.message}`);
+				});
+
 				this.httpServer.on("error", (err: Error & { code?: string }) => {
 					if (err.code === "EADDRINUSE") {
 						streamDeck.logger.error(`[WebSocket/HTTP] Port ${this.currentPort} is already in use!`);
 					} else {
 						streamDeck.logger.error(`[WebSocket/HTTP] Server error: ${err.message}`);
 					}
-					this.emit("error", err);
+					if (this.listenerCount("error") > 0) {
+						this.emit("error", err);
+					}
 					resolve();
 				});
 

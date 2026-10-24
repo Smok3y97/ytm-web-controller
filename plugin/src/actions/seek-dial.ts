@@ -75,6 +75,10 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 			duration > 0 ? Math.min(100, Math.max(0, Math.round((optimisticSeconds / duration) * 100))) : 0;
 		const valueText = StateManager.getInstance().formatTimeTemplate(timeTemplate, optimisticSeconds, duration);
 
+		const valueChanged = this.lastRenderedValue.get(actionId) !== valueText;
+		const indicatorChanged = this.lastRenderedIndicator.get(actionId) !== indicatorValue;
+		if (!valueChanged && !indicatorChanged) return;
+
 		this.lastRenderedValue.set(actionId, valueText);
 		this.lastRenderedIndicator.set(actionId, indicatorValue);
 
@@ -187,33 +191,7 @@ export class SeekDialAction extends BaseDialAction<SeekDialSettings> {
 						? "assets/actions/playpause/play.svg"
 						: "assets/actions/seekdial/icon.svg";
 
-				this.lastRenderedValue.set(dialAction.id, timeText);
-				this.lastRenderedIndicator.set(dialAction.id, indicatorValue);
-
-				if (this.isThreeLineLayout(layout)) {
-					const artistText = this.getFormattedMarqueeArtist(settings, dialAction.id);
-					const trackTitle = this.getFormattedMarqueeTrackTitle(settings, dialAction.id);
-					this.lastRenderedArtist.set(dialAction.id, artistText);
-					this.lastRenderedTrack.set(dialAction.id, trackTitle);
-
-					await dialAction.setFeedback({
-						artist: artistText,
-						track: trackTitle,
-						value: timeText,
-						icon: coverImage,
-						indicator: indicatorValue,
-					});
-				} else {
-					const marqueeTitle = this.getFormattedMarqueeTitle(settings, dialAction.id);
-					this.lastRenderedTitle.set(dialAction.id, marqueeTitle);
-
-					await dialAction.setFeedback({
-						title: marqueeTitle,
-						value: timeText,
-						icon: coverImage,
-						indicator: indicatorValue,
-					});
-				}
+				await this.applyDialFeedback(dialAction, settings, timeText, indicatorValue, coverImage);
 			} else if (dialAction.isKey()) {
 				await this.updateKeyCoverImage(dialAction, state);
 			}

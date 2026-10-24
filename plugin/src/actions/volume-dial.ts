@@ -47,20 +47,8 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		);
 	}
 
-	protected override getFormattedMarqueeArtist(settings: VolumeDialSettings, actionId?: string): string {
-		const state = StateManager.getInstance().getState();
-		if (!state.artist && !state.title) {
-			return "YouTube Music";
-		}
-		return super.getFormattedMarqueeArtist(settings, actionId);
-	}
-
-	protected override getFormattedMarqueeTrackTitle(settings: VolumeDialSettings, actionId?: string): string {
-		const state = StateManager.getInstance().getState();
-		if (!state.artist && !state.title) {
-			return "Volume";
-		}
-		return super.getFormattedMarqueeTrackTitle(settings, actionId);
+	protected override getEmptyTrackTitleFallback(_state: YTMPlaybackState): string {
+		return "Volume";
 	}
 
 	protected handleDialPress(
@@ -89,12 +77,20 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 
 	private async renderVolumeLcd(
 		action: WillAppearEvent<VolumeDialSettings>["action"],
+		actionId: string,
 		volume: number,
 		muted: boolean,
 	): Promise<void> {
 		if (!action.isDial()) return;
 		const valueText = muted ? "MUTED" : `${volume}%`;
 		const indicatorValue = muted ? 0 : volume;
+
+		const valueChanged = this.lastRenderedValue.get(actionId) !== valueText;
+		const indicatorChanged = this.lastRenderedIndicator.get(actionId) !== indicatorValue;
+		if (!valueChanged && !indicatorChanged) return;
+
+		this.lastRenderedValue.set(actionId, valueText);
+		this.lastRenderedIndicator.set(actionId, indicatorValue);
 
 		try {
 			await action.setFeedback({
@@ -116,7 +112,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		const baseVol = this.lastTargetVolume.get(actionId) ?? currentState.volume ?? 100;
 		const optimisticVolume = Math.min(100, Math.max(0, baseVol + ticks * step));
 
-		await this.renderVolumeLcd(action, optimisticVolume, currentState.muted);
+		await this.renderVolumeLcd(action, actionId, optimisticVolume, currentState.muted);
 	}
 
 	private async dispatchVolumeDelta(
@@ -133,7 +129,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 		this.lastTargetVolume.set(actionId, targetVol);
 
 		if (!alreadyRendered) {
-			await this.renderVolumeLcd(action, targetVol, currentState.muted);
+			await this.renderVolumeLcd(action, actionId, targetVol, currentState.muted);
 		}
 
 		WebSocketService.getInstance().sendCommand("setVolume", { volume: targetVol });
@@ -167,33 +163,7 @@ export class VolumeDialAction extends BaseDialAction<VolumeDialSettings> {
 						? "assets/actions/mute/muted.svg"
 						: "assets/actions/volumedial/icon.svg";
 
-				this.lastRenderedValue.set(dialAction.id, valueText);
-				this.lastRenderedIndicator.set(dialAction.id, indicatorValue);
-
-				if (this.isThreeLineLayout(layout)) {
-					const artistText = this.getFormattedMarqueeArtist(settings, dialAction.id);
-					const trackTitle = this.getFormattedMarqueeTrackTitle(settings, dialAction.id);
-					this.lastRenderedArtist.set(dialAction.id, artistText);
-					this.lastRenderedTrack.set(dialAction.id, trackTitle);
-
-					await dialAction.setFeedback({
-						artist: artistText,
-						track: trackTitle,
-						value: valueText,
-						icon: coverImage,
-						indicator: indicatorValue,
-					});
-				} else {
-					const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
-					this.lastRenderedTitle.set(dialAction.id, titleText);
-
-					await dialAction.setFeedback({
-						title: titleText,
-						value: valueText,
-						icon: coverImage,
-						indicator: indicatorValue,
-					});
-				}
+				await this.applyDialFeedback(dialAction, settings, valueText, indicatorValue, coverImage);
 			} else if (dialAction.isKey()) {
 				await this.updateKeyCoverImage(dialAction, state);
 			}

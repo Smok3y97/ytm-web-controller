@@ -98,33 +98,7 @@ export class TrackDialAction extends BaseDialAction<TrackDialSettings> {
 						: ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
 					: "assets/actions/trackdial/icon.svg";
 
-				this.lastRenderedValue.set(dialAction.id, timeText);
-				this.lastRenderedIndicator.set(dialAction.id, progressPercent);
-
-				if (this.isThreeLineLayout(layout)) {
-					const artistText = this.getFormattedMarqueeArtist(settings, dialAction.id);
-					const trackTitle = this.getFormattedMarqueeTrackTitle(settings, dialAction.id);
-					this.lastRenderedArtist.set(dialAction.id, artistText);
-					this.lastRenderedTrack.set(dialAction.id, trackTitle);
-
-					await dialAction.setFeedback({
-						artist: artistText,
-						track: trackTitle,
-						value: timeText,
-						icon: coverImage,
-						indicator: progressPercent,
-					});
-				} else {
-					const titleText = this.getFormattedMarqueeTitle(settings, dialAction.id);
-					this.lastRenderedTitle.set(dialAction.id, titleText);
-
-					await dialAction.setFeedback({
-						title: titleText,
-						value: timeText,
-						icon: coverImage,
-						indicator: progressPercent,
-					});
-				}
+				await this.applyDialFeedback(dialAction, settings, timeText, progressPercent, coverImage);
 			} else if (dialAction.isKey()) {
 				await this.updateKeyCoverImage(dialAction, state);
 			}

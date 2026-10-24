@@ -37,6 +37,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 	private keyPressTimers: Map<string, NodeJS.Timeout> = new Map();
 	private isLongPressTriggered: Map<string, boolean> = new Map();
 	private staticTrackFormattedCache: Map<string, { trackKey: string; text: string }> = new Map();
+	private playbackTimer: NodeJS.Timeout | null = null;
 	private renderDebounceTimer: NodeJS.Timeout | null = null;
 	private readonly LONG_PRESS_THRESHOLD_MS = 450;
 
@@ -62,6 +63,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		this.lastRenderedMismatch.delete(ev.action.id);
 		const state = StateManager.getInstance().getState();
 		await this.updateInstance(ev.action, state, ev.payload.settings);
+		this.checkPlaybackTimer();
 		WebSocketService.getInstance().sendCommand("requestState");
 	}
 
@@ -83,6 +85,7 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 			clearTimeout(this.renderDebounceTimer);
 			this.renderDebounceTimer = null;
 		}
+		this.checkPlaybackTimer();
 	}
 
 	override async onKeyDown(ev: KeyDownEvent<PlayPauseSettings>): Promise<void> {
@@ -150,9 +153,34 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 		this.staticTrackFormattedCache.delete(ev.action.id);
 		const state = StateManager.getInstance().getState();
 		await this.updateInstance(ev.action, state, ev.payload.settings);
+		this.checkPlaybackTimer();
+	}
+
+	private checkPlaybackTimer(): void {
+		const state = StateManager.getInstance().getState();
+		const hasTimeConsumer = Array.from(this.activeActions.entries()).some(([id, actionInstance]) => {
+			if (!actionInstance.isKey()) return false;
+			const settings = this.actionSettings.get(id);
+			if (!settings?.showTitle) return false;
+			const template = settings.titleTemplate?.trim() || DEFAULT_PLAYPAUSE_TEMPLATE;
+			return TIME_PLACEHOLDER_REGEX.test(template);
+		});
+		const shouldRun = hasTimeConsumer && !state.paused && !state.isVersionMismatch;
+
+		if (shouldRun) {
+			if (!this.playbackTimer) {
+				this.playbackTimer = setInterval(() => {
+					this.handleMarqueeTick();
+				}, 500);
+			}
+		} else if (this.playbackTimer) {
+			clearInterval(this.playbackTimer);
+			this.playbackTimer = null;
+		}
 	}
 
 	private updateAllInstances(state: YTMPlaybackState): void {
+		this.checkPlaybackTimer();
 		if (this.renderDebounceTimer) {
 			clearTimeout(this.renderDebounceTimer);
 		}
@@ -189,7 +217,10 @@ export class PlayPauseAction extends SingletonAction<PlayPauseSettings> {
 
 	private async handleMarqueeTick(): Promise<void> {
 		const state = StateManager.getInstance().getState();
-		if (state.paused || state.isVersionMismatch) return;
+		if (state.paused || state.isVersionMismatch) {
+			this.checkPlaybackTimer();
+			return;
+		}
 
 		for (const [actionId, actionInstance] of this.activeActions) {
 			if (!actionInstance.isKey()) continue;

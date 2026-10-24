@@ -63,10 +63,13 @@ export class StateManager extends EventEmitter {
 			sanitizedAlbum = artistResult.extractedAlbum;
 		}
 
-		// Retain existing in-RAM coverBase64 if coverUrl is identical and incoming snapshot has no coverBase64
+		// Retain existing or cached in-RAM coverBase64 if incoming snapshot has no coverBase64
 		let coverBase64 = state.coverBase64;
-		if (!coverBase64 && state.coverUrl && state.coverUrl === this.currentState.coverUrl) {
-			coverBase64 = this.currentState.coverBase64;
+		if (!coverBase64 && state.coverUrl) {
+			coverBase64 =
+				state.coverUrl === this.currentState.coverUrl
+					? this.currentState.coverBase64
+					: ImageRenderer.getInstance().getCachedCover(state.coverUrl);
 		}
 
 		let currentTime = typeof state.currentTime === "number" && !isNaN(state.currentTime) ? state.currentTime : 0;

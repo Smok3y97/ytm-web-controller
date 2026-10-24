@@ -39,6 +39,9 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	protected lastRenderedTitle: Map<string, string> = new Map();
 	protected lastRenderedArtist: Map<string, string> = new Map();
 	protected lastRenderedTrack: Map<string, string> = new Map();
+	protected lastRenderedIcon: Map<string, string> = new Map();
+	protected lastRenderedKeyImage: Map<string, string | undefined> = new Map();
+	protected lastRenderedMismatch: Map<string, boolean> = new Map();
 
 	constructor() {
 		super();
@@ -54,9 +57,21 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		});
 	}
 
+	protected clearRenderedCache(actionId: string): void {
+		this.lastRenderedValue.delete(actionId);
+		this.lastRenderedIndicator.delete(actionId);
+		this.lastRenderedTitle.delete(actionId);
+		this.lastRenderedArtist.delete(actionId);
+		this.lastRenderedTrack.delete(actionId);
+		this.lastRenderedIcon.delete(actionId);
+		this.lastRenderedKeyImage.delete(actionId);
+		this.lastRenderedMismatch.delete(actionId);
+	}
+
 	override async onWillAppear(ev: WillAppearEvent<TSettings>): Promise<void> {
 		this.activeDials.set(ev.action.id, ev.action);
 		this.actionSettings.set(ev.action.id, ev.payload.settings);
+		this.clearRenderedCache(ev.action.id);
 		if ("title" in ev.payload && typeof ev.payload.title === "string" && ev.payload.title) {
 			this.dialTitles.set(ev.action.id, ev.payload.title);
 		}
@@ -79,11 +94,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	override async onWillDisappear(ev: WillDisappearEvent<TSettings>): Promise<void> {
 		const id = ev.action.id;
 		this.dialTitles.delete(id);
-		this.lastRenderedValue.delete(id);
-		this.lastRenderedIndicator.delete(id);
-		this.lastRenderedTitle.delete(id);
-		this.lastRenderedArtist.delete(id);
-		this.lastRenderedTrack.delete(id);
+		this.clearRenderedCache(id);
 		this.appliedLayout.delete(id);
 		this.rotaryStreamer.cleanup(id);
 		this.activeDials.delete(id);
@@ -134,6 +145,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 			const layout = this.getTouchstripLayout(ev.payload.settings);
 			const prevLayout = this.appliedLayout.get(ev.action.id);
 			if (prevLayout !== layout) {
+				this.clearRenderedCache(ev.action.id);
 				MarqueeService.getInstance().unregisterConsumer(ev.action.id);
 				try {
 					await ev.action.setFeedbackLayout(this.getFeedbackLayoutPath(layout));
@@ -225,6 +237,13 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	}
 
 	/**
+	 * Fallback text for the track title line when no track is currently loaded
+	 */
+	protected getEmptyTrackTitleFallback(state: YTMPlaybackState): string {
+		return state.paused ? "Ready" : "No Track";
+	}
+
+	/**
 	 * Gets the formatted, marquee-scrolled display title for LCD touchstrips
 	 */
 	protected getFormattedMarqueeTitle(settings: TSettings, actionId?: string): string {
@@ -261,7 +280,7 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 	 */
 	protected getFormattedMarqueeTrackTitle(settings: TSettings, actionId?: string): string {
 		const state = StateManager.getInstance().getState();
-		const title = (state.title || "").trim() || (state.paused ? "Ready" : "No Track");
+		const title = (state.title || "").trim() || this.getEmptyTrackTitleFallback(state);
 		const layout = this.getTouchstripLayout(settings);
 		const availableWidth = getTouchstripAvailableWidth(layout);
 		const consumerId = actionId ? `${actionId}:track` : undefined;
@@ -276,18 +295,91 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		state: YTMPlaybackState,
 		iconPath: string,
 	): Promise<boolean> {
-		if (!state.isVersionMismatch) return false;
+		if (!state.isVersionMismatch) {
+			if (this.lastRenderedMismatch.get(dialAction.id) === true) {
+				this.clearRenderedCache(dialAction.id);
+				this.lastRenderedMismatch.set(dialAction.id, false);
+			}
+			return false;
+		}
 		MarqueeService.getInstance().unregisterConsumer(dialAction.id);
 		if (dialAction.isDial()) {
 			const warningTitle = VersionControlService.getInstance().getDialWarningTitle(state.extensionVersion);
-			await dialAction.setFeedback({
-				title: warningTitle,
-				value: "Mismatch",
-				icon: iconPath,
-				indicator: 0,
-			});
+			const prevMismatch = this.lastRenderedMismatch.get(dialAction.id);
+			const prevTitle = this.lastRenderedTitle.get(dialAction.id);
+			if (prevMismatch !== true || prevTitle !== warningTitle) {
+				this.clearRenderedCache(dialAction.id);
+				this.lastRenderedMismatch.set(dialAction.id, true);
+				this.lastRenderedTitle.set(dialAction.id, warningTitle);
+				await dialAction.setFeedback({
+					title: warningTitle,
+					value: "Mismatch",
+					icon: iconPath,
+					indicator: 0,
+				});
+			}
 		}
 		return true;
+	}
+
+	/**
+	 * Consolidates 3-line and single-line touchstrip feedback rendering with delta deduplication
+	 */
+	protected async applyDialFeedback(
+		dialAction: WillAppearEvent<TSettings>["action"],
+		settings: TSettings,
+		valueText: string,
+		indicatorValue: number,
+		coverImage: string,
+	): Promise<void> {
+		if (!dialAction.isDial()) return;
+		const id = dialAction.id;
+		const layout = this.getTouchstripLayout(settings);
+		const feedback: {
+			artist?: string;
+			track?: string;
+			title?: string;
+			value?: string;
+			icon?: string;
+			indicator?: number;
+		} = {};
+
+		if (this.isThreeLineLayout(layout)) {
+			const artistText = this.getFormattedMarqueeArtist(settings, id);
+			const trackTitle = this.getFormattedMarqueeTrackTitle(settings, id);
+
+			if (this.lastRenderedArtist.get(id) !== artistText) {
+				this.lastRenderedArtist.set(id, artistText);
+				feedback.artist = artistText;
+			}
+			if (this.lastRenderedTrack.get(id) !== trackTitle) {
+				this.lastRenderedTrack.set(id, trackTitle);
+				feedback.track = trackTitle;
+			}
+		} else {
+			const titleText = this.getFormattedMarqueeTitle(settings, id);
+			if (this.lastRenderedTitle.get(id) !== titleText) {
+				this.lastRenderedTitle.set(id, titleText);
+				feedback.title = titleText;
+			}
+		}
+
+		if (this.lastRenderedValue.get(id) !== valueText) {
+			this.lastRenderedValue.set(id, valueText);
+			feedback.value = valueText;
+		}
+		if (this.lastRenderedIndicator.get(id) !== indicatorValue) {
+			this.lastRenderedIndicator.set(id, indicatorValue);
+			feedback.indicator = indicatorValue;
+		}
+		if (this.lastRenderedIcon.get(id) !== coverImage) {
+			this.lastRenderedIcon.set(id, coverImage);
+			feedback.icon = coverImage;
+		}
+
+		if (Object.keys(feedback).length > 0) {
+			await dialAction.setFeedback(feedback);
+		}
 	}
 
 	/**
@@ -298,11 +390,14 @@ export abstract class BaseDialAction<TSettings extends JsonObject = JsonObject> 
 		state: YTMPlaybackState,
 	): Promise<void> {
 		if (!dialAction.isKey()) return;
-		if (state.coverBase64 && !state.isVersionMismatch) {
-			const keyImage = ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused);
+		const keyImage =
+			state.coverBase64 && !state.isVersionMismatch
+				? ImageRenderer.getInstance().getCoverWithPlaybackOverlay(state.coverBase64, state.paused)
+				: undefined;
+
+		if (!this.lastRenderedKeyImage.has(dialAction.id) || this.lastRenderedKeyImage.get(dialAction.id) !== keyImage) {
 			await dialAction.setImage(keyImage);
-		} else {
-			await dialAction.setImage(undefined);
+			this.lastRenderedKeyImage.set(dialAction.id, keyImage);
 		}
 	}
 

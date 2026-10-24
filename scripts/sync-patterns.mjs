@@ -118,10 +118,10 @@ try {
 }
 
 // 4. Check or Write
+const normalizeEol = (str) => (typeof str === 'string' ? str.replace(/\r\n/g, '\n') : str);
 if (isCheckOnly) {
   let isOutOfDate = false;
 
-  const normalizeEol = (str) => (typeof str === 'string' ? str.replace(/\r\n/g, '\n') : str);
   const currentExt = fs.existsSync(EXTENSION_OUTPUT_PATH) ? fs.readFileSync(EXTENSION_OUTPUT_PATH, 'utf8') : null;
   const currentPlugin = fs.existsSync(PLUGIN_OUTPUT_PATH) ? fs.readFileSync(PLUGIN_OUTPUT_PATH, 'utf8') : null;
 
@@ -143,9 +143,18 @@ if (isCheckOnly) {
   console.log('✅ [sync-patterns] All metadata pattern files are up to date.');
   process.exit(0);
 } else {
-  fs.writeFileSync(EXTENSION_OUTPUT_PATH, extensionContent, 'utf8');
-  console.log(`✅ [sync-patterns] Generated ${path.relative(ROOT_DIR, EXTENSION_OUTPUT_PATH)}`);
+  const writeIfChanged = (filePath, newContent) => {
+    if (fs.existsSync(filePath)) {
+      const current = fs.readFileSync(filePath, "utf8");
+      if (normalizeEol(current) === normalizeEol(newContent)) {
+        console.log(`✅ [sync-patterns] Up to date: ${path.relative(ROOT_DIR, filePath)}`);
+        return;
+      }
+    }
+    fs.writeFileSync(filePath, newContent, "utf8");
+    console.log(`✅ [sync-patterns] Generated ${path.relative(ROOT_DIR, filePath)}`);
+  };
 
-  fs.writeFileSync(PLUGIN_OUTPUT_PATH, formattedPluginContent, 'utf8');
-  console.log(`✅ [sync-patterns] Generated ${path.relative(ROOT_DIR, PLUGIN_OUTPUT_PATH)}`);
+  writeIfChanged(EXTENSION_OUTPUT_PATH, extensionContent);
+  writeIfChanged(PLUGIN_OUTPUT_PATH, formattedPluginContent);
 }

@@ -10,7 +10,7 @@ import { StateManager } from "./state-manager.js";
 
 // --- Layout Constants & Geometry ---
 export const KEYPAD_MAX_PIXEL_WIDTH = 64;
-export const DEFAULT_MARQUEE_SPEED_MS = 250;
+export const DEFAULT_MARQUEE_SPEED_MS = 320;
 export const START_PAUSE_TICKS = 4;
 export const END_PAUSE_TICKS = 3;
 

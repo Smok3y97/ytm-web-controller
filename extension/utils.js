@@ -47,20 +47,29 @@ function clickElement(selector, parent = document) {
   return false;
 }
 
+let cachedVideoElement = null;
+
 /**
  * Locate the YouTube Music main playback video element
  */
 function findVideoElement() {
+  if (cachedVideoElement && cachedVideoElement.isConnected) {
+    return cachedVideoElement;
+  }
   const sel = window.YTM.selectors?.player?.video;
   if (sel) {
     const v = $(sel);
-    if (v) return v;
+    if (v) {
+      cachedVideoElement = v;
+      return v;
+    }
   }
-  return $('.html5-main-video') ||
+  cachedVideoElement = $('.html5-main-video') ||
     $('#movie_player video') ||
     $('ytmusic-player video') ||
     $('ytmusic-player-bar video') ||
     $('video');
+  return cachedVideoElement;
 }
 
 /**

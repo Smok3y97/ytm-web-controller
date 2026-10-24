@@ -177,13 +177,24 @@ export class WebSocketService extends EventEmitter {
 								const versionService = VersionControlService.getInstance();
 								const validation = versionService.validateHandshake(extVersion);
 
+								// One-shot diagnostic probes (e.g. extension popup test) omit tabId
+								if (!payload.tabId) {
+									this.tabManager.removeTab(ws);
+									this.clients.delete(ws);
+									this.sendToClient(ws, validation.payload);
+									return;
+								}
+
 								this.tabManager.updateTab(ws, {
-									...(payload.tabId ? { tabId: payload.tabId } : {}),
+									tabId: payload.tabId,
 									version: extVersion,
 									isMismatch: !validation.isCompatible,
 								});
 
-								this.evaluateMismatchState();
+								const { hasMismatch, targetVersion } = this.tabManager.evaluateMismatchState();
+								this.isMismatchActive = hasMismatch;
+
+								this.sendToClient(ws, validation.payload);
 
 								if (validation.isCompatible) {
 									streamDeck.logger.info(
@@ -197,8 +208,7 @@ export class WebSocketService extends EventEmitter {
 									);
 								}
 
-								this.sendToClient(ws, validation.payload);
-								this.emit("handshake", { isMismatch: this.isMismatchActive, version: extVersion });
+								this.emit("handshake", { isMismatch: this.isMismatchActive, version: targetVersion });
 								return;
 							}
 

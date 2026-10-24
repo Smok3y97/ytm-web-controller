@@ -32,6 +32,7 @@ let lastSentState = {
   paused: true,
   currentTime: 0,
   duration: 0,
+  playbackRate: 1,
   volume: 100,
   muted: false,
   isLiked: false,
@@ -141,6 +142,7 @@ function sendState(force = false) {
       state.trackUrl === lastSentState.trackUrl &&
       state.artistUrl === lastSentState.artistUrl &&
       state.albumUrl === lastSentState.albumUrl &&
+      (state.playbackRate || 1) === (lastSentState.playbackRate || 1) &&
       Math.abs(state.currentTime - (lastSentState.currentTime || 0)) < 1.5
     );
 

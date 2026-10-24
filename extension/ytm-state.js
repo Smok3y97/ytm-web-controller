@@ -11,6 +11,9 @@ window.YTM = window.YTM || {};
 
 let lastResolvedVideoId = '';
 let lastResolvedTrackKey = '';
+let cachedBylineElem = null;
+let lastBylineCacheKey = '';
+let lastBylineResult = { artist: '', album: '', artistUrl: '', albumUrl: '' };
 
 /**
  * Get current player volume (0 - 100)
@@ -213,48 +216,78 @@ function extractTrackMetadata(mediaSession, playerBar) {
       trackUrl = `https://music.youtube.com/watch?v=${videoId}`;
     }
 
-    // Query Byline element
-    const bylineSel = window.YTM.selectors?.metadata?.byline || 'ytmusic-player-bar .byline, ytmusic-player-bar .subtitle, ytmusic-player-bar yt-formatted-string.byline, ytmusic-player-bar yt-formatted-string.subtitle, .middle-controls .byline, .middle-controls .subtitle, ytmusic-player-bar .content-info-wrapper .subtitle';
-    const bylineElem = $(bylineSel);
+    // Query Byline element (cached when connected)
+    if (!cachedBylineElem || !cachedBylineElem.isConnected) {
+      const bylineSel = window.YTM.selectors?.metadata?.byline || 'ytmusic-player-bar .byline, ytmusic-player-bar .subtitle, ytmusic-player-bar yt-formatted-string.byline, ytmusic-player-bar yt-formatted-string.subtitle, .middle-controls .byline, .middle-controls .subtitle, ytmusic-player-bar .content-info-wrapper .subtitle';
+      cachedBylineElem = $(bylineSel, playerBar || document) || $(bylineSel);
+    }
+    const bylineElem = cachedBylineElem;
 
     if (bylineElem) {
-      // Check explicit structured anchor links first
-      const allLinks = Array.from(bylineElem.querySelectorAll('a'));
-      let foundAlbumLink = false;
-
-      for (const a of allLinks) {
-        const href = a.getAttribute('href') || a.href || '';
-        const text = a.textContent?.trim() || '';
-        if (!href || !text) continue;
-
-        if (href.includes('browse/MPRE') || href.includes('browse/FEmusic_library_album') || href.includes('browse/FEmusic_album') || href.includes('/album')) {
-          if (!album && !isNonAlbumText(text)) {
-            album = text;
-            foundAlbumLink = true;
-          }
-          if (!albumUrl) albumUrl = a.href;
-        } else if (href.includes('channel/') || href.includes('browse/UC') || href.includes('artist')) {
-          if (!artistUrl) artistUrl = a.href;
-        }
-      }
-
-      // Parse byline textual segments (delimited by • or · or |)
       const bylineRawText = cleanWhitespace(bylineElem.textContent || '');
-      const parts = bylineRawText.split(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•|]/).map(p => p.trim()).filter(Boolean);
+      const bylineCacheKey = `${currentTrackKey}::${bylineRawText}`;
 
-      if (!artist && parts.length > 0) {
-        artist = parts[0];
-      }
+      if (bylineRawText && bylineCacheKey === lastBylineCacheKey) {
+        if (!artist && lastBylineResult.artist) artist = lastBylineResult.artist;
+        if (!album && lastBylineResult.album) album = lastBylineResult.album;
+        if (!artistUrl && lastBylineResult.artistUrl) artistUrl = lastBylineResult.artistUrl;
+        if (!albumUrl && lastBylineResult.albumUrl) albumUrl = lastBylineResult.albumUrl;
+      } else {
+        let parsedArtist = '';
+        let parsedAlbum = '';
+        let parsedArtistUrl = '';
+        let parsedAlbumUrl = '';
 
-      // Only search textual parts for album if no structured album link was found
-      if (!album && !foundAlbumLink && parts.length > 1) {
-        for (let i = 1; i < parts.length; i++) {
-          const candidate = parts[i];
-          if (!isNonAlbumText(candidate)) {
-            album = candidate;
-            break;
+        // Check explicit structured anchor links first
+        const allLinks = Array.from(bylineElem.querySelectorAll('a'));
+        let foundAlbumLink = false;
+
+        for (const a of allLinks) {
+          const href = a.getAttribute('href') || a.href || '';
+          const text = a.textContent?.trim() || '';
+          if (!href || !text) continue;
+
+          if (href.includes('browse/MPRE') || href.includes('browse/FEmusic_library_album') || href.includes('browse/FEmusic_album') || href.includes('/album')) {
+            if (!parsedAlbum && !isNonAlbumText(text)) {
+              parsedAlbum = text;
+              foundAlbumLink = true;
+            }
+            if (!parsedAlbumUrl) parsedAlbumUrl = a.href;
+          } else if (href.includes('channel/') || href.includes('browse/UC') || href.includes('artist')) {
+            if (!parsedArtistUrl) parsedArtistUrl = a.href;
           }
         }
+
+        // Parse byline textual segments (delimited by • or · or |)
+        const parts = bylineRawText.split(/[\u2022\u00B7\u2023\u25E6\u2043\u2219·•|]/).map(p => p.trim()).filter(Boolean);
+
+        if (parts.length > 0) {
+          parsedArtist = parts[0];
+        }
+
+        // Only search textual parts for album if no structured album link was found
+        if (!parsedAlbum && !foundAlbumLink && parts.length > 1) {
+          for (let i = 1; i < parts.length; i++) {
+            const candidate = parts[i];
+            if (!isNonAlbumText(candidate)) {
+              parsedAlbum = candidate;
+              break;
+            }
+          }
+        }
+
+        lastBylineCacheKey = bylineCacheKey;
+        lastBylineResult = {
+          artist: parsedArtist,
+          album: parsedAlbum,
+          artistUrl: parsedArtistUrl,
+          albumUrl: parsedAlbumUrl
+        };
+
+        if (!artist && parsedArtist) artist = parsedArtist;
+        if (!album && parsedAlbum) album = parsedAlbum;
+        if (!artistUrl && parsedArtistUrl) artistUrl = parsedArtistUrl;
+        if (!albumUrl && parsedAlbumUrl) albumUrl = parsedAlbumUrl;
       }
     }
 
@@ -307,14 +340,16 @@ function extractTrackMetadata(mediaSession, playerBar) {
     }
   } catch { }
 
+  const hasTrack = Boolean(title || artist || videoId);
+
   return {
-    title: title || 'Unbekannter Titel',
-    artist: artist || 'Unbekannter Interpret',
-    album: album || '',
-    coverUrl,
-    trackUrl,
-    artistUrl,
-    albumUrl
+    title: hasTrack ? (title || '') : '',
+    artist: hasTrack ? (artist || '') : '',
+    album: hasTrack ? (album || '') : '',
+    coverUrl: hasTrack ? coverUrl : '',
+    trackUrl: hasTrack ? trackUrl : '',
+    artistUrl: hasTrack ? artistUrl : '',
+    albumUrl: hasTrack ? albumUrl : ''
   };
 }
 
@@ -390,7 +425,7 @@ function collectPlaybackState() {
   const $ = window.YTM.utils?.$ || ((sel, parent = document) => {
     try { return parent.querySelector(sel); } catch { return null; }
   });
-  const playerBar = $('ytmusic-player-bar');
+  const playerBar = window.YTM.playerApi?.getPlayerBarElement?.() || $('ytmusic-player-bar');
 
   const metadata = extractTrackMetadata(mediaSession, playerBar);
   const transport = extractTransportState(video);

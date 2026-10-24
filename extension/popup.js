@@ -191,6 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          if (data.command === 'requestState' || data.type === 'STATE_UPDATE') {
+            return;
+          }
           const extVersion = getManifestVersion();
 
           if (data.type === 'handshake_ack') {

@@ -29,19 +29,19 @@
         "ws": "^8.22.0"
     },
     "devDependencies": {
-        "@elgato/cli": "^1.10.2",
+        "@elgato/cli": "^1.10.4",
         "@elgato/eslint-config": "^0.3.2",
         "@elgato/prettier-config": "^0.3.3",
         "@rollup/plugin-commonjs": "^29.0.3",
         "@rollup/plugin-json": "^6.1.0",
         "@rollup/plugin-node-resolve": "^16.0.3",
-        "@rollup/plugin-terser": "^1.0.0",
-        "@rollup/plugin-typescript": "^12.3.0",
+        "@rollup/plugin-terser": "^1.0.2",
+        "@rollup/plugin-typescript": "^12.3.1",
         "@types/node": "^24.19.2",
         "@types/ws": "^8.18.2",
         "eslint": "^9.26.0",
         "prettier": "^3.9.10",
-        "rollup": "^4.64.6",
+        "rollup": "^4.66.0",
         "typescript": "~5.9.3"
     }
 }

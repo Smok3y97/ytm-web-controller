@@ -18,6 +18,8 @@ let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
 let isTabClosing = false;
+let isInitialized = false;
+let isVersionMismatch = false;
 let lastSentTime = 0;
 let bridgeVersion = '';
 
@@ -119,7 +121,7 @@ function notifyTabClosed() {
  * Broadcast state payload over WebSocket
  */
 function sendState(force = false) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN || isVersionMismatch) return;
 
   try {
     const collector = window.YTM?.state?.collectPlaybackState || (typeof collectPlaybackState === 'function' ? collectPlaybackState : null);
@@ -172,7 +174,7 @@ window.YTM.sendState = sendState;
  * Execute control commands received from Stream Deck / HTTP API
  */
 function handleCommand(message) {
-  if (!message) return;
+  if (!message || isVersionMismatch) return;
 
   try {
     const command = typeof message === 'string' ? message : message.command;
@@ -288,12 +290,15 @@ function connectWebSocket(port) {
         if (data.type === 'handshake_ack') {
           const comp = cmpVersions(bridgeVersion, data.version);
           if (comp === 0) {
+            isVersionMismatch = false;
             console.info('[YTM Controller] 🟢 Handshake ACK received (Plugin v%s)', data.version);
             reportStatus(false);
           } else if (comp > 0) {
+            isVersionMismatch = true;
             console.warn('[YTM Controller] ⚠️ Plugin is older than Extension (Plugin v%s, Extension v%s)', data.version, bridgeVersion);
             reportStatus(true, bridgeVersion, data.version, `Stream Deck Plugin (v${data.version}) is outdated!`);
           } else {
+            isVersionMismatch = true;
             console.warn('[YTM Controller] ⚠️ Extension is older than Plugin (Extension v%s, Plugin v%s)', bridgeVersion, data.version);
             reportStatus(true, data.version, data.version, `Browser Extension (v${bridgeVersion}) is outdated!`);
           }
@@ -301,6 +306,10 @@ function connectWebSocket(port) {
         }
 
         if (data.type === 'version_mismatch') {
+          isVersionMismatch = true;
+          if (data.extensionVersion && data.extensionVersion !== 'unknown') {
+            bridgeVersion = data.extensionVersion;
+          }
           console.warn(`[YTM Controller] ⚠️ Version mismatch from Stream Deck Plugin:`, data);
           reportStatus(true, data.requiredPluginVersion, data.currentPluginVersion, data.message);
           return;
@@ -375,10 +384,44 @@ function wakeFromStandby() {
   connectWebSocket(currentPort);
 }
 
+// Listen for configuration from bridge script (ISOLATED world) at document_start
+window.addEventListener('message', (event) => {
+  if (event.source !== window || !event.data || typeof event.data !== 'object') return;
+
+  if (event.data.type === 'YTM_BRIDGE_CONFIG') {
+    const prevVersion = bridgeVersion;
+    if (event.data.version) bridgeVersion = event.data.version;
+    const targetPort = event.data.wsPort || DEFAULT_PORT;
+    if (!isInitialized) {
+      currentPort = targetPort;
+      return;
+    }
+    if (ws && ws.readyState === WebSocket.OPEN && targetPort === currentPort) {
+      if (bridgeVersion && bridgeVersion !== prevVersion) {
+        sendHandshake(bridgeVersion);
+        registerClient(bridgeVersion);
+        sendState(true);
+      }
+    } else {
+      connectWebSocket(targetPort);
+    }
+  } else if (event.data.type === 'YTM_BRIDGE_PORT_UPDATE') {
+    const targetPort = event.data.wsPort || DEFAULT_PORT;
+    if (targetPort !== currentPort) {
+      currentPort = targetPort;
+      if (isInitialized) {
+        console.info('[YTM Controller] Switching WebSocket port to', targetPort);
+        connectWebSocket(targetPort);
+      }
+    }
+  }
+});
+
 /**
  * Extension initialization
  */
 function init() {
+  isInitialized = true;
   console.info('[YTM Controller] ⚡ Initializing YouTube Music Content Script...');
 
   const setupMedia = window.YTM?.observers?.setupGlobalMediaListeners || window.YTM?.state?.setupGlobalMediaListeners || (typeof setupGlobalMediaListeners === 'function' ? setupGlobalMediaListeners : null);
@@ -413,41 +456,15 @@ function init() {
   document.addEventListener('play', wakeFromStandby, true);
   document.addEventListener('loadedmetadata', wakeFromStandby, true);
 
-  // Listen for configuration from bridge script (ISOLATED world)
-  window.addEventListener('message', (event) => {
-    if (event.source !== window || !event.data || typeof event.data !== 'object') return;
-
-    if (event.data.type === 'YTM_BRIDGE_CONFIG') {
-      const prevVersion = bridgeVersion;
-      if (event.data.version) bridgeVersion = event.data.version;
-      const targetPort = event.data.wsPort || DEFAULT_PORT;
-      if (ws && ws.readyState === WebSocket.OPEN && targetPort === currentPort) {
-        if (bridgeVersion && bridgeVersion !== prevVersion) {
-          sendHandshake(bridgeVersion);
-          registerClient(bridgeVersion);
-          sendState(true);
-        }
-      } else {
-        connectWebSocket(targetPort);
-      }
-    } else if (event.data.type === 'YTM_BRIDGE_PORT_UPDATE') {
-      const targetPort = event.data.wsPort || DEFAULT_PORT;
-      if (targetPort !== currentPort) {
-        console.info('[YTM Controller] Switching WebSocket port to', targetPort);
-        connectWebSocket(targetPort);
-      }
-    }
-  });
-
   // Request initial configuration from bridge
   try {
     window.postMessage({ type: 'YTM_PAGE_REQUEST_CONFIG' }, '*');
   } catch (e) { }
 
-  // Fallback: If bridge doesn't respond within 200ms, connect with default port
+  // Fallback: If bridge doesn't respond within 200ms, connect with current/default port
   setTimeout(() => {
     if (!ws) {
-      connectWebSocket(DEFAULT_PORT);
+      connectWebSocket(currentPort || DEFAULT_PORT);
     }
   }, 200);
 }

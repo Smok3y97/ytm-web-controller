@@ -155,6 +155,20 @@ streamDeck
 				await discordService.setEnabled(true, globalSettings.discordClientId);
 			}
 			await obsService.updateSettings(globalSettings);
+
+			const currentState = stateManager.getState();
+			const isMismatch = stateManager.isVersionMismatch();
+			if (Boolean(globalSettings.isVersionMismatch) !== isMismatch) {
+				await streamDeck.settings.setGlobalSettings<GlobalSettings>({
+					...globalSettings,
+					isVersionMismatch: isMismatch,
+					extensionVersion: currentState.extensionVersion,
+					requiredPluginVersion: versionService.minRequiredExtensionVersion,
+					warningMessage: isMismatch
+						? versionService.getWarningMessage(currentState.extensionVersion || "unknown")
+						: undefined,
+				});
+			}
 		} catch (err) {
 			streamDeck.logger.warn(`[YTM Controller] Could not fetch global settings: ${err}`);
 		}

@@ -182,6 +182,28 @@ export class WebSocketService extends EventEmitter {
 									this.tabManager.removeTab(ws);
 									this.clients.delete(ws);
 									this.sendToClient(ws, validation.payload);
+
+									if (!validation.isCompatible) {
+										streamDeck.logger.warn(
+											`[WebSocket] Handshake MISMATCH from extension v${extVersion} (min required: ${versionService.minRequiredExtensionVersion})`,
+										);
+										this.tabManager.applyExtensionHandshake(extVersion, true);
+										this.isMismatchActive = true;
+										this.broadcastToExtensionTabs(validation.payload);
+										this.emit("handshake", { isMismatch: true, version: extVersion });
+									} else if (this.isMismatchActive) {
+										streamDeck.logger.info(
+											`[WebSocket] Handshake SUCCESS from extension v${extVersion} (min required: ${versionService.minRequiredExtensionVersion})`,
+										);
+										this.tabManager.applyExtensionHandshake(extVersion, false);
+										this.isMismatchActive = false;
+										this.broadcastToExtensionTabs(validation.payload);
+										const activeTab = this.getActiveTabSocket();
+										if (activeTab) {
+											this.sendToClient(activeTab, { command: "requestState" });
+										}
+										this.emit("handshake", { isMismatch: false, version: extVersion });
+									}
 									return;
 								}
 
@@ -212,6 +234,27 @@ export class WebSocketService extends EventEmitter {
 								return;
 							}
 
+							if (payload.type === "REGISTER_CLIENT") {
+								const isOverlay =
+									payload.client === "ytm-overlay" ||
+									payload.client === "obs-overlay" ||
+									Boolean(payload.url?.includes("/overlay"));
+
+								this.tabManager.updateTab(ws, {
+									...(isOverlay ? { isOverlay: true } : {}),
+									...(payload.tabId ? { tabId: payload.tabId } : {}),
+									...(typeof payload.isPlaying === "boolean" ? { isPlaying: payload.isPlaying } : {}),
+								});
+
+								streamDeck.logger.info(`[WebSocket] Registered client: ${payload.client} (${payload.url || ""})`);
+								// Only send initial STATE_UPDATE to overlay clients that display visual widgets
+								if (isOverlay && !this.isMismatchActive) {
+									const currentState = StateManager.getInstance().getState();
+									this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
+								}
+								return;
+							}
+
 							// Discard state updates if connected extension is incompatible
 							if (this.isMismatchActive) {
 								return;
@@ -237,24 +280,6 @@ export class WebSocketService extends EventEmitter {
 								}
 
 								this.emit("stateUpdate", incomingState);
-							} else if (payload.type === "REGISTER_CLIENT") {
-								const isOverlay =
-									payload.client === "ytm-overlay" ||
-									payload.client === "obs-overlay" ||
-									Boolean(payload.url?.includes("/overlay"));
-
-								this.tabManager.updateTab(ws, {
-									...(isOverlay ? { isOverlay: true } : {}),
-									...(payload.tabId ? { tabId: payload.tabId } : {}),
-									...(typeof payload.isPlaying === "boolean" ? { isPlaying: payload.isPlaying } : {}),
-								});
-
-								streamDeck.logger.info(`[WebSocket] Registered client: ${payload.client} (${payload.url || ""})`);
-								// Only send initial STATE_UPDATE to overlay clients that display visual widgets
-								if (isOverlay) {
-									const currentState = StateManager.getInstance().getState();
-									this.sendToClient(ws, { type: "STATE_UPDATE", data: currentState });
-								}
 							}
 						} catch (err) {
 							streamDeck.logger.warn(`[WebSocket] Failed to parse message: ${err}`);
@@ -367,6 +392,26 @@ export class WebSocketService extends EventEmitter {
 	}
 
 	/**
+	 * Broadcast handshake/version status to connected YouTube Music browser extension tabs
+	 */
+	private broadcastToExtensionTabs(payload: object): void {
+		const message = JSON.stringify(payload);
+		for (const client of this.clients) {
+			if (client.readyState !== WebSocket.OPEN) {
+				continue;
+			}
+			const tabInfo = this.tabManager.getTab(client);
+			if (!tabInfo?.isOverlay) {
+				try {
+					client.send(message);
+				} catch (err) {
+					streamDeck.logger.warn(`[WebSocket] Error broadcasting handshake status: ${err}`);
+				}
+			}
+		}
+	}
+
+	/**
 	 * Centralized client disconnect and tab deregistration logic
 	 */
 	private handleClientClose(ws: WebSocket, reason: string): void {
@@ -374,10 +419,22 @@ export class WebSocketService extends EventEmitter {
 			return;
 		}
 
-		const { wasPlaying } = this.tabManager.removeTab(ws);
+		const { wasPlaying, wasOverlay, remainingTabsCount } = this.tabManager.removeTab(ws);
 		this.clients.delete(ws);
 
-		this.evaluateMismatchState();
+		if (wasOverlay) {
+			streamDeck.logger.info(
+				`[WebSocket] Overlay client disconnected (${reason}). Remaining clients: ${this.clients.size}`,
+			);
+			return;
+		}
+
+		if (remainingTabsCount > 0) {
+			this.evaluateMismatchState();
+		} else if (this.isMismatchActive) {
+			this.isMismatchActive = false;
+			this.emit("handshake", { isMismatch: false, version: undefined });
+		}
 
 		streamDeck.logger.info(`[WebSocket] Client disconnected (${reason}). Remaining clients: ${this.clients.size}`);
 

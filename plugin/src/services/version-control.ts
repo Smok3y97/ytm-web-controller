@@ -4,16 +4,27 @@
  * Centralized, decoupled version negotiation and compatibility management.
  * Dynamically reads the plugin version from manifest.json at build time.
  */
+import fs from "node:fs";
+
 import manifest from "../../com.smok3y97.ytmusicweb.sdPlugin/manifest.json" with { type: "json" };
 import { HandshakeAckPayload, VersionMismatchPayload } from "../types/index.js";
 
 export class VersionControlService {
 	private static instance: VersionControlService;
 
-	public readonly currentPluginVersion: string = manifest && manifest.Version ? manifest.Version : "2.1.0.0";
-	public readonly minRequiredExtensionVersion: string = manifest && manifest.Version ? manifest.Version : "2.1.0.0";
+	public currentPluginVersion: string = manifest && manifest.Version ? manifest.Version : "2.1.0.0";
+	public minRequiredExtensionVersion: string = manifest && manifest.Version ? manifest.Version : "2.1.0.0";
 
-	private constructor() {}
+	private constructor() {
+		try {
+			const raw = fs.readFileSync(new URL("../manifest.json", import.meta.url), "utf8");
+			const parsed = JSON.parse(raw) as { Version?: string };
+			if (parsed && typeof parsed.Version === "string" && parsed.Version.trim()) {
+				this.currentPluginVersion = parsed.Version.trim();
+				this.minRequiredExtensionVersion = this.currentPluginVersion;
+			}
+		} catch {}
+	}
 
 	public static getInstance(): VersionControlService {
 		if (!VersionControlService.instance) {
@@ -67,6 +78,28 @@ export class VersionControlService {
 		}
 		const shortVer = this.formatShortVersion(this.currentPluginVersion);
 		return `⚠️ Update Ext. (v${shortVer}+)`;
+	}
+
+	/**
+	 * Format unified warning fields for Stream Deck + Touchstrip layouts without ellipsis truncation
+	 */
+	public getCompactDialWarning(extVersion?: string): { artist: string; track: string; title: string; value: string } {
+		if (extVersion && this.compareVersions(extVersion, this.currentPluginVersion) > 0) {
+			const shortVer = this.formatShortVersion(extVersion);
+			return {
+				artist: "⚠️ Mismatch",
+				track: "Update Plugin",
+				title: "⚠️ Mismatch: Update Plugin",
+				value: `v${shortVer}+`,
+			};
+		}
+		const shortVer = this.formatShortVersion(this.currentPluginVersion);
+		return {
+			artist: "⚠️ Mismatch",
+			track: "Update Ext.",
+			title: "⚠️ Mismatch: Update Ext.",
+			value: `v${shortVer}+`,
+		};
 	}
 
 	/**
